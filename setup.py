@@ -34,4 +34,6 @@ setup(
             "notebook",
         ],
     },
+    package_data={"fsd_path_planning": ["*.json"]},
+    include_package_data=True,
 )
