@@ -10,20 +10,18 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, cast
 
 import numpy as np
-from fsd_path_planning.calculate_path.path_calculator_helpers import (
-    PathCalculatorHelpers,
-)
-from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
+from fsd_path_planning.calculate_path.path_calculator_helpers import \
+    PathCalculatorHelpers
+from fsd_path_planning.calculate_path.path_parameterization import \
+    PathParameterizer
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    circle_fit,
-    rotate,
-    trace_distance_to_next,
-    unit_2d_vector_from_angle,
-)
-from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                circle_fit, rotate,
+                                                trace_distance_to_next,
+                                                unit_2d_vector_from_angle)
+from fsd_path_planning.utils.spline_fit import (SplineEvaluator,
+                                                SplineFitterFactory)
 from icecream import ic  # pylint: disable=unused-import
 
 SplineEvalByType = List[SplineEvaluator]
@@ -40,14 +38,12 @@ class PathCalculationInput:
     right_to_left_matches: IntArray = field(default=np.zeros(0, dtype=int))
     position_global: FloatArray = np.zeros(2)
     direction_global: FloatArray = np.array([1, 0])
-    velocity: float = 0.0
 
 
 @dataclass
 class PathCalculationScalarValues:
     """Class holding scalar values of a path calculator."""
 
-    minimum_velocity: float
     maximal_distance_for_valid_path: float
     mpc_path_length: float = 30
     mpc_prediction_horizon: int = 40
@@ -63,7 +59,6 @@ class CalculatePath:
         self,
         smoothing: float,
         predict_every: float,
-        minimum_velocity: float,
         maximal_distance_for_valid_path: float,
         max_deg: int,
         mpc_path_length: float,
@@ -74,7 +69,6 @@ class CalculatePath:
 
         Args:
             smoothing, predict_every, max_deg: Arguments for cone fitting.
-            minimum_velocity: Minimum velocity needed for path calculation.
             maximal_distance_for_valid_path: Maximum distance for a valid path. If the
                 calculated path has a minimum distance from the car that is larger than
                 this value, the path is not valid, and the previously calculated path is
@@ -82,7 +76,6 @@ class CalculatePath:
         """
         self.input = PathCalculationInput()
         self.scalars = PathCalculationScalarValues(
-            minimum_velocity=minimum_velocity,
             maximal_distance_for_valid_path=maximal_distance_for_valid_path,
             mpc_path_length=mpc_path_length,
             mpc_prediction_horizon=mpc_prediction_horizon,

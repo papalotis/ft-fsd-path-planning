@@ -54,7 +54,6 @@ def get_path_calculation_config(
 ) -> KwargsType:
     """Create path calculation kwargs based on mission."""
     return dict(
-        minimum_velocity=0.01,
         maximal_distance_for_valid_path=5,
         mpc_path_length=20,  # 20 meters
         mpc_prediction_horizon=40,  # 40 path points

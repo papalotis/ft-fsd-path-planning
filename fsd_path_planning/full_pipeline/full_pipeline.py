@@ -11,15 +11,16 @@ Project: fsd_path_planning
 """
 from typing import List
 
-from fsd_path_planning.calculate_path.core_calculate_path import \
-    PathCalculationInput
-from fsd_path_planning.cone_matching.core_cone_matching import \
-    ConeMatchingInput
-from fsd_path_planning.config import (create_default_cone_matching,
-                                      create_default_pathing,
-                                      create_default_sorting)
-from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import \
-    ConeSortingInput
+from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
+from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
+from fsd_path_planning.config import (
+    create_default_cone_matching,
+    create_default_pathing,
+    create_default_sorting,
+)
+from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
+    ConeSortingInput,
+)
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.mission_types import MissionTypes
@@ -36,7 +37,6 @@ class PathPlanner:
         cones: List[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-        vehicle_speed: float,
     ) -> FloatArray:
         """
         Runs the whole path planning pipeline.
@@ -83,7 +83,6 @@ class PathPlanner:
             right_to_left_match,
             vehicle_position,
             vehicle_direction,
-            vehicle_speed,
         )
         self.pathing.set_new_input(path_calculation_input)
         final_path = self.pathing.run_path_calculation()

@@ -26,29 +26,27 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
     if data_path is None:
         data_path = Path(__file__).parent / "fsg_19_2_laps.json"
 
+    # extract data
     data = json.loads(data_path.read_text())
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
     cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
-    speeds = np.array([d["car_speed"] for d in data])
 
-    paths = []
+    paths = np.array(
+        [
+            planner.calculate_path_in_global_frame(
+                cones,
+                position,
+                direction,
+            )
+            for (position, direction, cones) in tqdm(
+                zip(positions, directions, cone_observations), total=len(positions)
+            )
+        ]
+    )
 
-    for position, direction, cones, speed in tqdm(
-        zip(positions, directions, cone_observations, speeds), total=len(positions)
-    ):
-
-        calculated_path = planner.calculate_path_in_global_frame(
-            cones,
-            position,
-            direction,
-            speed,
-        )
-        paths.append(calculated_path)
-
-    paths = np.array(paths)
-
+    # plot animation
     fig = plt.figure()
 
     xmin = np.min(positions[:, 0])
@@ -64,12 +62,12 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
         xmax = xmin + y_range
 
     ax = plt.axes(
-        xlim=(xmin - 3, xmax + 3),
-        ylim=(ymin - 3, ymax + 3),
+        xlim=(xmin - 5, xmax + 5),
+        ylim=(ymin - 5, ymax + 5),
     )
     (yellow_cones,) = ax.plot([], [], "yo", label="Yellow cones")
     (blue_cones,) = ax.plot([], [], "bo", label="Blue cones")
-    (path,) = ax.plot([], [], "ro", label="Path")
+    (path,) = ax.plot([], [], "r-", label="Path")
     (position,) = ax.plot([], [], "go", label="Position")
 
     def init():
@@ -100,6 +98,8 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
         interval=1 / data_rate * 1000,
         blit=True,
     )
+
+    # anim.save(..., fps=data_rate)
 
     plt.show()
 
