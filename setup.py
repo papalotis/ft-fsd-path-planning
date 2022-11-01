@@ -34,6 +34,6 @@ setup(
             "notebook",
         ],
     },
-    package_data={"fsd_path_planning": ["*.json"]},
+    setup_requires=["setuptools_scm"],
     include_package_data=True,
 )
