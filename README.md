@@ -31,7 +31,7 @@ The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, 
 The package can be installed using pip:
 
 ```bash
-pip install git+ssh://git@github.com/papalotis/fsd-path-planning.git@c1e7667fc53848df2a1aa7279549033e62471c58#egg=fsd_path_planning
+pip install git+ssh://git@github.com/papalotis/ft-fsd-path-planning.git
 ```
 
 ## Basic usage
