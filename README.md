@@ -22,6 +22,13 @@ The algorithm outputs:
 
 - Samples of a parameterized b-spline with the x,y and curvature of the samples
 
+The algorithm is completely stateless. Every time it is called no previous results are
+used. The only aspect that can be used again is the path that was previously generated.
+It is only used if the path calculation has failed.
+
+The parts of the pipeline are also available as individual classes, so if you only
+want to use parts of it you can do so.
+
 No color inference is performed, if there are cones for which the position is known, but the color is not, they are ignored.
 
 The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, and Numba.
