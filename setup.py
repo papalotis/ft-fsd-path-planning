@@ -26,13 +26,12 @@ setup(
             "black",
             "mypy",
             "pylint",
-            "matplotlib",
         ],
         "demo": [
             "matplotlib",
             "typer",
             "tqdm",
             "notebook",
-        ]
+        ],
     },
 )

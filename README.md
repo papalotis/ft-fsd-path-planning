@@ -55,4 +55,10 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 
 ```
 
+Run the following command to run the demo on your machine:
+
+```bash
+python -m fsd_path_planning.demo
+```
+
 ![An animation demoing the path planning algorithm](animation.gif)
