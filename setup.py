@@ -27,6 +27,12 @@ setup(
             "mypy",
             "pylint",
             "matplotlib",
+        ],
+        "demo": [
+            "matplotlib",
+            "typer",
+            "tqdm",
+            "notebook",
         ]
     },
 )
