@@ -19,6 +19,7 @@ setup(
         "scipy",
         "numba",
         "icecream",
+        "typing_extensions",
     ],
     extras_require={
         "dev": [
@@ -26,7 +27,6 @@ setup(
             "mypy",
             "pylint",
             "matplotlib",
-            
         ]
     },
 )
