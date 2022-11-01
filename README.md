@@ -1,4 +1,4 @@
-# fsd-path-planning
+# ft-fsd-path-planning
 Formula Student Driverless Path Planning Algorithm
 
 This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season.
