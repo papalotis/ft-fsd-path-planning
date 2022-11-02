@@ -4,6 +4,8 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season.
 
+You can find an **interactive demo** of the algorithm [here](https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/)
+
 List of contributors:
 
 - Panagiotis Karagiannis
