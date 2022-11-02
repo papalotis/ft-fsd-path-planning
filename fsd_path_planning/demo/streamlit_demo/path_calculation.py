@@ -20,23 +20,6 @@ from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     euler_angles_to_quaternion,
 )
-from geometry_msgs.msg import PoseStamped
-
-
-def x_y_yaw_to_pose(x: float, y: float, yaw: float) -> PoseStamped:
-    pose = PoseStamped()
-    pose.pose.position.x = x
-    pose.pose.position.y = y
-    pose.pose.position.z = 0
-
-    q = euler_angles_to_quaternion(np.array([0, 0, yaw]))
-
-    pose.pose.orientation.x = q[0]
-    pose.pose.orientation.y = q[1]
-    pose.pose.orientation.z = q[2]
-    pose.pose.orientation.w = q[3]
-
-    return pose
 
 
 def show_base_points(
