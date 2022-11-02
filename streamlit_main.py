@@ -9,7 +9,7 @@ from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
 
-st.set_page_config(page_title="Chabo AS Pathing", page_icon="🏎")
+st.set_page_config(page_title="FT Path Planning", page_icon="🏎")
 
 
 @st.cache  # type: ignore
@@ -24,7 +24,7 @@ def run_welcome() -> None:
 ## Path Planning Demo
 
 Welcome to the path planning app. The goal of this app is to visualize the algorithms
-that are used in the 2021/22 formula student season by FaSSTUBe (Formula Student Team TU Berlin).
+that are used in the 2021/22 formula student season by FaSTTUBe (Formula Student Team TU Berlin).
 
 The path planning algorithm is split ito three parts:
 
