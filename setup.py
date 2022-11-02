@@ -32,6 +32,8 @@ setup(
             "typer",
             "tqdm",
             "notebook",
+            "plotly",
+            "streamlit",
         ],
     },
     setup_requires=["setuptools_scm"],

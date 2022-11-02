@@ -74,7 +74,6 @@ def calculate_match_search_direction(
             directions_list: list[FloatArray] = []
 
             for idx_start_, idx_end_ in zip(idx_start, idx_end):
-                # st.write(idx_start_, idx_end_)
                 result = calculate_match_search_direction(
                     cones[idx_start_:idx_end_], cone_type
                 )
@@ -105,8 +104,6 @@ def calculate_match_search_direction(
             search_direction_last_normalized,
         ]
     )
-
-    # st.write(len(cones), len(all_search_directions))
 
     return all_search_directions
 

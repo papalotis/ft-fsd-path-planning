@@ -13,7 +13,9 @@ import numpy as np
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     create_adjacency_matrix,
 )
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import cost_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
+    cost_configurations,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     find_all_end_configurations,
 )

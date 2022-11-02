@@ -85,6 +85,6 @@ class PathPlanner:
             vehicle_direction,
         )
         self.pathing.set_new_input(path_calculation_input)
-        final_path = self.pathing.run_path_calculation()
+        final_path, _ = self.pathing.run_path_calculation()
 
         return final_path

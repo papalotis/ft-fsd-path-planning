@@ -10,18 +10,20 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, cast
 
 import numpy as np
-from fsd_path_planning.calculate_path.path_calculator_helpers import \
-    PathCalculatorHelpers
-from fsd_path_planning.calculate_path.path_parameterization import \
-    PathParameterizer
+from fsd_path_planning.calculate_path.path_calculator_helpers import (
+    PathCalculatorHelpers,
+)
+from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                circle_fit, rotate,
-                                                trace_distance_to_next,
-                                                unit_2d_vector_from_angle)
-from fsd_path_planning.utils.spline_fit import (SplineEvaluator,
-                                                SplineFitterFactory)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    circle_fit,
+    rotate,
+    trace_distance_to_next,
+    unit_2d_vector_from_angle,
+)
+from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 from icecream import ic  # pylint: disable=unused-import
 
 SplineEvalByType = List[SplineEvaluator]
@@ -419,9 +421,7 @@ class CalculatePath:
         self.mpc_paths = self.mpc_paths[-10:] + [path_with_length_for_mpc]
         self.path_is_trivial_list = self.path_is_trivial_list[-10:] + [path_is_trivial]
 
-    def run_path_calculation(
-        self,
-    ) -> FloatArray:
+    def run_path_calculation(self) -> Tuple[FloatArray, FloatArray]:
         """Calculate path."""
 
         if len(self.input.left_cones) < 2 and len(self.input.right_cones) < 2:
@@ -452,4 +452,4 @@ class CalculatePath:
 
         self.previous_paths.append(path_parameterization)
 
-        return path_parameterization
+        return path_parameterization, center_along_match_connection

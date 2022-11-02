@@ -9,9 +9,12 @@ Project: FaSTTUBe Chabo Pathing
 from typing import Tuple
 
 from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput, ConeSortingState)
-from fsd_path_planning.sorting_cones.utils.sorting_flow_control import \
-    SortingFlowControl
+    ConeSortingInput,
+    ConeSortingState,
+)
+from fsd_path_planning.sorting_cones.utils.sorting_flow_control import (
+    SortingFlowControl,
+)
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from icecream import ic  # pylint: disable=unused-import
@@ -55,7 +58,6 @@ class ConeSorting:
                 cone type.
         """
         self.input = ConeSortingInput()
-        
 
         self.state = ConeSortingState(
             max_n_neighbors=max_n_neighbors,
@@ -98,8 +100,8 @@ class ConeSorting:
 
         sorting_calculation = SortingFlowControl(self.state)
 
-        sorted_indices_list_by_cone_type = (
-            sorting_calculation.calculate_sort_indices(self.state)
+        sorted_indices_list_by_cone_type = sorting_calculation.calculate_sort_indices(
+            self.state
         )
 
         sorted_points_left = self.state.cones_by_type_array[ConeTypes.LEFT][
