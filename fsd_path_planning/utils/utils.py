@@ -3,7 +3,7 @@
 """
 Description: A module with common utility python functions
 
-Project: FaSTTUBe Chabo Common
+Project: fsd_path_planning
 """
 
 import time

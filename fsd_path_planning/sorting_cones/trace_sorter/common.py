@@ -3,7 +3,7 @@
 """
 Description: This File provides several functions used in several other files in the
 sorting algorithm
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import TYPE_CHECKING, Any, cast
 

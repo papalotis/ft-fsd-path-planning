@@ -3,7 +3,7 @@
 """
 Description: Calculate the cost of configurations according to the cost of the distance
 between cones
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 import numpy as np
 from fsd_path_planning.utils.math_utils import trace_distance_to_next

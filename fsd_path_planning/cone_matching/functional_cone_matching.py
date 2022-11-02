@@ -4,7 +4,7 @@
 Description: Match cones from left and right trace to facilitate
 more stable path calculation
 
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 
 

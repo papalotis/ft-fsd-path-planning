@@ -4,7 +4,7 @@
 Cone sorting class.
 
 Description: Entry point for Pathing/ConeSorting
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import Tuple
 

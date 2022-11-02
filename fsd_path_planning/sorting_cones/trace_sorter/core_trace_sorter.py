@@ -3,7 +3,7 @@
 """
 Description: This module provides functionality for sorting a trace of cones into a
 plausible track
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import Optional, Tuple, cast
 

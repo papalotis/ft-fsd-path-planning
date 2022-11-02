@@ -4,7 +4,7 @@
 Cone matching class.
 
 Description: Provides class interface to functional cone matching.
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from dataclasses import dataclass, field
 from typing import Tuple

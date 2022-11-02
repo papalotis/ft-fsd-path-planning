@@ -4,7 +4,7 @@
 Description: A module for finding line segment intersections. It can be used as part
 of the cost function of the sorting algorithm.
 
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import TYPE_CHECKING, Any, cast
 

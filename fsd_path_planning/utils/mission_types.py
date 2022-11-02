@@ -3,7 +3,7 @@
 """
 Description: Provides an enum for mission types (acceleration, skidpad, etc...)
 
-Project: FaSTTUBe Chabo Common
+Project: fsd_path_planning
 """
 from enum import IntEnum
 

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 Description: This File calculates all the possible paths
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import TYPE_CHECKING, Optional, Tuple
 

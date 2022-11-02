@@ -20,11 +20,11 @@ def load_ed_slides_as_bytes() -> bytes:
 def run_welcome() -> None:
     st.markdown(
         """
-# Chabo AS
-## Pathing
+# FaSTTUBe Formula Student Driverless Path Planning Algorithm
+## Path Planning Demo
 
-Welcome to the Chabo AS Pathing app. The goal of this app is to visualize the algorithms
-that are used for the path planning of the Chabo Autonomous System.
+Welcome to the path planning app. The goal of this app is to visualize the algorithms
+that are used in the 2021/22 formula student season by FaSSTUBe (Formula Student Team TU Berlin).
 
 The path planning algorithm is split ito three parts:
 
@@ -46,7 +46,7 @@ STRING_TO_FUNCTION = {
 
 
 with st.sidebar:
-    st.markdown("# Chabo AS Pathing")
+    st.markdown("# Path Planning")
 
     modes = list(chain(STRING_TO_FUNCTION, map(str.lower, STRING_TO_FUNCTION)))
     try:

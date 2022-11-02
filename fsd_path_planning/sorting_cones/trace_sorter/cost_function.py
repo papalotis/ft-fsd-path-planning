@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 Description: This File calculates the costs for the different path versions
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 
 import numpy as np

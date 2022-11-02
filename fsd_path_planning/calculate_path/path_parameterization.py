@@ -5,7 +5,7 @@ Path parameterization for MPC
 
 Description: Path parameterization for MPC. MPC requires specific features of a path
 not just the 2D points of the path. This module provides the necessary features.
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from dataclasses import dataclass
 from typing import Tuple, cast

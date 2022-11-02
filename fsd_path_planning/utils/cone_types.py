@@ -2,10 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 Description: Enum for cone types (yellow, blue, etc...)
-
-Taken directly from ft-as-utils
-
-Project: FaSTTUBe Chabo Common
+Project: fsd_path_planning
 """
 from enum import IntEnum
 

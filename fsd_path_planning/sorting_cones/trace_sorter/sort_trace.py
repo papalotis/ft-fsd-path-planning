@@ -3,7 +3,7 @@
 """
 Description: This File provides the core algorithm for sorting a trace of cones into a
 plausible track
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 import sys
 from typing import Optional

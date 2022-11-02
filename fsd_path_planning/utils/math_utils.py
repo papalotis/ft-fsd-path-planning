@@ -5,7 +5,7 @@ Description: A module with common mathematical functions
 
 Taken from ft-as-utils
 
-Project: FaSTTUBe Chabo Common
+Project: fsd_path_planning
 """
 from typing import Tuple, TypeVar, cast
 

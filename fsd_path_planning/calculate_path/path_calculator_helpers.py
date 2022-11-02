@@ -6,7 +6,7 @@ Core path calculation.
 Description: A module for path update calculation that will be used in combination with
 the existing path
 
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 import numpy as np
 from fsd_path_planning.utils.cone_types import ConeTypes

@@ -4,7 +4,7 @@
 Class for the flow control of the cone sorting calculation.
 
 Description: Entry point for Pathing/ConeSorting
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from typing import Iterable, List, Optional, cast
 

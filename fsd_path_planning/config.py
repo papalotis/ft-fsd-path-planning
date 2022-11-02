@@ -4,7 +4,7 @@
 Class creation config file.
 
 Description: Config file to create instances of the pathing related classes.
-Project: FaSTTUBe Driverless Pathing
+Project: fsd_path_planning
 """
 from typing import Any, Dict, Type
 

@@ -5,7 +5,7 @@ Special case of path calculation for skidpad.
 
 Description: Skidpad requires a special case for path calculation. This file provides
 a class that overwrites the path calculation for the skidpad track.
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 import numpy as np
 from fsd_path_planning.utils.math_utils import trace_distance_to_next

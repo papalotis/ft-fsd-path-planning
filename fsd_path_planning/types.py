@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 Description: Define types that are used commonly in the whole package
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 
 from typing import TYPE_CHECKING, Any, Literal

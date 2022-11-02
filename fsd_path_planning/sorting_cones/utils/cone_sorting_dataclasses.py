@@ -4,7 +4,7 @@
 Class that stores all dataclasses and custom defined datatypes.
 
 Description: Entry point for Pathing/ConeSorting
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from dataclasses import dataclass, field
 from typing import List

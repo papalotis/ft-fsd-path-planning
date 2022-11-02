@@ -4,7 +4,7 @@
 Path calculation class.
 
 Description: Last step in Pathing pipeline
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 from dataclasses import dataclass, field
 from typing import List, Tuple, cast

@@ -2,7 +2,7 @@
 # -*- coding:utf-8 -*-
 """
 Description: This File calculates the Adjacency Matrix
-Project: FaSTTUBe Chabo Pathing
+Project: fsd_path_planning
 """
 
 from typing import Tuple, cast
