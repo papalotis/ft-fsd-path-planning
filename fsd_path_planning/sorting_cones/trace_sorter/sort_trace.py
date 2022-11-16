@@ -59,7 +59,8 @@ def sort_trace(
 
     if n_neighbors >= len(trace):
         raise ValueError(
-            f"sort_trace was called with n_neighbors ({n_neighbors}) >= len(trace) ({len(trace)})."
+            f"sort_trace was called with n_neighbors ({n_neighbors}) >= len(trace)"
+            f" ({len(trace)})."
         )
 
     adjacency_matrix, reachable_nodes = create_adjacency_matrix(

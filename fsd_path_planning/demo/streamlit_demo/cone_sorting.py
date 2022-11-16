@@ -97,7 +97,6 @@ def show_starting_cone(
 def plot_adjacency_matrix(
     adjacency_matrix: BoolArray, cones: FloatArray, ax: Axes
 ) -> None:
-
     ax.axis("equal")
     ax.set_xticks([])
     ax.set_yticks([])
@@ -144,11 +143,9 @@ def show_graph_search(
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
 ) -> list[Optional[IntArray]]:
-
     cols = st.columns(2)
     all_end_configs: list[Optional[IntArray]] = [None for _ in ConeTypes]
     for cone_type, col in zip((ConeTypes.LEFT, ConeTypes.RIGHT), cols):
-
         cones = cones_by_type[cone_type]
 
         adjacency_matrix = adjacency_matrices[cone_type]
@@ -175,7 +172,6 @@ def show_graph_search(
         for config, is_end_configuration in zip(
             all_configurations, configuration_is_end
         ):
-
             config = config[config != -1]
             points = cones[config]
             scatter_lines = go.Scatter(
@@ -238,7 +234,6 @@ def show_costs(
 ) -> list[FloatArray]:
     final_out = [np.zeros((0, 2)) for _ in ConeTypes]
     for cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT):
-
         cones = cones_by_type[cone_type]
         end_configurations = end_configurations_by_type[cone_type]
         assert cones is not None
@@ -433,7 +428,12 @@ then the likelihood of them being connected is very low.
         )
     if n_neighbors > 3:
         st.warning(
-            "The number of neighbors can drastically increase the computation time. While it is possible to use a higher number of neighbors, it is not recommended. A value of 3 should be sufficient. If you want to experiment with a larger number keep the exponential nature of the algorithm in mind. If you want to avoid the exponential nature, set the max depth to a low number like 4."
+            "The number of neighbors can drastically increase the computation time."
+            " While it is possible to use a higher number of neighbors, it is not"
+            " recommended. A value of 3 should be sufficient. If you want to experiment"
+            " with a larger number keep the exponential nature of the algorithm in"
+            " mind. If you want to avoid the exponential nature, set the max depth to a"
+            " low number like 4."
         )
     adjacency_matrices = show_adjacency_matrix(
         cones_by_type, start_indices, n_neighbors, maximum_distance
@@ -456,7 +456,8 @@ is not important.
     if n_neighbors >= 4:
         max_maximum_depth = 5
         st.warning(
-            "The upper limit for maximum depth is set to 5 when maximum number of neighbors is over 3"
+            "The upper limit for maximum depth is set to 5 when maximum number of"
+            " neighbors is over 3"
         )
 
     maximum_depth = st.slider(

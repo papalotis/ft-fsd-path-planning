@@ -101,7 +101,8 @@ class Timer:
         Prints a formated version of get_cum_time. The time is reported in microseconds
         """
         print(
-            f"Cumulative time for block {self.name} is {self.get_cum_time() * 1_000_000:.3f} μs"
+            f"Cumulative time for block {self.name} is"
+            f" {self.get_cum_time() * 1_000_000:.3f} μs"
         )
 
     def report_mean_time(self) -> None:

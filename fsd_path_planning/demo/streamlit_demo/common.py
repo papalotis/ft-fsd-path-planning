@@ -75,7 +75,6 @@ def get_cones_for_configuration(
     vehicle_position = np.array([0, 0], dtype=float)
     vehicle_direction = np.array([1, 0], dtype=float)
     if configuration == "Straight":
-
         cones_x = np.arange(-2, 20, 4)
         noise_range = 0.3
         cones_left_y = np.ones(len(cones_x)) * 1.5 + rng.uniform(

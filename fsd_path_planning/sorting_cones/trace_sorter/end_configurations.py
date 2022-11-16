@@ -214,7 +214,6 @@ def _impl_find_all_end_configurations(
         configuration_is_end = np.zeros(end_configurations.shape[0], dtype=np.bool_)
 
     while stack_end_pointer >= 0:
-
         # pop the index and the position from the stack
         next_idx, position_in_stack = stack[stack_end_pointer]
         stack_end_pointer -= 1

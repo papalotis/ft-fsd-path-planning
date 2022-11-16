@@ -267,7 +267,6 @@ def pairwise_segment_intersection(
     for index_first_single, index_second_single, indicator_overlap_single in zip(
         indices_first_keep, indices_second_keep, indicator_overlap
     ):
-
         indicator_matrix[
             index_first_single, index_second_single
         ] = indicator_overlap_single

@@ -26,7 +26,6 @@ from fsd_path_planning.demo.streamlit_demo.common import (
 def naive_search_directions(
     left_cones: FloatArray, right_cones: FloatArray
 ) -> tuple[FloatArray, FloatArray]:
-
     left_rotated = rotate(normalize(np.diff(left_cones, axis=0)), -np.pi / 2)
     right_rotated = rotate(normalize(np.diff(right_cones, axis=0)), np.pi / 2)
 
@@ -41,7 +40,6 @@ def show_search_direction(
     right_cones: FloatArray,
     use_naive_direction: bool,
 ) -> tuple[FloatArray, FloatArray]:
-
     if use_naive_direction:
         left_rotated, right_rotated = naive_search_directions(left_cones, right_cones)
     else:
@@ -589,7 +587,8 @@ def run() -> None:
 
     if n_without_match == 0:
         st.info(
-            "In this instance, all cones have a match, so no virtual cones will be computed"
+            "In this instance, all cones have a match, so no virtual cones will be"
+            " computed"
         )
 
     minimum_track_width = st.slider("Minimum track width", 2.5, 6.0, 3.0, step=0.1)

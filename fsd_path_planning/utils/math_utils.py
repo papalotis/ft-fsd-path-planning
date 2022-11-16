@@ -49,7 +49,6 @@ def vec_dot(vecs1: np.ndarray, vecs2: np.ndarray) -> np.ndarray:
 
 @my_njit
 def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
-
     original_shape = arr.shape
     arr_row_col = arr.flatten().reshape(-1, arr.shape[-1])
     result = np.empty(arr_row_col.shape[0])
@@ -184,7 +183,6 @@ def my_in1d(test_values: np.ndarray, source_container: np.ndarray) -> np.ndarray
     is_in = np.zeros(test_values.shape[0], dtype=np.bool_)
     for i, test_val in enumerate(test_values):
         for source_val in source_sorted:
-
             if test_val == source_val:
                 is_in[i] = True
                 break

@@ -8,13 +8,11 @@ a class that overwrites the path calculation for the skidpad track.
 Project: fsd_path_planning
 """
 import numpy as np
-from fsd_path_planning.utils.math_utils import trace_distance_to_next
 from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.core_calculate_path import CalculatePath
-
-# from fsd_path_planning.misc.base_skidpad_path import BASE_SKIDPAD_PATH
 from fsd_path_planning.types import FloatArray
+from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
 
 class SkidpadCalculatePath(CalculatePath):

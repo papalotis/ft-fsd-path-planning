@@ -28,7 +28,6 @@ def show_base_points(
     direction: FloatArray,
     cones_by_type: list[FloatArray],
 ) -> None:
-
     middle = []
 
     left_cones = cones_by_type[ConeTypes.LEFT]
@@ -71,7 +70,6 @@ def show_base_points(
 
 
 def run() -> None:
-
     st.markdown(
         """
     # Path Calculation

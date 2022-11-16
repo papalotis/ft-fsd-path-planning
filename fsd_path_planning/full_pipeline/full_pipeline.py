@@ -42,7 +42,8 @@ class PathPlanner:
         Runs the whole path planning pipeline.
 
         Args:
-            cones: List of cones in global frame. Position of Nx2 arrays based on `ConeTypes`.
+            cones: List of cones in global frame. Position of Nx2 arrays based on
+            `ConeTypes`.
             vehicle_position: Vehicle position in global frame. 2 element array (x,y).
             vehicle_direction: Vehicle direction in global frame. 2 element array
             (dir_x,dir_y).

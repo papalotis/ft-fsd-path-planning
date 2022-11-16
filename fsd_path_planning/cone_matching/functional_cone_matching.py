@@ -312,7 +312,6 @@ def insert_virtual_cones_to_existing(
     history: list[FloatArray] = []
 
     for cone_to_insert in cones_to_insert:
-
         distance_to_existing_cones = np.linalg.norm(
             existing_cones - cone_to_insert, axis=1
         )
@@ -323,7 +322,6 @@ def insert_virtual_cones_to_existing(
                 car_position, existing_cones, cone_to_insert
             )
         else:
-
             closest_index, second_closest_index = indices_sorted_by_distances[:2]
 
             if np.abs(closest_index - second_closest_index) != 1:
@@ -616,7 +614,6 @@ def calculate_virtual_cones_for_both_sides(
     max_len = max(len(left_cones), len(right_cones))
     discard_one_side = min_len == 0 or ((max_len / min_len) > 2)
     if discard_one_side:
-
         if len(left_cones) < len(right_cones):
             left_cones = empty_cone_array
         else:
