@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
 
 try:
@@ -23,15 +24,7 @@ except ImportError:
 def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
     planner = PathPlanner(MissionTypes.trackdrive)
 
-    if data_path is None:
-        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
-
-    # extract data
-    data = json.loads(data_path.read_text())
-
-    positions = np.array([d["car_position"] for d in data])
-    directions = np.array([d["car_direction"] for d in data])
-    cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
+    positions, directions, cone_observations = load_data_json(data_path)
 
     paths = np.array(
         [
@@ -102,6 +95,18 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
     # anim.save(..., fps=data_rate)
 
     plt.show()
+
+def load_data_json(data_path: Optional[Path] = None) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
+    if data_path is None:
+        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
+
+    # extract data
+    data = json.loads(data_path.read_text())
+
+    positions = np.array([d["car_position"] for d in data])
+    directions = np.array([d["car_direction"] for d in data])
+    cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
+    return positions,directions,cone_observations
 
 
 if __name__ == "__main__":

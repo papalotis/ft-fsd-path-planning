@@ -5,14 +5,16 @@ Description: This module provides functionality for sorting a trace of cones int
 plausible track
 Project: fsd_path_planning
 """
-from typing import Optional, Tuple, cast
+from typing import Optional, Tuple
 
 import numpy as np
-from fsd_path_planning.utils.math_utils import points_inside_ellipse, vec_angle_between
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.sort_trace import sort_trace
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
+from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                points_inside_ellipse, rotate)
 
 
 class TraceSorter:
@@ -94,9 +96,9 @@ class TraceSorter:
 
             else:
                 if start_idx is None:
-                    angles_to_car = vec_angle_between(trace - car_pos, car_dir)
+                    angles_to_car = angle_from_2d_vector(rotate(trace - car_pos,-angle_from_2d_vector(car_dir)))
                     start_idx = self.select_starting_cone(
-                        car_pos, car_dir, trace, angles_to_car, distances_to_car
+                        car_pos, car_dir, trace, cone_type, angles_to_car, distances_to_car
                     )
 
                 if start_idx is None:
@@ -130,6 +132,7 @@ class TraceSorter:
         car_position: FloatArray,
         car_direction: FloatArray,
         cones: FloatArray,
+        cone_type: ConeTypes,
         trace_angles: FloatArray,
         trace_distances: FloatArray,
     ) -> Optional[int]:
@@ -149,14 +152,24 @@ class TraceSorter:
             self.max_dist_to_first / 1.3,
         )
 
+        angle_signs = np.sign(trace_angles)
+        valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
+        mask_valid_side = angle_signs == valid_angle_sign
         mask_is_valid_angle = np.abs(trace_angles) < np.pi / 1.1
-        mask_is_closest = trace_distances == trace_distances.min()
-        mask_is_valid = mask_is_valid_angle * mask_is_in_ellipse * mask_is_closest
+        mask_is_valid = mask_is_valid_angle * mask_is_in_ellipse * mask_valid_side
 
-        if np.any(mask_is_valid):
-            # return the position of the first true
-            start_idx = int(np.argmax(mask_is_valid))
+        trace_distances_copy = trace_distances.copy()
+        trace_distances_copy[~mask_is_valid] = np.inf
+        
+        if len(trace_distances_copy) > 0:
+            start_idx = int(np.argmin(trace_distances_copy))
         else:
             start_idx = None
+
+        # if np.any(mask_is_valid):
+        #     # return the position of the first true
+        #     start_idx = int(np.argmax(mask_is_valid))
+        # else:
+        #     start_idx = None
 
         return start_idx

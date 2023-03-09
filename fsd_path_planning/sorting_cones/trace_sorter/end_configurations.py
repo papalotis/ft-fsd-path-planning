@@ -7,12 +7,15 @@ Project: fsd_path_planning
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
-from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import my_in1d, my_njit
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import cast
-from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
+    cast
+from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
+                                     IntArray)
+from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import (my_in1d, my_njit,
+                                                vec_angle_between)
 
 
 @my_njit
@@ -108,6 +111,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     neighbors: IntArray,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
+    car_direction: FloatArray,
 ) -> BoolArray:
     # neighbor can be added if not in current attempt
     can_be_added = ~my_in1d(neighbors, current_attempt[: position_in_stack + 1])
@@ -122,10 +126,12 @@ def neighbor_bool_mask_can_be_added_to_attempt(
         # threshold. there are two thresholds, one is the maximum angle in a specific direction
         # for blue cones that is counter-clockwise and for yellow cones that is clockwise
         # the second threshold is an absolute angle between the two vectors.
+        candidate_neighbor = trace[neighbors[i]]
+        # XXX: There might be a bug where the can_be_added[i] is set to false and then
+        # back to true
         if position_in_stack >= 1:
             second_to_last_in_attempt = trace[current_attempt[position_in_stack - 1]]
             last_in_attempt = trace[current_attempt[position_in_stack]]
-            candidate_neighbor = trace[neighbors[i]]
             second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
             last_to_candidate = candidate_neighbor - last_in_attempt
             angle_1 = cast(
@@ -154,6 +160,13 @@ def neighbor_bool_mask_can_be_added_to_attempt(
                 )
             else:
                 raise AssertionError("Unreachable code")
+        
+        if position_in_stack == 2:
+            start = trace[current_attempt[0]]
+            diff = candidate_neighbor - start
+            initial_direction = vec_angle_between(car_direction, diff)
+            can_be_added[i] &= initial_direction < np.pi / 2
+
     return can_be_added
 
 
@@ -184,6 +197,7 @@ def _impl_find_all_end_configurations(
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
     first_k_indices_must_be: IntArray,
+    car_direction: FloatArray,
     store_all_end_configurations: bool,
 ) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
     """
@@ -235,6 +249,7 @@ def _impl_find_all_end_configurations(
             neighbors,
             threshold_directional_angle,
             threshold_absolute_angle,
+            car_direction,
         )
 
         has_valid_neighbors = position_in_stack < target_length - 1 and np.any(
@@ -306,6 +321,7 @@ def find_all_end_configurations(
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
     first_k_indices_must_be: IntArray,
+    car_direction: FloatArray,
     store_all_end_configurations: bool,
 ) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
     """
@@ -336,6 +352,7 @@ def find_all_end_configurations(
         threshold_directional_angle,
         threshold_absolute_angle,
         first_k_indices_must_be,
+        car_direction,
         store_all_end_configurations,
     )
 
@@ -345,6 +362,7 @@ def find_all_end_configurations(
             == first_k_indices_must_be
         ).all(axis=1)
         end_configurations = end_configurations[mask_keep]
+
 
     if len(end_configurations) == 0:
         raise NoPathError("Could not create a valid trace using the provided points")

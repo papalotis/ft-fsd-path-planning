@@ -647,3 +647,18 @@ if __name__ == "__main__":
 
     p1, p2, p3 = np.array([0, 0.0]), np.array([0, 1.0]), np.array([0.0, 2.0])
     print(center_of_circle_from_3_points(p1, p2, p3))
+
+
+def angle_difference(angle1: Numeric, angle2: Numeric) -> Numeric:
+    """
+    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    The order of the angles *is* important.
+
+    Args:
+        angle1: First angle.
+        angle2: Second angle.
+
+    Returns:
+        The difference between the two angles.
+    """
+    return cast(Numeric, (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi)  # type: ignore

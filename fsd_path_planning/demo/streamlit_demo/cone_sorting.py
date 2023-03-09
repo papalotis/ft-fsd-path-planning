@@ -5,29 +5,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate
-from fsd_path_planning.utils.utils import Timer
-from fsd_path_planning.demo.streamlit_demo.common import (
-    CONE_TYPE_TO_COLOR,
-    create_animation,
-    get_cones_for_configuration,
-    visualize_configuration,
-)
 from matplotlib.axes import Axes
 from matplotlib.patches import Polygon
 
-from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
-    create_adjacency_matrix,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
-    cost_configurations,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
-    find_all_end_configurations,
-)
+from fsd_path_planning.demo.streamlit_demo.common import (
+    CONE_TYPE_TO_COLOR, create_animation, get_cones_for_configuration,
+    visualize_configuration)
+from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import \
+    create_adjacency_matrix
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
+    TraceSorter
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
+    cost_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import \
+    find_all_end_configurations
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
+from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate
+from fsd_path_planning.utils.utils import Timer
 
 
 def get_points_on_ellipse(thetas: FloatArray, a: float, b: float) -> np.ndarray:
@@ -163,6 +158,7 @@ def show_graph_search(
                 threshold_directional_angle,
                 threshold_absolute_angle,
                 np.zeros(0, dtype=np.int32),
+                # need to add car direction here
                 store_all_end_configurations=True,
             )
 
