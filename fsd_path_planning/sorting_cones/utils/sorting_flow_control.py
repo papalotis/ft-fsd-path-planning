@@ -10,15 +10,13 @@ from typing import Iterable, List, Optional, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
-    TraceSorter
-from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import \
-    ConeSortingState
-from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
-                                     SortableConeTypes)
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
+from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
+    ConeSortingState,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (my_cdist_sq_euclidean,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import my_cdist_sq_euclidean, vec_angle_between
 
 
 def cones_in_range_and_pov_mask(

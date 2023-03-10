@@ -96,7 +96,10 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
 
     plt.show()
 
-def load_data_json(data_path: Optional[Path] = None) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
+
+def load_data_json(
+    data_path: Optional[Path] = None,
+) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
     if data_path is None:
         data_path = Path(__file__).parent / "fsg_19_2_laps.json"
 
@@ -106,7 +109,7 @@ def load_data_json(data_path: Optional[Path] = None) -> tuple[np.ndarray, np.nda
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
     cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
-    return positions,directions,cone_observations
+    return positions, directions, cone_observations
 
 
 if __name__ == "__main__":

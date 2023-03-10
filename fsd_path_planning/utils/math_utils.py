@@ -649,7 +649,8 @@ if __name__ == "__main__":
     print(center_of_circle_from_3_points(p1, p2, p3))
 
 
-def angle_difference(angle1: Numeric, angle2: Numeric) -> Numeric:
+# @my_njit
+def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """
     Calculate the difference between two angles. The range of the difference is [-pi, pi].
     The order of the angles *is* important.
@@ -661,4 +662,4 @@ def angle_difference(angle1: Numeric, angle2: Numeric) -> Numeric:
     Returns:
         The difference between the two angles.
     """
-    return cast(Numeric, (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi)  # type: ignore
+    return (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi  # type: ignore

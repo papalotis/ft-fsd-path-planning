@@ -9,16 +9,21 @@ from matplotlib.axes import Axes
 from matplotlib.patches import Polygon
 
 from fsd_path_planning.demo.streamlit_demo.common import (
-    CONE_TYPE_TO_COLOR, create_animation, get_cones_for_configuration,
-    visualize_configuration)
-from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import \
-    create_adjacency_matrix
-from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
-    TraceSorter
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
-    cost_configurations
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import \
-    find_all_end_configurations
+    CONE_TYPE_TO_COLOR,
+    create_animation,
+    get_cones_for_configuration,
+    visualize_configuration,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
+    create_adjacency_matrix,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
+    cost_configurations,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
+    find_all_end_configurations,
+)
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate

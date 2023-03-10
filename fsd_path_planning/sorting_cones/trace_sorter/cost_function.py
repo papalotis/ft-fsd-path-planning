@@ -18,7 +18,7 @@ from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection impo
 from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
                                      SortableConeTypes)
 from fsd_path_planning.utils.math_utils import (angle_difference,
-                                                angle_from_2d_vector,
+                                                angle_from_2d_vector, my_njit,
                                                 normalize, vec_angle_between)
 
 
@@ -55,6 +55,7 @@ def calc_angle_cost_for_configuration(
     Returns:
         np.array: The score of each configuration
     """
+
     angles = calc_angle_to_next(points, configurations)
 
     is_part_of_configuration = (configurations != -1)[:, 2:]
@@ -121,9 +122,10 @@ def calc_initial_direction_cost(
     points: FloatArray, configurations: IntArray, vehicle_direction: FloatArray
 ) -> FloatArray:
     points_configs_first_two = np.diff(points[configurations][:, :2], axis=1)[:, 0]
+    
     return vec_angle_between(points_configs_first_two, vehicle_direction)
 
-
+# @my_njit
 def calc_change_of_direction_cost(
         points: FloatArray, configurations: IntArray
 ) -> FloatArray:
@@ -149,8 +151,12 @@ def calc_change_of_direction_cost(
             continue
 
         points_of_configuration = points[c]
+
+        diff_1 = points_of_configuration[1:] - points_of_configuration[:-1]
+
         diff_1 = np.diff(points_of_configuration, axis=0)
-        angle = angle_from_2d_vector(diff_1)
+        angle = np.arctan2(diff_1[:, 1], diff_1[:, 0])
+        # angle = angle_from_2d_vector(diff_1)
         difference = angle_difference(angle[:-1], angle[1:])
 
         mask_zero_crossing = np.sign(difference[:-1]) != np.sign(difference[1:])
@@ -161,7 +167,7 @@ def calc_change_of_direction_cost(
 
     return out
 
-
+# @my_njit
 def calc_other_side_cones_cost(
     points: FloatArray, configurations: IntArray, cone_type: SortableConeTypes
 ) -> FloatArray:
@@ -202,7 +208,7 @@ def calc_other_side_cones_cost(
             if len(distances) == 0:
                 continue
 
-            found_cones_for_each_config[i] += distances.min() < 2
+            found_cones_for_each_config[i] += distances.min() < 3
 
     # we want to have as many cones on the other side as possible
     found_cones_for_each_config = 1 / found_cones_for_each_config    
@@ -217,7 +223,8 @@ def cost_configurations(
     points: FloatArray,
     configurations: IntArray,
     cone_type: SortableConeTypes,
-    vehicle_direction: FloatArray,
+    vehicle_position: FloatArray, # pylint: disable=unused-argument (future proofing, incase we want to use it)
+    vehicle_direction: FloatArray, # pylint: disable=unused-argument (future proofing)
     *,
     return_individual_costs: bool,
 ) -> FloatArray:
@@ -231,6 +238,10 @@ def cost_configurations(
     Returns:
         A cost for each configuration
     """
+    if configurations.shape[1] < 3:
+        return np.zeros(configurations.shape[0])
+
+
     from fsd_path_planning.utils.utils import Timer
     timer_no_print = True
 
@@ -265,7 +276,7 @@ def cost_configurations(
             points, configurations, cone_type
         )
 
-    factors: FloatArray = np.array([4.0, 10.0, 0.0, 30.0, 3.0, 0.2, 10.0])
+    factors: FloatArray = np.array([4.0, 10.0, 2.0, 10.0, 3.0, 0.2, 10.0])
     final_costs = (
         np.column_stack(
             [
@@ -280,6 +291,8 @@ def cost_configurations(
         )
         * factors
     )
+
+    
 
     if return_individual_costs:
         return final_costs

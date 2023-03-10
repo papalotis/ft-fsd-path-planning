@@ -20,8 +20,7 @@ ConeTypesForPathCalculation = Literal[ConeTypes.LEFT, ConeTypes.RIGHT]
 
 
 class PathCalculatorHelpers:
-    """A class for calculating the update path that will be combined with the existing path.
-    """
+    """A class for calculating the update path that will be combined with the existing path."""
 
     HALF_PI = np.pi / 2
 

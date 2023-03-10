@@ -26,6 +26,7 @@ def sort_trace(
     start_idx: int,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
+    vehicle_position: FloatArray,
     vehicle_direction: FloatArray,
     max_dist: float = np.inf,
     max_length: int = sys.maxsize,
@@ -78,7 +79,9 @@ def sort_trace(
         threshold_directional_angle,
         threshold_absolute_angle,
         first_k_indices_must_be,
+        vehicle_position,
         vehicle_direction,
+        car_size=4.1,
         store_all_end_configurations=False,  # this is only used for testing/debugging/visualization purposes and should be set to False in production
     )
 
@@ -90,6 +93,7 @@ def sort_trace(
             points=trace,
             configurations=all_end_configurations,
             cone_type=cone_type,
+            vehicle_position=vehicle_position,
             vehicle_direction=vehicle_direction,
             return_individual_costs=False,
         )

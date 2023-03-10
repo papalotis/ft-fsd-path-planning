@@ -9,8 +9,8 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
-    cast
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
+    cast, lines_segments_intersect_indicator)
 from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
                                      IntArray)
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -111,8 +111,12 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     neighbors: IntArray,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
+    car_position: FloatArray,
     car_direction: FloatArray,
+    car_size: float,
 ) -> BoolArray:
+    car_direction_normalized = car_direction / np.linalg.norm(car_direction)
+
     # neighbor can be added if not in current attempt
     can_be_added = ~my_in1d(neighbors, current_attempt[: position_in_stack + 1])
     for i in range(len(can_be_added)):
@@ -160,12 +164,24 @@ def neighbor_bool_mask_can_be_added_to_attempt(
                 )
             else:
                 raise AssertionError("Unreachable code")
-        
-        if position_in_stack == 2:
+
+        if position_in_stack == 1:
             start = trace[current_attempt[0]]
             diff = candidate_neighbor - start
-            initial_direction = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= initial_direction < np.pi / 2
+            direction_offset = vec_angle_between(car_direction, diff)
+            can_be_added[i] &= direction_offset < np.pi / 3
+
+        
+        if position_in_stack >= 0:
+            # make sure that no intersection with car occurs
+            last_in_attempt = trace[current_attempt[position_in_stack]]
+            car_start = car_position - car_direction_normalized * car_size / 2
+            car_end = car_position + car_direction_normalized * car_size
+
+            can_be_added[i] &= not lines_segments_intersect_indicator(
+                last_in_attempt, candidate_neighbor, car_start, car_end
+            )
+            
 
     return can_be_added
 
@@ -197,7 +213,9 @@ def _impl_find_all_end_configurations(
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
     first_k_indices_must_be: IntArray,
+    car_position: FloatArray,
     car_direction: FloatArray,
+    car_size: float,
     store_all_end_configurations: bool,
 ) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
     """
@@ -249,7 +267,9 @@ def _impl_find_all_end_configurations(
             neighbors,
             threshold_directional_angle,
             threshold_absolute_angle,
+            car_position,
             car_direction,
+            car_size,
         )
 
         has_valid_neighbors = position_in_stack < target_length - 1 and np.any(
@@ -321,7 +341,9 @@ def find_all_end_configurations(
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
     first_k_indices_must_be: IntArray,
+    car_position: FloatArray,
     car_direction: FloatArray,
+    car_size: float,
     store_all_end_configurations: bool,
 ) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
     """
@@ -352,7 +374,9 @@ def find_all_end_configurations(
         threshold_directional_angle,
         threshold_absolute_angle,
         first_k_indices_must_be,
+        car_position,
         car_direction,
+        car_size,
         store_all_end_configurations,
     )
 
@@ -363,6 +387,9 @@ def find_all_end_configurations(
         ).all(axis=1)
         end_configurations = end_configurations[mask_keep]
 
+    mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
+
+    end_configurations = end_configurations[mask_length_is_atleast_3]
 
     if len(end_configurations) == 0:
         raise NoPathError("Could not create a valid trace using the provided points")
