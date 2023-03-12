@@ -10,12 +10,12 @@ import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast, lines_segments_intersect_indicator)
-from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
-                                     IntArray)
+    cast,
+    lines_segments_intersect_indicator,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (my_in1d, my_njit,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import my_in1d, my_njit, vec_angle_between
 
 
 @my_njit
@@ -171,7 +171,6 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             direction_offset = vec_angle_between(car_direction, diff)
             can_be_added[i] &= direction_offset < np.pi / 3
 
-        
         if position_in_stack >= 0:
             # make sure that no intersection with car occurs
             last_in_attempt = trace[current_attempt[position_in_stack]]
@@ -181,7 +180,6 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             can_be_added[i] &= not lines_segments_intersect_indicator(
                 last_in_attempt, candidate_neighbor, car_start, car_end
             )
-            
 
     return can_be_added
 

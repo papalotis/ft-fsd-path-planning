@@ -77,7 +77,7 @@ def show_starting_cone(
         angle_to_car = angle_from_2d_vector(rotate(car_to_cone, -angle_direction))
 
         distance_to_car = np.linalg.norm(car_to_cone, axis=1)
-        idx = sorter.select_starting_cone(
+        idx = sorter.select_starting_cone_by_direction(
             position, direction, cones, angle_to_car, distance_to_car
         )
         if idx is None:

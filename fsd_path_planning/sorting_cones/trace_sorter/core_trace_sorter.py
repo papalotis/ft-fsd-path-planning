@@ -13,8 +13,11 @@ from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.sort_trace import sort_trace
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                points_inside_ellipse, rotate)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    points_inside_ellipse,
+    rotate,
+)
 
 
 class TraceSorter:
@@ -95,20 +98,23 @@ class TraceSorter:
                     trace_sorted_idxs = trace_sorted_idxs[:1]
 
             else:
-                if start_idx is None:
-                    angles_to_car = angle_from_2d_vector(
-                        rotate(trace - car_pos, -angle_from_2d_vector(car_dir))
-                    )
-                    start_idx = self.select_starting_cone(
+                if start_idx is None and first_k_indices_must_be is None:
+                  
+                    first_2 = self.select_first_two_starting_cones(
                         car_pos,
                         car_dir,
                         trace,
                         cone_type,
-                        angles_to_car,
-                        distances_to_car,
                     )
-
-                if start_idx is None:
+                    if first_2 is None:
+                        pass
+                    else:
+                        start_idx = first_2[0]
+                        if len(first_2) > 1:
+                            first_k_indices_must_be = first_2.copy()
+                
+                
+                if start_idx is None and first_k_indices_must_be is None:
                     trace_sorted_idxs = empty_idxs_array
                 else:
                     n_neighbors = min(self.max_n_neighbors, len(trace) - 1)
@@ -129,11 +135,26 @@ class TraceSorter:
 
                     # if no configurations can be found, then just return the first trace
                     except NoPathError:
-                        trace_sorted_idxs = np.array([start_idx], dtype=np.int_)
+                        trace_sorted_idxs = first_2[:1]
 
         sorted_trace = trace[trace_sorted_idxs]
 
         return sorted_trace, trace_sorted_idxs
+
+    def invert_cone_type(self, cone_type: ConeTypes) -> ConeTypes:
+        """
+        Inverts the cone type
+        Args:
+            cone_type: The cone type to be inverted
+        Returns:
+            ConeTypes: The inverted cone type
+        """
+        if cone_type == ConeTypes.LEFT:
+            return ConeTypes.RIGHT
+        if cone_type == ConeTypes.RIGHT:
+            return ConeTypes.LEFT
+        
+        raise ValueError(f'Cone type {cone_type} cannot be inverted.')
 
     def select_starting_cone(
         self,
@@ -141,17 +162,19 @@ class TraceSorter:
         car_direction: FloatArray,
         cones: FloatArray,
         cone_type: ConeTypes,
-        trace_angles: FloatArray,
-        trace_distances: FloatArray,
+        index_to_skip: Optional[np.ndarray] = None,
     ) -> Optional[int]:
         """
         Return the index of the starting cone
-        Args:
-            trace_angles: The trace from which to choose
-            trace_distances: The distance to the starting
-        Returns:
             int: The index of the stating cone
         """
+        cones_relative = rotate(cones - car_position, -angle_from_2d_vector(car_direction))
+
+        cone_relative_angles = angle_from_2d_vector(cones_relative)
+
+        trace_distances = np.linalg.norm(cones_relative, axis=-1)
+
+
         mask_is_in_ellipse = points_inside_ellipse(
             cones,
             car_position,
@@ -160,22 +183,33 @@ class TraceSorter:
             self.max_dist_to_first / 1.3,
         )
 
-        angle_signs = np.sign(trace_angles)
+        angle_signs = np.sign(cone_relative_angles)
         valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
         mask_valid_side = angle_signs == valid_angle_sign
-        mask_is_valid_angle = np.abs(trace_angles) < np.pi / 1.5
-        mask_is_valid = mask_is_valid_angle * mask_is_in_ellipse * mask_valid_side
+        mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi / 1
+        mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 6
+        mask_is_valid = (
+            mask_is_valid_angle
+            * mask_is_in_ellipse
+            * mask_valid_side
+            * mask_is_valid_angle_min
+        )
 
         trace_distances_copy = trace_distances.copy()
         trace_distances_copy[~mask_is_valid] = np.inf
 
         if np.any(mask_is_valid) > 0:
-            start_idx = int(np.argmin(trace_distances_copy))
+            sorted_idxs = np.argsort(trace_distances_copy)
+            start_idx = None
+            for idx in sorted_idxs:
+                if idx != index_to_skip:
+                    start_idx = idx
+                    break
+            # start_idx = int(np.argmin(trace_distances_copy))
             if trace_distances_copy[start_idx] > self.max_dist_to_first:
                 start_idx = None
         else:
             start_idx = None
-
 
         # if np.any(mask_is_valid):
         #     # return the position of the first true
@@ -184,3 +218,42 @@ class TraceSorter:
         #     start_idx = None
 
         return start_idx
+
+    def select_first_two_starting_cones(
+        self,
+        car_position: FloatArray,
+        car_direction: FloatArray,
+        cones: FloatArray,
+        cone_type: ConeTypes,
+    ) -> Optional[np.ndarray]:
+        """
+        Return the index of the starting cones. Pick the cone that is closest in front
+        of the car and the cone that is closest behind the car.
+        """
+        front_index = self.select_starting_cone(
+            car_position,
+            car_direction,
+            cones,
+            cone_type,
+        )
+
+        if front_index is None:
+            return None
+
+        # get the cone behind the car
+        back_index = self.select_starting_cone(
+            car_position,
+            -car_direction,
+            cones,
+            self.invert_cone_type(cone_type),
+            index_to_skip=np.array([front_index]),
+        )
+
+        dist = np.linalg.norm(cones[front_index] - cones[back_index])
+
+        if 1 or back_index is None or dist > self.max_dist * 1.1 or back_index == front_index:
+            return_value = np.array([front_index], dtype=np.int_)
+        else:
+            return_value = np.array([back_index, front_index], dtype=np.int_)
+
+        return return_value
