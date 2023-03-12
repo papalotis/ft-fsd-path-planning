@@ -31,7 +31,7 @@ def sort_trace(
     max_dist: float = np.inf,
     max_length: int = sys.maxsize,
     first_k_indices_must_be: Optional[IntArray] = None,
-) -> IntArray:
+) -> tuple[IntArray, tuple[FloatArray, IntArray]]:
     """
     Sorts a set of points such that the sum of the angles between the points is minimal.
     If a point is too far away, from any neighboring points, it is considered an outlier
@@ -52,7 +52,8 @@ def sort_trace(
         ValueError: If `n_neighbors` is greater than len(trace) - 1
         RuntimeError: If no valid path can be computed
     Returns:
-        np.array[int]: A list of indexes of the points in the optimal ordering
+        A list of indexes of the points in the optimal ordering, as well as the
+        the costs of all end configurations and their corresponding indices
     """
 
     if n_neighbors >= len(trace):
@@ -86,18 +87,20 @@ def sort_trace(
     )
 
     best_configuration: IntArray
-    if len(all_end_configurations) == 1:
-        best_configuration = all_end_configurations[0]
-    else:
-        costs = cost_configurations(
-            points=trace,
-            configurations=all_end_configurations,
-            cone_type=cone_type,
-            vehicle_position=vehicle_position,
-            vehicle_direction=vehicle_direction,
-            return_individual_costs=False,
-        )
-        best_configuration = all_end_configurations[np.argmin(costs)]
+ 
+ 
+    costs = cost_configurations(
+        points=trace,
+        configurations=all_end_configurations,
+        cone_type=cone_type,
+        vehicle_position=vehicle_position,
+        vehicle_direction=vehicle_direction,
+        return_individual_costs=False,
+    )
+    costs_sort_idx = np.argsort(costs)
+    costs = costs[costs_sort_idx]
+    all_end_configurations = all_end_configurations[costs_sort_idx]
+    best_configuration = all_end_configurations[0]
 
     best_configuration = best_configuration[best_configuration != -1]
-    return best_configuration
+    return best_configuration, (costs, all_end_configurations)

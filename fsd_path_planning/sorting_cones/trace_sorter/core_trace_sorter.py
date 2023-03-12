@@ -13,11 +13,8 @@ from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.sort_trace import sort_trace
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    points_inside_ellipse,
-    rotate,
-)
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                points_inside_ellipse, rotate)
 
 
 class TraceSorter:
@@ -75,27 +72,27 @@ class TraceSorter:
         """
         # updates the given trace to exclude passed cones
         # trace = self.remove_cones_behind(trace)
-        trace_sorted_idxs: IntArray
-        empty_idxs_array: IntArray = np.zeros(0, dtype=np.int_)
+        # trace_sorted_idxs: IntArray
+        no_result = None
         # nothing to sort
         if len(trace) == 0:
-            trace_sorted_idxs = empty_idxs_array
+            return_value = no_result
         else:
             distances_to_car = np.linalg.norm(trace - car_pos, axis=-1)
             dist_to_closest_cone = distances_to_car.min()
 
             if len(trace) == 1:
-                trace_sorted_idxs = np.zeros(1, dtype=np.int_)
+                return_value = no_result
 
             elif len(trace) == 2:
                 # for cases where only 2 cones are available
                 # just return the cones sorted by distance since there is no better algorithm
-                trace_sorted_idxs = distances_to_car.argsort()
+                return_value = None
 
                 # if the distance between the two points is too large then only get the
                 # first point
                 if np.abs(np.diff(distances_to_car)) > self.max_dist:
-                    trace_sorted_idxs = trace_sorted_idxs[:1]
+                    return_value = None
 
             else:
                 if start_idx is None and first_k_indices_must_be is None:
@@ -115,11 +112,11 @@ class TraceSorter:
                 
                 
                 if start_idx is None and first_k_indices_must_be is None:
-                    trace_sorted_idxs = empty_idxs_array
+                    return_value = no_result
                 else:
                     n_neighbors = min(self.max_n_neighbors, len(trace) - 1)
                     try:
-                        trace_sorted_idxs = sort_trace(
+                        return_value = sort_trace(
                             trace,
                             cone_type,
                             n_neighbors,
@@ -131,15 +128,16 @@ class TraceSorter:
                             self.max_dist,
                             self.max_length,
                             first_k_indices_must_be,
-                        )
+                        )[1]
 
                     # if no configurations can be found, then just return the first trace
                     except NoPathError:
-                        trace_sorted_idxs = first_2[:1]
+                        return_value = None
 
-        sorted_trace = trace[trace_sorted_idxs]
 
-        return sorted_trace, trace_sorted_idxs
+
+
+        return return_value
 
     def invert_cone_type(self, cone_type: ConeTypes) -> ConeTypes:
         """

@@ -168,8 +168,6 @@ def calc_change_of_direction_cost(
         mask_zero_crossing = np.sign(difference[:-1]) != np.sign(difference[1:])
         raw_cost_values = np.abs(difference[:-1] - difference[1:])
 
-        
-
         cost_values = raw_cost_values * mask_zero_crossing
         out[i] = np.sum(cost_values)
 
@@ -225,13 +223,11 @@ def calc_other_side_cones_cost(
                     wrong_side_distances.min() < 3
                 )
 
-
     # we want to have as many cones on the other side as possible
     found_cones_for_each_config = 1 / found_cones_for_each_config
 
     # we want to have as few cones on the same side as possible, so we just scale
     found_wrong_side_cones_for_each_config = 0 * found_wrong_side_cones_for_each_config
-    
 
     return found_cones_for_each_config + found_wrong_side_cones_for_each_config
 
@@ -295,8 +291,7 @@ def cost_configurations(
             points, configurations, cone_type
         )
 
-
-    factors: FloatArray = np.array([4.0, 10.0, 2.0, 200000.0, 10000.0, 1000.4, 10.0])
+    factors: FloatArray = np.array([4.0, 10.0, 2.0, 200.0, 10.0, 10.0, 10.0])
     final_costs = (
         np.column_stack(
             [
