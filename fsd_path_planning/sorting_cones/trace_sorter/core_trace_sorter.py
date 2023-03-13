@@ -13,12 +13,9 @@ from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.sort_trace import sort_trace
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    points_inside_ellipse,
-    rotate,
-    vec_angle_between,
-)
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                points_inside_ellipse, rotate,
+                                                vec_angle_between)
 
 
 class TraceSorter:
@@ -170,32 +167,7 @@ class TraceSorter:
         Return the index of the starting cone
             int: The index of the stating cone
         """
-        cones_relative = rotate(cones - car_position, -angle_from_2d_vector(car_direction))
-
-        cone_relative_angles = angle_from_2d_vector(cones_relative)
-
-        trace_distances = np.linalg.norm(cones_relative, axis=-1)
-
-
-        mask_is_in_ellipse = points_inside_ellipse(
-            cones,
-            car_position,
-            car_direction,
-            self.max_dist_to_first * 1.3,
-            self.max_dist_to_first / 1.3,
-        )
-
-        angle_signs = np.sign(cone_relative_angles)
-        valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
-        mask_valid_side = angle_signs == valid_angle_sign
-        mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi / 1
-        mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 6
-        mask_is_valid = (
-            mask_is_valid_angle
-            * mask_is_in_ellipse
-            * mask_valid_side
-            * mask_is_valid_angle_min
-        )
+        trace_distances, mask_is_valid = self.mask_cone_can_be_first_in_config(car_position, car_direction, cones, cone_type)
 
         trace_distances_copy = trace_distances.copy()
         trace_distances_copy[~mask_is_valid] = np.inf
@@ -220,6 +192,36 @@ class TraceSorter:
         #     start_idx = None
 
         return start_idx
+
+    def mask_cone_can_be_first_in_config(self, car_position, car_direction, cones, cone_type):
+        cones_relative = rotate(cones - car_position, -angle_from_2d_vector(car_direction))
+
+        cone_relative_angles = angle_from_2d_vector(cones_relative)
+
+        trace_distances = np.linalg.norm(cones_relative, axis=-1)
+
+
+        mask_is_in_ellipse = points_inside_ellipse(
+            cones,
+            car_position,
+            car_direction,
+            self.max_dist_to_first * 1.3,
+            self.max_dist_to_first / 1.3,
+        )
+        # print(self.max_dist_to_first * 1.3)
+        angle_signs = np.sign(cone_relative_angles)
+        valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
+        mask_valid_side = angle_signs == valid_angle_sign
+        mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi / 1
+        mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 10
+        mask_is_valid = (
+            mask_is_valid_angle
+            * mask_is_in_ellipse
+            * mask_valid_side
+            * mask_is_valid_angle_min
+        )
+        
+        return trace_distances,mask_is_valid
 
     def select_first_two_starting_cones(
         self,
