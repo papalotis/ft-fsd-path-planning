@@ -13,8 +13,12 @@ from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.sort_trace import sort_trace
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                points_inside_ellipse, rotate)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    points_inside_ellipse,
+    rotate,
+    vec_angle_between,
+)
 
 
 class TraceSorter:
@@ -228,30 +232,42 @@ class TraceSorter:
         Return the index of the starting cones. Pick the cone that is closest in front
         of the car and the cone that is closest behind the car.
         """
-        front_index = self.select_starting_cone(
+        index_1 = self.select_starting_cone(
             car_position,
             car_direction,
             cones,
             cone_type,
         )
 
-        if front_index is None:
+        if index_1 is None:
             return None
 
         # get the cone behind the car
-        back_index = self.select_starting_cone(
+        index_2 = self.select_starting_cone(
             car_position,
             -car_direction,
             cones,
             self.invert_cone_type(cone_type),
-            index_to_skip=np.array([front_index]),
+            index_to_skip=np.array([index_1]),
         )
 
-        dist = np.linalg.norm(cones[front_index] - cones[back_index])
+        if index_2 is None:
+            return np.array([index_1], dtype=np.int_)
 
-        if 1 or back_index is None or dist > self.max_dist * 1.1 or back_index == front_index:
-            return_value = np.array([front_index], dtype=np.int_)
+        cone_dir_1 = cones[index_1] - cones[index_2]
+        cone_dir_2 = cones[index_2] - cones[index_1]
+
+        angle_1 = vec_angle_between(cone_dir_1, car_direction)
+        angle_2 = vec_angle_between(cone_dir_2, car_direction)
+
+        if angle_1 > angle_2:
+            index_1, index_2 = index_2, index_1
+
+
+        dist = np.linalg.norm(cone_dir_1)
+        if dist > self.max_dist * 1.1 or index_2 == index_1:
+            return_value = np.array([index_1], dtype=np.int_)
         else:
-            return_value = np.array([back_index, front_index], dtype=np.int_)
+            return_value = np.array([index_2, index_1], dtype=np.int_)
 
         return return_value

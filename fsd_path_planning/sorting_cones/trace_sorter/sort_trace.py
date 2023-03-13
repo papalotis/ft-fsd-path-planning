@@ -10,12 +10,15 @@ from typing import Optional
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import \
-    create_adjacency_matrix
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
-    cost_configurations
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import \
-    find_all_end_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
+    create_adjacency_matrix,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
+    cost_configurations,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
+    find_all_end_configurations,
+)
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
 
 
@@ -82,13 +85,12 @@ def sort_trace(
         first_k_indices_must_be,
         vehicle_position,
         vehicle_direction,
-        car_size=4.1,
+        car_size=2.1,
         store_all_end_configurations=False,  # this is only used for testing/debugging/visualization purposes and should be set to False in production
     )
 
     best_configuration: IntArray
- 
- 
+
     costs = cost_configurations(
         points=trace,
         configurations=all_end_configurations,

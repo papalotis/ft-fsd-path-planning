@@ -7,24 +7,19 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    calculate_match_search_direction,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
-from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
-    calc_distance_cost,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    number_of_intersections_in_configurations,
-)
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_difference,
-    angle_from_2d_vector,
-    my_njit,
-    normalize,
-    vec_angle_between,
-)
+from fsd_path_planning.cone_matching.functional_cone_matching import \
+    calculate_match_search_direction
+from fsd_path_planning.sorting_cones.trace_sorter.common import \
+    get_configurations_diff
+from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import \
+    calc_distance_cost
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
+    number_of_intersections_in_configurations
+from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
+                                     SortableConeTypes)
+from fsd_path_planning.utils.math_utils import (angle_difference,
+                                                angle_from_2d_vector, my_njit,
+                                                normalize, vec_angle_between)
 
 
 def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArray:
@@ -291,7 +286,7 @@ def cost_configurations(
             points, configurations, cone_type
         )
 
-    factors: FloatArray = np.array([4.0, 10.0, 2.0, 200.0, 10.0, 10.0, 10.0])
+    factors: FloatArray = np.array([40.0, 10.0, 2.0, 200.0, 100.0, 10.0, 10.0])
     final_costs = (
         np.column_stack(
             [
