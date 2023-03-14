@@ -65,7 +65,7 @@ def create_default_pathing(mission: MissionTypes) -> CalculatePath:
         configured for
 
     Returns:
-        path_calculation: The created pathing instance
+        The created path calculation instance
     """
     path_calculation_kwargs = get_path_calculation_config(mission)
     cone_fitting_kwargs = get_cone_fitting_config(mission)
@@ -150,6 +150,10 @@ def create_default_cone_matching_with_non_monotonic_matches(
     """
     kwargs = get_default_matching_kwargs(mission)
     assert "matches_should_be_monotonic" in kwargs
+    kwargs["matches_should_be_monotonic"] = False
+    return ConeMatching(**kwargs)
+    kwargs["matches_should_be_monotonic"] = False
+    return ConeMatching(**kwargs)
     kwargs["matches_should_be_monotonic"] = False
     return ConeMatching(**kwargs)
     kwargs["matches_should_be_monotonic"] = False

@@ -9,21 +9,19 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
-    calc_final_configs_for_left_and_right,
-)
+from fsd_path_planning.cone_matching.functional_cone_matching import \
+    combine_and_sort_virtual_with_real
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
+    calc_final_configs_for_left_and_right
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
-    calc_scores_and_end_configurations,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
+    calc_scores_and_end_configurations
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    points_inside_ellipse,
-    rotate,
-    vec_angle_between,
-)
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                my_cdist_sq_euclidean,
+                                                points_inside_ellipse, rotate,
+                                                vec_angle_between)
 
 
 class TraceSorter:
@@ -76,6 +74,19 @@ class TraceSorter:
 
         return out
 
+    def remove_last_cone_in_config_if_not_of_type(
+        self, config: IntArray, cones: FloatArray, cone_type: ConeTypes
+    ) -> IntArray:
+        """Remove the last cone in the config if it is not of the specified type"""
+        if len(config) > 0:
+            last = config[-1]
+            type_last = cones[last, 2]
+
+            if type_last != cone_type and len(config) > 3:
+                config = config[:-1]
+
+        return config
+
     def sort_left_right(
         self,
         cones_by_type: list[FloatArray],
@@ -98,7 +109,7 @@ class TraceSorter:
             car_dir,
         )
 
-        left_sorted, right_sorted = calc_final_configs_for_left_and_right(
+        left_config, right_config = calc_final_configs_for_left_and_right(
             left_scores,
             left_configs,
             right_scores,
@@ -108,10 +119,22 @@ class TraceSorter:
             car_dir,
         )
 
-        # we remove the last cone in the sorted trace, since we have no angle
-        # information for it and it is likely that it is wrong
+        left_config = self.remove_last_cone_in_config_if_not_of_type(
+            left_config, cones_flat, ConeTypes.LEFT
+        )
 
-        return left_sorted[:-1, :2], right_sorted[:-1, :2]
+        right_config = self.remove_last_cone_in_config_if_not_of_type(
+            right_config, cones_flat, ConeTypes.RIGHT
+        )
+
+        # remove any placeholder positions if they are present
+        left_config = left_config[left_config != -1]
+        right_config = right_config[right_config != -1]
+
+        left_sorted = cones_flat[left_config]
+        right_sorted = cones_flat[right_config]
+
+        return left_sorted[:, :2], right_sorted[:, :2]
 
     def calc_configurations_with_score_for_one_side(
         self,
@@ -136,7 +159,7 @@ class TraceSorter:
         if len(cones) < 3:
             return no_result
 
-        first_2 = self.select_first_two_starting_cones(
+        first_2 = self.select_first_k_starting_cones(
             car_pos,
             car_dir,
             cones,
@@ -198,7 +221,7 @@ class TraceSorter:
         car_direction: FloatArray,
         cones: FloatArray,
         cone_type: ConeTypes,
-        index_to_skip: Optional[int] = None,
+        index_to_skip: Optional[np.ndarray] = None,
     ) -> Optional[int]:
         """
         Return the index of the starting cone
@@ -215,7 +238,7 @@ class TraceSorter:
             sorted_idxs = np.argsort(trace_distances_copy)
             start_idx = None
             for idx in sorted_idxs:
-                if idx != index_to_skip:
+                if index_to_skip is None or idx not in index_to_skip:
                     start_idx = idx
                     break
             if trace_distances_copy[start_idx] > self.max_dist_to_first:
@@ -261,7 +284,7 @@ class TraceSorter:
 
         return trace_distances, mask_is_valid
 
-    def select_first_two_starting_cones(
+    def select_first_k_starting_cones(
         self,
         car_position: FloatArray,
         car_direction: FloatArray,
@@ -304,9 +327,36 @@ class TraceSorter:
             index_1, index_2 = index_2, index_1
 
         dist = np.linalg.norm(cone_dir_1)
-        if dist > self.max_dist * 1.1 or index_2 == index_1:
-            return_value = np.array([index_1], dtype=np.int_)
-        else:
-            return_value = np.array([index_2, index_1], dtype=np.int_)
+        if dist > self.max_dist * 1.1:
+            return np.array([index_1], dtype=np.int_)
 
-        return return_value
+        two_cones = np.array([index_2, index_1], dtype=np.int_)
+
+        # find the third cone
+        index_3 = self.select_starting_cone(
+            car_position,
+            car_direction,
+            cones,
+            cone_type,
+            index_to_skip=two_cones,
+        )
+
+        if index_3 is None:
+            return two_cones
+
+        # check if the third cone is close enough to the first cone
+        min_dist_to_first_two = np.linalg.norm(
+            cones[index_3, :2] - cones[two_cones, :2], axis=1
+        ).min()
+
+        if min_dist_to_first_two > self.max_dist * 1.1:
+            return two_cones
+
+        two_cones_pos = cones[two_cones, :2]
+        third_cone = cones[index_3, :2][None]
+
+        new_cones, *_ = combine_and_sort_virtual_with_real(
+            two_cones_pos, third_cone, cone_type, car_position, car_direction
+        )
+
+        return my_cdist_sq_euclidean(new_cones, cones[:, :2]).argmin(axis=1)

@@ -8,12 +8,14 @@ Project: fsd_path_planning
 """
 from typing import Tuple
 
+import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
-    TraceSorter
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
 from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput, ConeSortingState)
+    ConeSortingInput,
+    ConeSortingState,
+)
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -59,6 +61,9 @@ class ConeSorting:
             threshold_absolute_angle=threshold_absolute_angle,
         )
 
+        self.last_left_cones = np.zeros((0, 2))
+        self.last_right_cones = np.zeros((0, 2))
+
     def set_new_input(self, slam_input: ConeSortingInput) -> None:
         """Save inputs from other software nodes in variable."""
         self.input = slam_input
@@ -71,6 +76,29 @@ class ConeSorting:
         )
 
         self.state.cones_by_type_array = self.input.slam_cones
+
+    def use_old_result_if_needed(
+        self, car_position: FloatArray, new_result: FloatArray, cone_type: ConeTypes
+    ) -> FloatArray:
+        """Use the last result if the new result is empty."""
+        if len(new_result) > 0:
+            return new_result
+
+        old_result = (
+            self.last_left_cones
+            if cone_type == ConeTypes.LEFT
+            else self.last_right_cones
+        )
+        # print("old result", old_result)
+        try:
+            min_dist = np.linalg.norm(old_result - car_position, axis=1).min()
+        except ValueError:
+            min_dist = 1000
+
+        if min_dist < 8:
+            return old_result
+
+        return new_result
 
     def run_cone_sorting(
         self,
@@ -99,5 +127,17 @@ class ConeSorting:
             self.state.position_global,
             self.state.direction_global,
         )
+
+        # left_cones = self.use_old_result_if_needed(
+        #     self.state.position_global, left_cones, ConeTypes.LEFT
+        # )
+        # right_cones = self.use_old_result_if_needed(
+        #     self.state.position_global, right_cones, ConeTypes.RIGHT
+        # )
+
+        # self.last_left_cones = left_cones
+        # self.last_right_cones = right_cones
+
+        # print(len(self.last_left_cones))
 
         return left_cones, right_cones

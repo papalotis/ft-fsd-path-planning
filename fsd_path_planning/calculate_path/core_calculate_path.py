@@ -208,10 +208,15 @@ class CalculatePath:
         the length of the path required by MPC. The path will be trimmed to the correct length
         in another step
         """
+        try:
+            path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
+                der=0, max_u=self.scalars.mpc_path_length * 1.5
+            )
+        except Exception:
+            print(repr(final_path))
+            print(repr(self.input))
+            raise
 
-        path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
-            der=0, max_u=self.scalars.mpc_path_length * 1.5
-        )
         return path_length_fixed
 
     def extend_path(self, path_update: FloatArray) -> FloatArray:
@@ -252,7 +257,7 @@ class CalculatePath:
         center_x, center_y, radius = circle_fit(relevant_path)
         center = np.array([center_x, center_y])
 
-        radius_to_use = max(radius, 10)
+        radius_to_use = min(max(radius, 10), 200)
 
         relevant_path_centered = relevant_path - center
         # find the orientation of the path part, to know if the circular arc should be
@@ -275,6 +280,7 @@ class CalculatePath:
         new_points = new_points_raw - new_points_raw[0] + path_update[-1]
         # to avoid overlapping when spline fitting, we need to first n points
         new_points = new_points[10:]
+
         return np.row_stack((path_update, new_points))
 
     def create_path_for_mpc_from_path_update(
@@ -306,10 +312,14 @@ class CalculatePath:
         path_with_no_path_behind_car = self.remove_path_behind_car(
             path_with_enough_length
         )
-
-        path_length_fixed = self.refit_path_for_mpc_with_safety_factor(
-            path_with_no_path_behind_car
-        )
+        try:
+            path_length_fixed = self.refit_path_for_mpc_with_safety_factor(
+                path_with_no_path_behind_car
+            )
+        except Exception:
+            print("path update")
+            print(repr(path_update))
+            raise
 
         path_with_length_for_mpc = self.remove_path_not_in_prediction_horizon(
             path_length_fixed
@@ -452,7 +462,14 @@ class CalculatePath:
             path_update_too_far_away
         )
 
-        path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
+        try:
+            path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
+        except ValueError:
+            # there is a bug with the path extrapolation which leads to the spline
+            # fit failing, in this case we just use the previous path
+            path_parameterization = self.do_all_mpc_parameter_calculations(
+                self.previous_paths[-1][:, 1:3]
+            )
 
         self.previous_paths.append(path_parameterization)
 

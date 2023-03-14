@@ -28,7 +28,7 @@ def calc_final_configs_for_left_and_right(
     cones: FloatArray,
     car_pos: FloatArray,
     car_dir: FloatArray,
-) -> tuple[FloatArray, FloatArray]:
+) -> tuple[IntArray, IntArray]:
     left_score_is_none = left_scores is None
     left_config_is_none = left_configs is None
     assert left_score_is_none == left_config_is_none
@@ -40,7 +40,8 @@ def calc_final_configs_for_left_and_right(
     n_non_none = sum(x is not None for x in (left_scores, right_scores))
 
     # if both sides are None, we have no valid configuration
-    empty_result = np.zeros((0, 3)), np.zeros((0, 3))
+    empty_config = np.zeros(0, dtype=np.int)
+    empty_result = (empty_config, empty_config)
 
     if n_non_none == 0:
         return empty_result
@@ -50,7 +51,6 @@ def calc_final_configs_for_left_and_right(
         return calc_final_configs_when_only_one_side_has_configs(
             left_configs,
             right_configs,
-            cones,
         )
 
     # both sides have valid configurations
@@ -70,25 +70,26 @@ def calc_final_configs_for_left_and_right(
 def calc_final_configs_when_only_one_side_has_configs(
     left_configs: Optional[IntArray],
     right_configs: Optional[IntArray],
-    cones: FloatArray,
-) -> tuple[FloatArray, FloatArray]:
-    if left_configs is None:
-        left_cones = np.zeros((0, 3))
+) -> tuple[IntArray, IntArray]:
+    empty_config = np.zeros(0, dtype=np.int)
 
+    left_config_is_none = left_configs is None
+    right_config_is_none = right_configs is None
+
+    assert left_config_is_none != right_config_is_none
+
+    if left_configs is None:
+        left_config = empty_config
         right_config = right_configs[0]
         right_config = right_config[right_config != -1]
-
-        right_cones = cones[right_config]
-
-    else:
-        right_cones = np.zeros((0, 3))
-
+    elif right_configs is None:
+        right_config = empty_config
         left_config = left_configs[0]
         left_config = left_config[left_config != -1]
+    else:
+        raise ValueError("Should not happen")
 
-        left_cones = cones[left_config]
-
-    return left_cones, right_cones
+    return left_config, right_config
 
 
 def calc_final_configs_when_both_available(
@@ -99,7 +100,7 @@ def calc_final_configs_when_both_available(
     cones: FloatArray,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> tuple[FloatArray, FloatArray]:
+) -> tuple[IntArray, IntArray]:
     # we need to pick the best one for each side
 
     left_zip = zip(left_scores, left_configs)
@@ -138,7 +139,7 @@ def calc_final_configs_when_both_available(
         # and assume that the result is good enough
         if i == 0 and left_config_unchanged and right_config_unchanged:
             # if nothing changed, we can just return the first result
-            return cones[left_config], cones[right_config]
+            return left_config, right_config
 
         if not left_config_unchanged:
             left_score = score_config(
@@ -163,11 +164,11 @@ def calc_final_configs_when_both_available(
 
     idx_best_score = np.argmin(final_scores)
     if final_scores[idx_best_score] == np.inf:
-        return np.zeros((0, 3)), np.zeros((0, 3))
+        return np.zeros(0, dtype=np.int), np.zeros(0, dtype=np.int)
 
     left_config, right_config = final_configurations[idx_best_score]
 
-    return cones[left_config], cones[right_config]
+    return left_config, right_config
 
 
 def score_config(

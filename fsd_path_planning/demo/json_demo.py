@@ -28,32 +28,25 @@ def main(
 ) -> None:
     planner = PathPlanner(MissionTypes.trackdrive)
 
-    positions, directions, cone_observations = load_data_json(data_path)
-
-    if remove_color_info:
-        cones_observations_all_unkown = []
-        for cones in cone_observations:
-            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
-            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
-                [c.reshape(-1, 2) for c in cones]
-            )
-            cones_observations_all_unkown.append(new_observation)
-
-        cone_observations = cones_observations_all_unkown.copy()
+    positions, directions, cone_observations = load_data_json(
+        data_path, remove_color_info=remove_color_info
+    )
 
     paths = []
 
-    for position, direction, cones in tqdm(
-        zip(positions, directions, cone_observations),
+    for i, (position, direction, cones) in tqdm(
+        enumerate(zip(positions, directions, cone_observations)),
         total=len(positions),
     ):
-        # print(cones)
-        # break
-        path = planner.calculate_path_in_global_frame(
-            cones,
-            position,
-            direction,
-        )
+        try:
+            path = planner.calculate_path_in_global_frame(
+                cones,
+                position,
+                direction,
+            )
+        except Exception:
+            print(f"Error at frame {i}")
+            raise
         paths.append(path)
 
     paths = np.array(paths)
@@ -82,6 +75,7 @@ def main(
     (unknown_cones,) = ax.plot([], [], "ko", label="Unknown cones")
     (path,) = ax.plot([], [], "r-", label="Path")
     (position,) = ax.plot([], [], "go", label="Position")
+    text = ax.text(xmin + 1, ymin + 1, "", fontsize=12)
 
     def init():
         yellow_cones.set_data([], [])
@@ -89,7 +83,8 @@ def main(
         unknown_cones.set_data([], [])
         path.set_data([], [])
         position.set_data([], [])
-        return yellow_cones, blue_cones, path, position
+        text.set_text("")
+        return yellow_cones, blue_cones, path, position, text
 
     def animate(i):
         yellow_cones.set_data(
@@ -106,9 +101,10 @@ def main(
         )
         path.set_data(paths[i][:, 1], paths[i][:, 2])
         position.set_data(positions[i][0], positions[i][1])
-        return yellow_cones, blue_cones, unknown_cones, path, position
+        text.set_text(f"Frame: {i}")
+        return yellow_cones, blue_cones, unknown_cones, path, position, text
 
-    anim = matplotlib.animation.FuncAnimation(
+    _ = matplotlib.animation.FuncAnimation(
         fig,
         animate,
         init_func=init,
@@ -124,6 +120,7 @@ def main(
 
 def load_data_json(
     data_path: Optional[Path] = None,
+    remove_color_info: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
     if data_path is None:
         data_path = Path(__file__).parent / "fsg_19_2_laps.json"
@@ -136,6 +133,18 @@ def load_data_json(
     cone_observations = [
         [np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data
     ]
+
+    if remove_color_info:
+        cones_observations_all_unkown = []
+        for cones in cone_observations:
+            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
+            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
+                [c.reshape(-1, 2) for c in cones]
+            )
+            cones_observations_all_unkown.append(new_observation)
+
+        cone_observations = cones_observations_all_unkown.copy()
+
     return positions, directions, cone_observations
 
 
