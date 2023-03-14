@@ -133,3 +133,5 @@ dmypy.json
 frames/
 
 *.mp4
+
+.ruff_cache/
