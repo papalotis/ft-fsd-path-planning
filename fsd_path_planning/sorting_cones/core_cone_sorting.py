@@ -8,16 +8,14 @@ Project: fsd_path_planning
 """
 from typing import Tuple
 
+from icecream import ic  # pylint: disable=unused-import
+
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
+    TraceSorter
 from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput,
-    ConeSortingState,
-)
-from fsd_path_planning.sorting_cones.utils.sorting_flow_control import (
-    SortingFlowControl,
-)
+    ConeSortingInput, ConeSortingState)
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from icecream import ic  # pylint: disable=unused-import
 
 
 class ConeSorting:
@@ -28,11 +26,7 @@ class ConeSorting:
         max_n_neighbors: int,
         max_dist: float,
         max_dist_to_first: float,
-        max_range: float,
-        max_angle: float,
         max_length: int,
-        max_length_backwards: int,
-        max_backwards_index: int,
         threshold_directional_angle: float,
         threshold_absolute_angle: float,
     ):
@@ -45,9 +39,6 @@ class ConeSorting:
                 valid trace in the sorting algorithm.
             max_length_backwards: Argument for TraceSorter. The maximum length of a
                 valid trace in the sorting algorithm for the backwards direction.
-            max_range: The maximum range for which cones will be sorted
-                (used in mask).
-            max_angle: The maximum angle for which cones will be sorted (used in mask).
             max_backwards_index: the maximum amount of cones that will be taken in the
                 backwards direction
             threshold_directional_angle: The threshold for the directional angle that is
@@ -63,11 +54,7 @@ class ConeSorting:
             max_n_neighbors=max_n_neighbors,
             max_dist=max_dist,
             max_dist_to_first=max_dist_to_first,
-            max_range=max_range,
-            max_angle=max_angle,
             max_length=max_length,
-            max_length_backwards=max_length_backwards,
-            max_backwards_index=max_backwards_index,
             threshold_directional_angle=threshold_directional_angle,
             threshold_absolute_angle=threshold_absolute_angle,
         )
@@ -98,17 +85,19 @@ class ConeSorting:
         # make transition from set inputs to usable state variables
         self.transition_input_to_state()
 
-        sorting_calculation = SortingFlowControl(self.state)
-
-        sorted_indices_list_by_cone_type = sorting_calculation.calculate_sort_indices(
-            self.state
+        ts = TraceSorter(
+            self.state.max_n_neighbors,
+            self.state.max_dist,
+            self.state.max_dist_to_first,
+            self.state.max_length,
+            self.state.threshold_directional_angle,
+            self.state.threshold_absolute_angle,
         )
 
-        sorted_points_left = self.state.cones_by_type_array[ConeTypes.LEFT][
-            sorted_indices_list_by_cone_type[ConeTypes.LEFT]
-        ]
-        sorted_points_right = self.state.cones_by_type_array[ConeTypes.RIGHT][
-            sorted_indices_list_by_cone_type[ConeTypes.RIGHT]
-        ]
+        left_cones, right_cones = ts.sort_left_right(
+            self.state.cones_by_type_array,
+            self.state.position_global,
+            self.state.direction_global,
+        )
 
-        return sorted_points_left, sorted_points_right
+        return left_cones, right_cones

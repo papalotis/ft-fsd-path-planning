@@ -12,18 +12,20 @@ from typing import List, Tuple, cast
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.calculate_path.path_calculator_helpers import \
-    PathCalculatorHelpers
-from fsd_path_planning.calculate_path.path_parameterization import \
-    PathParameterizer
+from fsd_path_planning.calculate_path.path_calculator_helpers import (
+    PathCalculatorHelpers,
+)
+from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                circle_fit, rotate,
-                                                trace_distance_to_next,
-                                                unit_2d_vector_from_angle)
-from fsd_path_planning.utils.spline_fit import (SplineEvaluator,
-                                                SplineFitterFactory)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    circle_fit,
+    rotate,
+    trace_distance_to_next,
+    unit_2d_vector_from_angle,
+)
+from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 
 SplineEvalByType = List[SplineEvaluator]
 
@@ -423,7 +425,7 @@ class CalculatePath:
     def run_path_calculation(self) -> Tuple[FloatArray, FloatArray]:
         """Calculate path."""
 
-        if len(self.input.left_cones) < 2 and len(self.input.right_cones) < 2:
+        if len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
             if len(self.previous_paths) > 0:
                 # extract x, y from previously calculated path
                 center_along_match_connection = self.previous_paths[-1][:, 1:3]

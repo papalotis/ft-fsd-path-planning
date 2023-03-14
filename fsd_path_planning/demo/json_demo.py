@@ -21,23 +21,42 @@ except ImportError:
     tqdm = lambda x, total=None: x
 
 
-def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
+def main(
+    data_path: Optional[Path] = None,
+    data_rate: float = 10,
+    remove_color_info: bool = False,
+) -> None:
     planner = PathPlanner(MissionTypes.trackdrive)
 
     positions, directions, cone_observations = load_data_json(data_path)
 
-    paths = np.array(
-        [
-            planner.calculate_path_in_global_frame(
-                cones,
-                position,
-                direction,
+    if remove_color_info:
+        cones_observations_all_unkown = []
+        for cones in cone_observations:
+            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
+            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
+                [c.reshape(-1, 2) for c in cones]
             )
-            for (position, direction, cones) in tqdm(
-                zip(positions, directions, cone_observations), total=len(positions)
-            )
-        ]
-    )
+            cones_observations_all_unkown.append(new_observation)
+
+        cone_observations = cones_observations_all_unkown.copy()
+
+    paths = []
+
+    for position, direction, cones in tqdm(
+        zip(positions, directions, cone_observations),
+        total=len(positions),
+    ):
+        # print(cones)
+        # break
+        path = planner.calculate_path_in_global_frame(
+            cones,
+            position,
+            direction,
+        )
+        paths.append(path)
+
+    paths = np.array(paths)
 
     # plot animation
     fig = plt.figure()
@@ -60,12 +79,14 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
     )
     (yellow_cones,) = ax.plot([], [], "yo", label="Yellow cones")
     (blue_cones,) = ax.plot([], [], "bo", label="Blue cones")
+    (unknown_cones,) = ax.plot([], [], "ko", label="Unknown cones")
     (path,) = ax.plot([], [], "r-", label="Path")
     (position,) = ax.plot([], [], "go", label="Position")
 
     def init():
         yellow_cones.set_data([], [])
         blue_cones.set_data([], [])
+        unknown_cones.set_data([], [])
         path.set_data([], [])
         position.set_data([], [])
         return yellow_cones, blue_cones, path, position
@@ -79,9 +100,13 @@ def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
             cone_observations[i][ConeTypes.BLUE][:, 0],
             cone_observations[i][ConeTypes.BLUE][:, 1],
         )
+        unknown_cones.set_data(
+            cone_observations[i][ConeTypes.UNKNOWN][:, 0],
+            cone_observations[i][ConeTypes.UNKNOWN][:, 1],
+        )
         path.set_data(paths[i][:, 1], paths[i][:, 2])
         position.set_data(positions[i][0], positions[i][1])
-        return yellow_cones, blue_cones, path, position
+        return yellow_cones, blue_cones, unknown_cones, path, position
 
     anim = matplotlib.animation.FuncAnimation(
         fig,
@@ -108,7 +133,9 @@ def load_data_json(
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
-    cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
+    cone_observations = [
+        [np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data
+    ]
     return positions, directions, cone_observations
 
 

@@ -29,16 +29,12 @@ def get_cone_sorting_config(
 ) -> KwargsType:
     """Create cone sorting kwargs."""
     return dict(
-        max_n_neighbors=3,
-        max_dist=11,
-        max_dist_to_first=8,
-        max_range=30,
-        max_angle=(np.pi / 50) * 49,
-        max_length=15,
-        max_length_backwards=5,
-        max_backwards_index=3,
+        max_n_neighbors=5,
+        max_dist=5.0,
+        max_dist_to_first=6.0,
+        max_length=10,
         threshold_directional_angle=np.deg2rad(40),
-        threshold_absolute_angle=np.deg2rad(70),
+        threshold_absolute_angle=np.deg2rad(55),
     )
 
 
@@ -154,5 +150,7 @@ def create_default_cone_matching_with_non_monotonic_matches(
     """
     kwargs = get_default_matching_kwargs(mission)
     assert "matches_should_be_monotonic" in kwargs
+    kwargs["matches_should_be_monotonic"] = False
+    return ConeMatching(**kwargs)
     kwargs["matches_should_be_monotonic"] = False
     return ConeMatching(**kwargs)

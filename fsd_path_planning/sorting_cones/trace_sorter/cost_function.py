@@ -7,19 +7,24 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import \
-    calculate_match_search_direction
-from fsd_path_planning.sorting_cones.trace_sorter.common import \
-    get_configurations_diff
-from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import \
-    calc_distance_cost
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
-    number_of_intersections_in_configurations
-from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
-                                     SortableConeTypes)
-from fsd_path_planning.utils.math_utils import (angle_difference,
-                                                angle_from_2d_vector, my_njit,
-                                                normalize, vec_angle_between)
+from fsd_path_planning.cone_matching.functional_cone_matching import (
+    calculate_match_search_direction,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
+from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
+    calc_distance_cost,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
+    number_of_intersections_in_configurations,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
+from fsd_path_planning.utils.math_utils import (
+    angle_difference,
+    angle_from_2d_vector,
+    my_njit,
+    normalize,
+    vec_angle_between,
+)
 
 
 def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArray:
@@ -246,6 +251,8 @@ def cost_configurations(
     Returns:
         A cost for each configuration
     """
+    points_xy = points[:, :2]
+
     if configurations.shape[1] < 3:
         return np.zeros(configurations.shape[0])
 
@@ -255,18 +262,18 @@ def cost_configurations(
 
     with Timer("angle_cost", timer_no_print):
         angle_cost = calc_angle_cost_for_configuration(
-            points, configurations, cone_type
+            points_xy, configurations, cone_type
         )
 
     with Timer("line_segment_intersection_cost", timer_no_print):
         line_segment_intersection_cost = calc_line_segment_intersection_cost(
-            points, configurations
+            points_xy, configurations
         )
 
     with Timer("residual_distance_cost", timer_no_print):
         threshold_distance = 3  # maximum allowed distance between cones is 5 meters
         residual_distance_cost = calc_distance_cost(
-            points, configurations, threshold_distance
+            points_xy, configurations, threshold_distance
         )
 
     with Timer("number_of_cones_cost", timer_no_print):
@@ -274,16 +281,18 @@ def cost_configurations(
 
     with Timer("initial_direction_cost", timer_no_print):
         initial_direction_cost = calc_initial_direction_cost(
-            points, configurations, vehicle_direction
+            points_xy, configurations, vehicle_direction
         )
         # initial_direction_cost = np.zeros(configurations.shape[0])
 
     with Timer("change_of_direction_cost", timer_no_print):
-        change_of_direction_cost = calc_change_of_direction_cost(points, configurations)
+        change_of_direction_cost = calc_change_of_direction_cost(
+            points_xy, configurations
+        )
 
     with Timer("other_side_cones_cost", timer_no_print):
         other_side_cones_cost = calc_other_side_cones_cost(
-            points, configurations, cone_type
+            points_xy, configurations, cone_type
         )
 
     factors: FloatArray = np.array([40.0, 10.0, 2.0, 200.0, 100.0, 10.0, 10.0])

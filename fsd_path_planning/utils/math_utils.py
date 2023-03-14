@@ -78,6 +78,9 @@ def vec_angle_between(
         np.ndarray: A vector, such that each element i contains the angle between
         vectors vecs1[i] and vecs2[i]
     """
+    assert vecs1.shape[-1] == 2
+    assert vecs2.shape[-1] == 2
+
     cos_theta = vec_dot(vecs1, vecs2)
 
     cos_theta /= norm_of_last_axis(vecs1) * norm_of_last_axis(vecs2)

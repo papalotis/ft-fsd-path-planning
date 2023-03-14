@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 import numpy as np
+
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -34,11 +35,7 @@ class ConeSortingState:
     max_n_neighbors: int
     max_dist: float
     max_dist_to_first: float
-    max_range: float
-    max_angle: float
     max_length: int
-    max_length_backwards: int
-    max_backwards_index: int
     position_global: FloatArray = np.zeros((2,))
     direction_global: FloatArray = np.array([0, 1.0])
     cones_by_type_array: List[FloatArray] = field(

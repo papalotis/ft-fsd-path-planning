@@ -11,6 +11,8 @@ Project: fsd_path_planning
 """
 from typing import List
 
+import numpy as np
+
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
 from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
 from fsd_path_planning.config import (
@@ -61,7 +63,7 @@ class PathPlanner:
         sorted_left, sorted_right = self.cone_sorting.run_cone_sorting()
 
         # run cone matching
-        matched_cones_input = cones.copy()
+        matched_cones_input = [np.zeros((0, 2)) for _ in ConeTypes]
         matched_cones_input[ConeTypes.LEFT] = sorted_left
         matched_cones_input[ConeTypes.RIGHT] = sorted_right
 

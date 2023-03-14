@@ -359,11 +359,13 @@ def find_all_end_configurations(
     # print(locals())
     neighbors_flat, borders = adjacency_matrix_to_borders_and_targets(adjacency_matrix)
 
+    points_xy = points[:, :2]
+
     (
         end_configurations,
         all_configurations_and_is_end_configuration_indicator,
     ) = _impl_find_all_end_configurations(
-        points,
+        points_xy,
         cone_type,
         start_idx,
         neighbors_flat,

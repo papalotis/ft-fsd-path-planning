@@ -8,10 +8,11 @@ Project: fsd_path_planning
 from typing import Tuple, cast
 
 import numpy as np
-from fsd_path_planning.utils.math_utils import calc_pairwise_distances
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.types import FloatArray, IntArray
+from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
+from fsd_path_planning.utils.math_utils import calc_pairwise_distances
 
 
 def find_k_closest_in_point_cloud(pairwise_distances: FloatArray, k: int) -> IntArray:
@@ -30,10 +31,11 @@ def find_k_closest_in_point_cloud(pairwise_distances: FloatArray, k: int) -> Int
 
 
 def create_adjacency_matrix(
-    trace: FloatArray,
+    cones: FloatArray,
     n_neighbors: int,
     start_idx: int,
     max_dist: float,
+    cone_type: ConeTypes,
 ) -> Tuple[IntArray, IntArray]:
     """
     Creates the adjacency matrix that defines the possible points each point can be connected with
@@ -48,9 +50,15 @@ def create_adjacency_matrix(
         matrix indicating at each position if two nodes are connected. The second 1d
         matrix contains the reachable nodes from `start_idx`.
     """
-    n_points = trace.shape[0]
 
-    pairwise_distances: FloatArray = calc_pairwise_distances(trace, dist_to_self=np.inf)
+    n_points = cones.shape[0]
+
+    cones_xy = cones[:, :2]
+    cones_color = cones[:, 2]
+
+    pairwise_distances: FloatArray = calc_pairwise_distances(
+        cones_xy, dist_to_self=np.inf
+    )
 
     k_closest_each = find_k_closest_in_point_cloud(pairwise_distances, n_neighbors)
 
@@ -79,6 +87,10 @@ def create_adjacency_matrix(
     nodes_to_disconnect = np.ones(n_points, dtype=bool)
     # but for the reachable nodes don't do anything
     nodes_to_disconnect[reachable_nodes] = False
+
+    # if we are sorting left (blue) cones, then we want to disconnect
+    # all right (yellow) cones
+    nodes_to_disconnect[cones_color == invert_cone_type(cone_type)] = True
 
     # disconnect the remaining nodes in both directions
     adjacency_matrix[:, nodes_to_disconnect] = 0
