@@ -36,6 +36,7 @@ class ConeSortingState:
     max_dist: float
     max_dist_to_first: float
     max_length: int
+    use_unknown_cones: bool
     position_global: FloatArray = np.zeros((2,))
     direction_global: FloatArray = np.array([0, 1.0])
     cones_by_type_array: List[FloatArray] = field(

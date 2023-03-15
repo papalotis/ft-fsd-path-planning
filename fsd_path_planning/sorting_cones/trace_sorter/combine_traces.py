@@ -159,8 +159,19 @@ def calc_final_configs_when_both_available(
                 car_direction,
             )
 
+        factor = 4.0 if None in (left_score, right_score) else 1.0
+        if left_score is None and right_score is None:
+            left_score = np.inf
+            right_score = np.inf
+        elif left_score is None:
+            left_score = right_score
+        elif right_score is None:
+            right_score = left_score
+
+        score = (left_score + right_score) * factor
+
         final_configurations.append((left_config, right_config))
-        final_scores.append(left_score + right_score)
+        final_scores.append(score)
 
     idx_best_score = np.argmin(final_scores)
     if final_scores[idx_best_score] == np.inf:
@@ -177,10 +188,14 @@ def score_config(
     cone_type: ConeTypes,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> float:
+) -> Optional[float]:
     config = config[config != -1]
-    if len(config) < 3:
+    if len(config) < 2:
         return np.inf
+
+    if len(config) == 2:
+        return None
+
     return float(
         cost_configurations(
             cones,
@@ -269,17 +284,29 @@ def calc_new_length_for_configs_for_same_cone_intersection(
         # if the intersection is the last cone in the config, we assume that this is
         # an error because the configuration could not continue, so we only remove it
         # from that side
-        right_stop_idx = (
-            len(right_config)
-            if left_intersection_index == len(left_config) - 1
-            else right_intersection_index
-        )
+        left_intersection_is_at_end = left_intersection_index == len(left_config) - 1
+        right_intersection_is_at_end = right_intersection_index == len(right_config) - 1
 
-        left_stop_idx = (
-            len(left_config)
-            if right_intersection_index == len(right_config) - 1
-            else left_intersection_index
-        )
+        if left_intersection_is_at_end and right_intersection_is_at_end:
+            left_stop_idx = len(left_config) - 1
+            right_stop_idx = len(right_config) - 1
+
+        elif left_intersection_is_at_end:
+            right_stop_idx = len(right_config)
+            left_stop_idx = left_intersection_index
+
+        elif right_intersection_is_at_end:
+            left_stop_idx = len(left_config)
+            right_stop_idx = right_intersection_index
+        else:
+            left_stop_idx = left_intersection_index
+            right_stop_idx = right_intersection_index
+
+        # left_stop_idx = (
+        #     len(left_config)
+        #     if right_intersection_index == len(right_config) - 1
+        #     else left_intersection_index
+        # )
 
     return left_stop_idx, right_stop_idx
 

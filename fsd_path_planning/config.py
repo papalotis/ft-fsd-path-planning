@@ -13,7 +13,9 @@ from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath as CalculatePath,
-)  # for reexport
+)
+
+# for reexport
 from fsd_path_planning.calculate_path.skidpad_calculate_path import SkidpadCalculatePath
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching as ConeMatching,
@@ -23,18 +25,33 @@ from fsd_path_planning.utils.mission_types import MissionTypes
 
 KwargsType = Dict[str, Any]
 
+USE_UNKNOWN_CONES = True
+
 
 def get_cone_sorting_config(
     mission: MissionTypes,  # pylint: disable=unused-argument
 ) -> KwargsType:
     """Create cone sorting kwargs."""
+
+    if USE_UNKNOWN_CONES:
+        max_n_neighbors = 5
+        max_dist = 5.0
+        max_dist_to_first = 6.0
+        max_length = 11
+    else:
+        max_n_neighbors = 3
+        max_dist = 8.0
+        max_dist_to_first = 8.0
+        max_length = 15
+
     return dict(
-        max_n_neighbors=5,
-        max_dist=5.0,
-        max_dist_to_first=6.0,
-        max_length=10,
+        max_n_neighbors=max_n_neighbors,
+        max_dist=max_dist,
+        max_dist_to_first=max_dist_to_first,
+        max_length=max_length,
         threshold_directional_angle=np.deg2rad(40),
         threshold_absolute_angle=np.deg2rad(55),
+        use_unknown_cones=USE_UNKNOWN_CONES,
     )
 
 
@@ -150,11 +167,5 @@ def create_default_cone_matching_with_non_monotonic_matches(
     """
     kwargs = get_default_matching_kwargs(mission)
     assert "matches_should_be_monotonic" in kwargs
-    kwargs["matches_should_be_monotonic"] = False
-    return ConeMatching(**kwargs)
-    kwargs["matches_should_be_monotonic"] = False
-    return ConeMatching(**kwargs)
-    kwargs["matches_should_be_monotonic"] = False
-    return ConeMatching(**kwargs)
     kwargs["matches_should_be_monotonic"] = False
     return ConeMatching(**kwargs)

@@ -9,19 +9,25 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import \
-    combine_and_sort_virtual_with_real
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
-    calc_final_configs_for_left_and_right
+from fsd_path_planning.cone_matching.functional_cone_matching import (
+    combine_and_sort_virtual_with_real,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
+    calc_final_configs_for_left_and_right,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
-    calc_scores_and_end_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
+    calc_scores_and_end_configurations,
+)
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                my_cdist_sq_euclidean,
-                                                points_inside_ellipse, rotate,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    my_cdist_sq_euclidean,
+    points_inside_ellipse,
+    rotate,
+    vec_angle_between,
+)
 
 
 class TraceSorter:
@@ -308,9 +314,9 @@ class TraceSorter:
         # get the cone behind the car
         index_2 = self.select_starting_cone(
             car_position,
-            -car_direction,
+            car_direction,
             cones,
-            self.invert_cone_type(cone_type),
+            cone_type,
             index_to_skip=np.array([index_1]),
         )
 
@@ -359,4 +365,13 @@ class TraceSorter:
             two_cones_pos, third_cone, cone_type, car_position, car_direction
         )
 
-        return my_cdist_sq_euclidean(new_cones, cones[:, :2]).argmin(axis=1)
+        last, middle, first = my_cdist_sq_euclidean(new_cones, cones[:, :2]).argmin(
+            axis=1
+        )
+
+        middle_to_last = cones[last, :2] - cones[middle, :2]
+        middle_to_first = cones[first, :2] - cones[middle, :2]
+        if vec_angle_between(middle_to_last, middle_to_first) < np.pi / 1.5:
+            return two_cones
+
+        return np.array([last, middle, first], dtype=np.int_)

@@ -9,7 +9,8 @@ from typing import Tuple, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
+from fsd_path_planning.sorting_cones.trace_sorter.common import \
+    breadth_first_order
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.math_utils import calc_pairwise_distances
@@ -59,6 +60,10 @@ def create_adjacency_matrix(
     pairwise_distances: FloatArray = calc_pairwise_distances(
         cones_xy, dist_to_self=np.inf
     )
+
+    mask_is_other_cone_type = cones_color == invert_cone_type(cone_type)
+    pairwise_distances[mask_is_other_cone_type,:] = np.inf
+    pairwise_distances[:,mask_is_other_cone_type] = np.inf
 
     k_closest_each = find_k_closest_in_point_cloud(pairwise_distances, n_neighbors)
 

@@ -32,24 +32,23 @@ def main(
         data_path, remove_color_info=remove_color_info
     )
 
-    paths = []
+    results = []
 
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations)),
         total=len(positions),
     ):
         try:
-            path = planner.calculate_path_in_global_frame(
+            out = planner.calculate_path_in_global_frame(
                 cones,
                 position,
                 direction,
+                return_intermediate_results=True,
             )
         except Exception:
             print(f"Error at frame {i}")
             raise
-        paths.append(path)
-
-    paths = np.array(paths)
+        results.append(out)
 
     # plot animation
     fig = plt.figure()
@@ -73,6 +72,8 @@ def main(
     (yellow_cones,) = ax.plot([], [], "yo", label="Yellow cones")
     (blue_cones,) = ax.plot([], [], "bo", label="Blue cones")
     (unknown_cones,) = ax.plot([], [], "ko", label="Unknown cones")
+    (yellow_cones_sorted,) = ax.plot([], [], "y-", label="Yellow cones (sorted)")
+    (blue_cones_sorted,) = ax.plot([], [], "b-", label="Blue cones (sorted)")
     (path,) = ax.plot([], [], "r-", label="Path")
     (position,) = ax.plot([], [], "go", label="Position")
     text = ax.text(xmin + 1, ymin + 1, "", fontsize=12)
@@ -81,12 +82,24 @@ def main(
         yellow_cones.set_data([], [])
         blue_cones.set_data([], [])
         unknown_cones.set_data([], [])
+        yellow_cones_sorted.set_data([], [])
+        blue_cones_sorted.set_data([], [])
         path.set_data([], [])
         position.set_data([], [])
         text.set_text("")
-        return yellow_cones, blue_cones, path, position, text
+        return (
+            yellow_cones,
+            blue_cones,
+            unknown_cones,
+            yellow_cones_sorted,
+            blue_cones_sorted,
+            path,
+            position,
+            text,
+        )
 
     def animate(i):
+        out = results[i]
         yellow_cones.set_data(
             cone_observations[i][ConeTypes.YELLOW][:, 0],
             cone_observations[i][ConeTypes.YELLOW][:, 1],
@@ -98,11 +111,23 @@ def main(
         unknown_cones.set_data(
             cone_observations[i][ConeTypes.UNKNOWN][:, 0],
             cone_observations[i][ConeTypes.UNKNOWN][:, 1],
-        )
-        path.set_data(paths[i][:, 1], paths[i][:, 2])
+        ),
+        blue_cones_sorted.set_data(out[1][:, 0], out[1][:, 1])
+        yellow_cones_sorted.set_data(out[2][:, 0], out[2][:, 1])
+
+        path.set_data(out[0][:, 1], out[0][:, 2])
         position.set_data(positions[i][0], positions[i][1])
         text.set_text(f"Frame: {i}")
-        return yellow_cones, blue_cones, unknown_cones, path, position, text
+        return (
+            yellow_cones,
+            blue_cones,
+            unknown_cones,
+            yellow_cones_sorted,
+            blue_cones_sorted,
+            path,
+            position,
+            text,
+        )
 
     _ = matplotlib.animation.FuncAnimation(
         fig,
@@ -126,7 +151,7 @@ def load_data_json(
         data_path = Path(__file__).parent / "fsg_19_2_laps.json"
 
     # extract data
-    data = json.loads(data_path.read_text())
+    data = json.loads(data_path.read_text())  # [:20]
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
