@@ -169,7 +169,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             start = trace[current_attempt[0]]
             diff = candidate_neighbor - start
             direction_offset = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= direction_offset < np.pi / 3
+            can_be_added[i] &= direction_offset < np.pi / 10
 
         if position_in_stack >= 0:
             # make sure that no intersection with car occurs

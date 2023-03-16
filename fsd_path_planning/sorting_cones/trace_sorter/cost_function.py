@@ -7,24 +7,17 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    calculate_match_search_direction,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
-from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
-    calc_distance_cost,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    number_of_intersections_in_configurations,
-)
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_difference,
-    angle_from_2d_vector,
-    my_njit,
-    normalize,
-    vec_angle_between,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.common import \
+    get_configurations_diff
+from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import \
+    calc_distance_cost
+from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import \
+    number_cones_on_each_side_for_each_config
+from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
+                                     SortableConeTypes)
+from fsd_path_planning.utils.math_utils import (angle_difference,
+                                                vec_angle_between)
+from fsd_path_planning.utils.utils import Timer
 
 
 def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArray:
@@ -86,26 +79,6 @@ def calc_angle_cost_for_configuration(
     return costs
 
 
-def calc_line_segment_intersection_cost(
-    points: FloatArray, configurations: IntArray
-) -> FloatArray:
-    """
-    Calculates the number of intersections in each configuration
-    Args:
-        points: The underlying points
-        configurations: An array of indices defining a configuration of the
-        provided points
-    Returns:
-        np.array: The number of intersections for each configuration
-    """
-
-    exponent: IntArray = number_of_intersections_in_configurations(
-        points, configurations
-    )
-    return_value: FloatArray = np.power(2.0, exponent) - 1.0
-    return return_value
-
-
 def calc_number_of_cones_cost(configurations: IntArray) -> FloatArray:
     """
     Calculates the number of cones in each configuration
@@ -131,7 +104,6 @@ def calc_initial_direction_cost(
     return vec_angle_between(points_configs_first_two, vehicle_direction)
 
 
-# @my_njit
 def calc_change_of_direction_cost(
     points: FloatArray, configurations: IntArray
 ) -> FloatArray:
@@ -174,62 +146,24 @@ def calc_change_of_direction_cost(
     return out
 
 
-# @my_njit
-def calc_other_side_cones_cost(
-    points: FloatArray, configurations: IntArray, cone_type: SortableConeTypes
+def calc_cones_on_either_cost(
+    points: FloatArray,
+    configurations: IntArray,
+    cone_type: SortableConeTypes,
 ) -> FloatArray:
-    """
-    Calculates the cost for each configuration based on the number of cones on the other
-    side of the configuration
-    Args:
-        points: The underlying points
-        configurations: An array of indices defining a configuration of the
-        provided points
-        cone_type: The type of cone (left/right)
-    Returns:
-        A cost for each configuration
-    """
-    found_cones_for_each_config = np.zeros(configurations.shape[0]) + 0.01
-    found_wrong_side_cones_for_each_config = np.zeros(configurations.shape[0]) + 0.01
+    n_good, n_bad = number_cones_on_each_side_for_each_config(
+        points,
+        configurations,
+        cone_type,
+        4.5,
+        np.pi / 1.9,
+    )
+    diff = n_good - n_bad
+    m_value = diff.min()
 
-    if len(configurations) == 0:
-        return found_cones_for_each_config
+    diff += np.abs(m_value) + 1
 
-    for i, c in enumerate(configurations):
-        c = c[c != -1]
-        points_in_config = points[c]
-        mask_not_in_c = np.ones(points.shape[0], dtype=bool)
-        mask_not_in_c[c] = False
-
-        points_not_in_c = points[mask_not_in_c]
-        # print(len(points_in_config), cone_type)
-        try:
-            directions = calculate_match_search_direction(points_in_config, cone_type)
-        except AssertionError:
-            continue
-
-        for point, direction in zip(points_in_config, directions):
-            search_point = point + normalize(direction) * 3
-            distances = np.linalg.norm(points_not_in_c - search_point, axis=1)
-            if len(distances) != 0:
-                found_cones_for_each_config[i] += distances.min() < 3
-
-            wrong_side_search_point = point + normalize(direction) * -3
-            wrong_side_distances = np.linalg.norm(
-                points_not_in_c - wrong_side_search_point, axis=1
-            )
-            if len(wrong_side_distances) != 0:
-                found_wrong_side_cones_for_each_config[i] += (
-                    wrong_side_distances.min() < 3
-                )
-
-    # we want to have as many cones on the other side as possible
-    found_cones_for_each_config = 1 / found_cones_for_each_config
-
-    # we want to have as few cones on the same side as possible, so we just scale
-    found_wrong_side_cones_for_each_config = 0 * found_wrong_side_cones_for_each_config
-
-    return found_cones_for_each_config + found_wrong_side_cones_for_each_config
+    return 1 / diff
 
 
 def cost_configurations(
@@ -256,18 +190,11 @@ def cost_configurations(
     if configurations.shape[1] < 3:
         return np.zeros(configurations.shape[0])
 
-    from fsd_path_planning.utils.utils import Timer
-
     timer_no_print = True
 
     with Timer("angle_cost", timer_no_print):
         angle_cost = calc_angle_cost_for_configuration(
             points_xy, configurations, cone_type
-        )
-
-    with Timer("line_segment_intersection_cost", timer_no_print):
-        line_segment_intersection_cost = calc_line_segment_intersection_cost(
-            points_xy, configurations
         )
 
     with Timer("residual_distance_cost", timer_no_print):
@@ -290,22 +217,22 @@ def cost_configurations(
             points_xy, configurations
         )
 
-    with Timer("other_side_cones_cost", timer_no_print):
-        other_side_cones_cost = calc_other_side_cones_cost(
+    with Timer("cones_on_either_cost", timer_no_print):
+        cones_on_either_cost = calc_cones_on_either_cost(
             points_xy, configurations, cone_type
         )
 
-    factors: FloatArray = np.array([40.0, 10.0, 2.0, 200.0, 100.0, 10.0, 10.0])
+    factors: FloatArray = np.array([40.0, 2.0, 200.0, 100.0, 10.0, 1000.0])
+    # print(configurations)
     final_costs = (
         np.column_stack(
             [
                 angle_cost,
-                line_segment_intersection_cost,
                 residual_distance_cost,
                 number_of_cones_cost,
                 initial_direction_cost,
                 change_of_direction_cost,
-                other_side_cones_cost,
+                cones_on_either_cost,
             ]
         )
         * factors

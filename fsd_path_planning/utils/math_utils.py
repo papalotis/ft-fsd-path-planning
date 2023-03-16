@@ -96,6 +96,7 @@ def vec_angle_between(
     return np.arccos(cos_theta)
 
 
+@my_njit
 def rotate(points: np.ndarray, theta: float) -> np.ndarray:
     """
     Rotates the points in `points` by angle `theta` around the origin
@@ -296,18 +297,22 @@ def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     raise ValueError("vecs can either be a 2d vector or an array of 2d vectors")
 
 
-def normalize(vecs: np.ndarray, axis: int = -1) -> np.ndarray:
+@my_njit
+def normalize_last_axis(vecs: np.ndarray) -> np.ndarray:
     """
     Returns a normalized version of vecs
 
     Args:
         vecs (np.ndarray): The vectors to normalize
-        axis (int, optional): The axis to use for lengths. Defaults to -1.
-
     Returns:
         np.ndarray: The normalized vectors
     """
-    return vecs / np.linalg.norm(vecs, axis=axis, keepdims=True)
+    vecs_flat = vecs.reshape(-1, vecs.shape[-1])
+    out = np.zeros(vecs.shape, dtype=vecs.dtype)
+    for i, vec in enumerate(vecs_flat):
+        out[i] = vec / np.linalg.norm(vec)
+
+    return out.reshape(vecs.shape)
 
 
 @my_njit

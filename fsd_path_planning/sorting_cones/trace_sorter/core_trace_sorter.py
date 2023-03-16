@@ -88,8 +88,10 @@ class TraceSorter:
             last = config[-1]
             type_last = cones[last, 2]
 
-            if type_last != cone_type and len(config) > 3:
-                config = config[:-1]
+            if type_last != cone_type:
+                min_length = 3
+                new_length = max(len(config) - 1, min_length)
+                config = config[:new_length]
 
         return config
 
@@ -164,17 +166,18 @@ class TraceSorter:
 
         if len(cones) < 3:
             return no_result
+        from fsd_path_planning.utils.utils import Timer
 
-        first_2 = self.select_first_k_starting_cones(
+        first_k = self.select_first_k_starting_cones(
             car_pos,
             car_dir,
             cones,
             cone_type,
         )
-        if first_2 is not None:
-            start_idx = first_2[0]
-            if len(first_2) > 1:
-                first_k_indices_must_be = first_2.copy()
+        if first_k is not None:
+            start_idx = first_k[0]
+            if len(first_k) > 1:
+                first_k_indices_must_be = first_k.copy()
             else:
                 first_k_indices_must_be = None
         else:

@@ -17,7 +17,11 @@ from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection impo
 )
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import my_njit, vec_angle_between
+from fsd_path_planning.utils.math_utils import (
+    angle_difference,
+    my_njit,
+    vec_angle_between,
+)
 
 
 def calc_final_configs_for_left_and_right(
@@ -271,9 +275,25 @@ def calc_new_length_for_configs_for_same_cone_intersection(
             cones, right_config, right_intersection_index
         )
 
+        left_direction_at_intersection = calculate_direction_at_position(
+            cones, left_config, left_intersection_index
+        )
+
+        right_direction_at_intersection = calculate_direction_at_position(
+            cones, right_config, right_intersection_index
+        )
+
+        cross_angle_at_intersection = vec_angle_between(
+            left_direction_at_intersection, right_direction_at_intersection
+        )
+
+        if cross_angle_at_intersection > np.pi / 3:
+            left_stop_idx = left_intersection_index
+            right_stop_idx = right_intersection_index
+
         # if the angle of the left side is larger then the cone probably belongs to the
         # left side
-        if angle_left > angle_right:
+        elif angle_left > angle_right:
             # we set the
             left_stop_idx = len(left_config)
             right_stop_idx = right_intersection_index
@@ -324,6 +344,17 @@ def calc_angle_of_config_at_position(
     intersection_to_prev = previous_cone - intersection_cone
 
     return vec_angle_between(intersection_to_prev, intersection_to_next)
+
+
+def calculate_direction_at_position(
+    cones: FloatArray, config: IntArray, position: int
+) -> FloatArray:
+    if position == 0:
+        return cones[config[1], :2] - cones[config[0], :2]
+    elif position == len(config) - 1:
+        return cones[config[-1], :2] - cones[config[-2], :2]
+    else:
+        return cones[config[position + 1], :2] - cones[config[position - 1], :2]
 
 
 @my_njit

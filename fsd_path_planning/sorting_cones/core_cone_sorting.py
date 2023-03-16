@@ -11,10 +11,11 @@ from typing import Tuple
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import \
-    TraceSorter
+from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
 from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput, ConeSortingState)
+    ConeSortingInput,
+    ConeSortingState,
+)
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -64,7 +65,6 @@ class ConeSorting:
             use_unknown_cones=use_unknown_cones,
         )
 
-
     def set_new_input(self, slam_input: ConeSortingInput) -> None:
         """Save inputs from other software nodes in variable."""
         self.input = slam_input
@@ -80,7 +80,6 @@ class ConeSorting:
         if not self.state.use_unknown_cones:
             self.state.cones_by_type_array[ConeTypes.UNKNOWN] = np.zeros((0, 2))
 
-   
     def run_cone_sorting(
         self,
     ) -> Tuple[FloatArray, FloatArray]:
