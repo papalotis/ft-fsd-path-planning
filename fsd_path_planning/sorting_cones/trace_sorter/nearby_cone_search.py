@@ -59,6 +59,9 @@ def number_cones_on_each_side_for_each_config(
         A tuple of two arrays, the first is the number of cones on the correct side of
         the track, the second is the number of cones on the wrong side of the track.
     """
+    # TODO: this function is not yet optimized
+    # need to find a way to only make computations once for all and not for each 
+    # configuration
     cones_xy = cones[:, :2]
 
     idxs_in_all_configs = np.unique(configs.flatten())

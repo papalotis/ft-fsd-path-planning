@@ -115,6 +115,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     car_direction: FloatArray,
     car_size: float,
 ) -> BoolArray:
+    # print(locals())
     car_direction_normalized = car_direction / np.linalg.norm(car_direction)
 
     # neighbor can be added if not in current attempt
@@ -155,12 +156,12 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             elif cone_type == ConeTypes.LEFT:
                 can_be_added[i] = (
                     difference < threshold_directional_angle
-                    or len_last_to_candidate < 4.5
+                    or len_last_to_candidate < 4.0
                 )
             elif cone_type == ConeTypes.RIGHT:
                 can_be_added[i] = (
                     difference > -threshold_directional_angle
-                    or len_last_to_candidate < 4.5
+                    or len_last_to_candidate < 4.0
                 )
             else:
                 raise AssertionError("Unreachable code")
@@ -169,7 +170,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             start = trace[current_attempt[0]]
             diff = candidate_neighbor - start
             direction_offset = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= direction_offset < np.pi / 10
+            can_be_added[i] &= direction_offset < np.pi / 5
 
         if position_in_stack >= 0:
             # make sure that no intersection with car occurs

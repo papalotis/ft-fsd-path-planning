@@ -151,12 +151,23 @@ def calc_cones_on_either_cost(
     configurations: IntArray,
     cone_type: SortableConeTypes,
 ) -> FloatArray:
+    # print(
+    #     repr(
+    #         (
+    #             points,
+    #             configurations,
+    #             cone_type,
+    #             4.0,
+    #             np.pi / 2,
+    #         )
+    #     )
+    # )
     n_good, n_bad = number_cones_on_each_side_for_each_config(
         points,
         configurations,
         cone_type,
-        4.5,
-        np.pi / 1.9,
+        4.0,
+        np.pi / 2,
     )
     diff = n_good - n_bad
     m_value = diff.min()
@@ -192,6 +203,9 @@ def cost_configurations(
 
     timer_no_print = True
 
+    if not timer_no_print:
+        print(cone_type)
+
     with Timer("angle_cost", timer_no_print):
         angle_cost = calc_angle_cost_for_configuration(
             points_xy, configurations, cone_type
@@ -221,6 +235,8 @@ def cost_configurations(
         cones_on_either_cost = calc_cones_on_either_cost(
             points_xy, configurations, cone_type
         )
+
+    not timer_no_print and print()
 
     factors: FloatArray = np.array([40.0, 2.0, 200.0, 100.0, 10.0, 1000.0])
     # print(configurations)
