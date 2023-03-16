@@ -4,24 +4,19 @@
 Description: Combines the results of the search along the left and right traces
 Project: fsd_path_planning
 """
-from itertools import product
-from typing import Optional
+from itertools import count, product
+from typing import Iterable, Optional
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
-    cost_configurations,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    lines_segments_intersect_indicator,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
+    cost_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
+    lines_segments_intersect_indicator
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_difference,
-    my_njit,
-    vec_angle_between,
-)
+from fsd_path_planning.utils.math_utils import (angle_difference, my_njit,
+                                                vec_angle_between)
 
 
 def calc_final_configs_for_left_and_right(
@@ -32,7 +27,7 @@ def calc_final_configs_for_left_and_right(
     cones: FloatArray,
     car_pos: FloatArray,
     car_dir: FloatArray,
-) -> tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray, bool, bool]:
     left_score_is_none = left_scores is None
     left_config_is_none = left_configs is None
     assert left_score_is_none == left_config_is_none
@@ -45,16 +40,20 @@ def calc_final_configs_for_left_and_right(
 
     # if both sides are None, we have no valid configuration
     empty_config = np.zeros(0, dtype=np.int)
-    empty_result = (empty_config, empty_config)
+    empty_result = (empty_config, empty_config, True, True)
 
     if n_non_none == 0:
         return empty_result
 
     if n_non_none == 1:
         # only one side has a valid configuration
-        return calc_final_configs_when_only_one_side_has_configs(
-            left_configs,
-            right_configs,
+        return (
+            *calc_final_configs_when_only_one_side_has_configs(
+                left_configs,
+                right_configs,
+            ),
+            False,
+            False,
         )
 
     # both sides have valid configurations
@@ -96,6 +95,42 @@ def calc_final_configs_when_only_one_side_has_configs(
     return left_config, right_config
 
 
+def yield_config_pairs(
+    left_configs: IntArray,
+    left_scores: FloatArray,
+    right_configs: IntArray,
+    right_scores: FloatArray,
+) -> Iterable[tuple[int, tuple[IntArray, Optional[float], IntArray, Optional[float]]]]:
+    counter = count()
+    left_zip = zip(left_configs, left_scores)
+    right_zip = zip(right_configs, right_scores)
+    for (left_config, left_score), (right_config, right_score) in product(
+        left_zip, right_zip
+    ):
+        left_config = left_config[left_config != -1]
+        right_config = right_config[right_config != -1]
+
+        try:
+            ratio = len(left_config) / len(right_config)
+        except ZeroDivisionError:
+            ratio = 1000
+
+        if ratio > 1.7:
+            # left is very long so we allow to consider it on its own
+            yield next(counter), (left_config, left_score, right_config[:0], left_score)
+
+        if ratio < 0.58:
+            # right is very long so we allow to consider it on its own
+            yield next(counter), (
+                left_config[:0],
+                right_score,
+                right_config,
+                right_score,
+            )
+
+        yield next(counter), (left_config, left_score, right_config, right_score)
+
+
 def calc_final_configs_when_both_available(
     left_scores: FloatArray,
     left_configs: IntArray,
@@ -104,17 +139,18 @@ def calc_final_configs_when_both_available(
     cones: FloatArray,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray, bool, bool]:
     # we need to pick the best one for each side
-
-    left_zip = zip(left_scores, left_configs)
-    right_zip = zip(right_scores, right_configs)
 
     final_configurations = []
     final_scores = []
+    final_has_been_trim_indicators = []
 
-    for i, x in enumerate(product(left_zip, right_zip)):
-        (left_score, left_config), (right_score, right_config) = x
+    for _, x in yield_config_pairs(
+        left_configs, left_scores, right_configs, right_scores
+    ):
+        
+        left_config, left_score, right_config, right_score = x
 
         left_config = left_config[left_config != -1]
         right_config = right_config[right_config != -1]
@@ -141,9 +177,9 @@ def calc_final_configs_when_both_available(
         # the configs are sorted by best to worst, if we didn't change anything
         # in the best config from the left and right, we can just return it
         # and assume that the result is good enough
-        if i == 0 and left_config_unchanged and right_config_unchanged:
-            # if nothing changed, we can just return the first result
-            return left_config, right_config
+        # if i == 0 and left_config_unchanged and right_config_unchanged:
+        #     # if nothing changed, we can just return the first result
+        #     return left_config, right_config
 
         if not left_config_unchanged:
             left_score = score_config(
@@ -176,14 +212,20 @@ def calc_final_configs_when_both_available(
 
         final_configurations.append((left_config, right_config))
         final_scores.append(score)
+        final_has_been_trim_indicators.append(
+            (not left_config_unchanged, not right_config_unchanged)
+        )
 
     idx_best_score = np.argmin(final_scores)
     if final_scores[idx_best_score] == np.inf:
-        return np.zeros(0, dtype=np.int), np.zeros(0, dtype=np.int)
+        return np.zeros(0, dtype=np.int), np.zeros(0, dtype=np.int), True, True
 
     left_config, right_config = final_configurations[idx_best_score]
+    left_has_been_trimmed, right_has_been_trimmed = final_has_been_trim_indicators[
+        idx_best_score
+    ]
 
-    return left_config, right_config
+    return left_config, right_config, left_has_been_trimmed, right_has_been_trimmed
 
 
 def score_config(
@@ -194,10 +236,10 @@ def score_config(
     car_direction: FloatArray,
 ) -> Optional[float]:
     config = config[config != -1]
-    if len(config) < 2:
-        return np.inf
+    # if len(config) < 2:
+    #     return np.inf
 
-    if len(config) == 2:
+    if len(config) < 3:
         return None
 
     return float(

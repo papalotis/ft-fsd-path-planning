@@ -23,7 +23,7 @@ except ImportError:
 
 
 def main(
-    data_path: Optional[Path] = None,
+    data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
     data_rate: float = 10,
     remove_color_info: bool = False,
     show_runtime_histogram: bool = False,

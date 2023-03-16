@@ -9,25 +9,19 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    combine_and_sort_virtual_with_real,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
-    calc_final_configs_for_left_and_right,
-)
+from fsd_path_planning.cone_matching.functional_cone_matching import \
+    combine_and_sort_virtual_with_real
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
+    calc_final_configs_for_left_and_right
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
-    calc_scores_and_end_configurations,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
+    calc_scores_and_end_configurations
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    my_cdist_sq_euclidean,
-    points_inside_ellipse,
-    rotate,
-    vec_angle_between,
-)
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                my_cdist_sq_euclidean,
+                                                points_inside_ellipse, rotate,
+                                                vec_angle_between)
 
 
 class TraceSorter:
@@ -117,7 +111,12 @@ class TraceSorter:
             car_dir,
         )
 
-        left_config, right_config = calc_final_configs_for_left_and_right(
+        (
+            left_config,
+            right_config,
+            left_has_been_trimmed,
+            right_has_been_trimmed,
+        ) = calc_final_configs_for_left_and_right(
             left_scores,
             left_configs,
             right_scores,
@@ -127,13 +126,15 @@ class TraceSorter:
             car_dir,
         )
 
-        left_config = self.remove_last_cone_in_config_if_not_of_type(
-            left_config, cones_flat, ConeTypes.LEFT
-        )
+        if not left_has_been_trimmed:
+            left_config = self.remove_last_cone_in_config_if_not_of_type(
+                left_config, cones_flat, ConeTypes.LEFT
+            )
 
-        right_config = self.remove_last_cone_in_config_if_not_of_type(
-            right_config, cones_flat, ConeTypes.RIGHT
-        )
+        if not right_has_been_trimmed:
+            right_config = self.remove_last_cone_in_config_if_not_of_type(
+                right_config, cones_flat, ConeTypes.RIGHT
+            )
 
         # remove any placeholder positions if they are present
         left_config = left_config[left_config != -1]
@@ -280,8 +281,9 @@ class TraceSorter:
         angle_signs = np.sign(cone_relative_angles)
         valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
         mask_valid_side = angle_signs == valid_angle_sign
-        mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi / 1
+        mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi - np.pi / 5
         mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 10
+
         mask_is_not_opposite_cone_type = cones[:, 2] != invert_cone_type(cone_type)
         mask_is_valid = (
             mask_is_valid_angle
