@@ -50,7 +50,7 @@ def vec_dot(vecs1: np.ndarray, vecs2: np.ndarray) -> np.ndarray:
 @my_njit
 def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
     original_shape = arr.shape
-    arr_row_col = arr.flatten().reshape(-1, arr.shape[-1])
+    arr_row_col = np.ascontiguousarray(arr).reshape(-1, arr.shape[-1])
     result = np.empty(arr_row_col.shape[0])
     for i in range(arr_row_col.shape[0]):
         vec = arr_row_col[i]
@@ -292,8 +292,12 @@ def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     """
     if vecs.shape == (2,):
         return np.arctan2(vecs[1], vecs[0])
-    if vecs.ndim == 2 and vecs.shape[-1] == 2:
-        return np.arctan2(vecs[:, 1], vecs[:, 0])
+    if vecs.shape[-1] == 2:
+        vecs_flat = vecs.reshape(-1, vecs.shape[-1])
+
+        angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
+        return angles.reshape(vecs.shape[:-1])
+
     raise ValueError("vecs can either be a 2d vector or an array of 2d vectors")
 
 

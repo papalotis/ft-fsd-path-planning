@@ -10,12 +10,14 @@ import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast,
-    lines_segments_intersect_indicator,
-)
-from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
+    cast, lines_segments_intersect_indicator)
+from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
+                                     IntArray)
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import my_in1d, my_njit, vec_angle_between
+from fsd_path_planning.utils.math_utils import (my_in1d, my_njit,
+                                                vec_angle_between)
+
+my_njit = lambda x: x  # XXX: just for debugging
 
 
 @my_njit
@@ -115,6 +117,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     car_direction: FloatArray,
     car_size: float,
 ) -> BoolArray:
+    # TODO: this function is too long, split it up
     # print(locals())
     car_direction_normalized = car_direction / np.linalg.norm(car_direction)
 
@@ -123,6 +126,41 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     for i in range(len(can_be_added)):
         if not can_be_added[i]:
             continue
+
+        candidate_neighbor = neighbors[i]
+
+        # find if there is a cone that is between the last cone in the attempt
+        # and the candidate neighbor
+        for neighbor in neighbors:
+            if neighbor == neighbors[i]:
+                continue
+
+            neighbor_to_last_in_attempt = (
+                trace[current_attempt[position_in_stack]] - trace[neighbor]
+            )
+
+            neighbor_to_candidate = trace[candidate_neighbor] - trace[neighbor]
+
+            dist_to_candidate = np.linalg.norm(neighbor_to_candidate)
+            dist_to_last_in_attempt = np.linalg.norm(neighbor_to_last_in_attempt)
+
+            # if the angle between the two vectors is more than 150 degrees
+            # then the neighbor cone is between the last cone in the attempt
+            # and the candidate neighbor. we can't add the candidate neighbor
+            # to the attempt
+            if (
+                dist_to_candidate < 6.0
+                and dist_to_last_in_attempt < 6.0
+                and vec_angle_between(
+                    neighbor_to_last_in_attempt, neighbor_to_candidate
+                )
+                > np.deg2rad(150)
+            ):
+                # print("neighbor cone is between last cone and candidate neighbor")
+                can_be_added[i] = False
+                break
+            # else:
+            #     print("will keep candidate neighbor")
 
         # calculate angle between second to last to last vector in attempt
         # and the vector between the last node and the candidate neighbor
@@ -134,7 +172,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
         candidate_neighbor = trace[neighbors[i]]
         # XXX: There might be a bug where the can_be_added[i] is set to false and then
         # back to true
-        if position_in_stack >= 1:
+        if can_be_added[i] and position_in_stack >= 1:
             second_to_last_in_attempt = trace[current_attempt[position_in_stack - 1]]
             last_in_attempt = trace[current_attempt[position_in_stack]]
             second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
@@ -166,13 +204,28 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             else:
                 raise AssertionError("Unreachable code")
 
-        if position_in_stack == 1:
+            # check if candidate causes change in direction in attempt
+            # if position_in_stack >= 2:
+            #     third_to_last = trace[current_attempt[position_in_stack - 2]]
+            #     third_to_last_to_second_to_last = (
+            #         second_to_last_in_attempt - third_to_last
+            #     )
+            #     angle_3 = cast(
+            #         FLOAT,
+            #         np.arctan2(
+            #             third_to_last_to_second_to_last[1],
+            #             third_to_last_to_second_to_last[0],
+            #         ),
+            #     )
+            #     difference_2 = angle_difference(angle_1, angle_3)
+
+        if can_be_added[i] and position_in_stack == 1:
             start = trace[current_attempt[0]]
             diff = candidate_neighbor - start
             direction_offset = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= direction_offset < np.pi / 5
+            can_be_added[i] &= direction_offset < np.pi / 2.5
 
-        if position_in_stack >= 0:
+        if can_be_added[i] and position_in_stack >= 0:
             # make sure that no intersection with car occurs
             last_in_attempt = trace[current_attempt[position_in_stack]]
             car_start = car_position - car_direction_normalized * car_size / 2

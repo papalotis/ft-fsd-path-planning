@@ -34,7 +34,7 @@ def get_cone_sorting_config(
     """Create cone sorting kwargs."""
 
     if USE_UNKNOWN_CONES:
-        max_n_neighbors = 4
+        max_n_neighbors = 5
         max_dist = 6.5
         max_dist_to_first = 6.0
         max_length = 11

@@ -9,19 +9,26 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import \
-    combine_and_sort_virtual_with_real
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
-    calc_final_configs_for_left_and_right
+from fsd_path_planning.cone_matching.functional_cone_matching import (
+    combine_and_sort_virtual_with_real,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
+    calc_final_configs_for_left_and_right,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
-    calc_scores_and_end_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
+    calc_scores_and_end_configurations,
+)
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                my_cdist_sq_euclidean,
-                                                points_inside_ellipse, rotate,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    my_cdist_sq_euclidean,
+    points_inside_ellipse,
+    rotate,
+    vec_angle_between,
+)
+from fsd_path_planning.utils.utils import Timer
 
 
 class TraceSorter:
@@ -95,36 +102,54 @@ class TraceSorter:
         car_pos: FloatArray,
         car_dir: FloatArray,
     ) -> tuple[FloatArray, FloatArray]:
+        timer_no_print = True
         cones_flat = self.flatten_cones_by_type_array(cones_by_type)
 
-        left_scores, left_configs = self.calc_configurations_with_score_for_one_side(
-            cones_flat,
-            ConeTypes.LEFT,
-            car_pos,
-            car_dir,
-        )
+        # mask_cones_close = (
+        #     my_cdist_sq_euclidean(car_pos[None], cones_flat[:, :2])[0] < 25**2
+        # )
 
-        right_scores, right_configs = self.calc_configurations_with_score_for_one_side(
-            cones_flat,
-            ConeTypes.RIGHT,
-            car_pos,
-            car_dir,
-        )
+        # print(mask_cones_close.mean())
 
-        (
-            left_config,
-            right_config,
-            left_has_been_trimmed,
-            right_has_been_trimmed,
-        ) = calc_final_configs_for_left_and_right(
-            left_scores,
-            left_configs,
-            right_scores,
-            right_configs,
-            cones_flat,
-            car_pos,
-            car_dir,
-        )
+        # cones_flat = cones_flat[mask_cones_close]
+
+        with Timer("left config search", timer_no_print):
+            (
+                left_scores,
+                left_configs,
+            ) = self.calc_configurations_with_score_for_one_side(
+                cones_flat,
+                ConeTypes.LEFT,
+                car_pos,
+                car_dir,
+            )
+
+        with Timer("right config search", timer_no_print):
+            (
+                right_scores,
+                right_configs,
+            ) = self.calc_configurations_with_score_for_one_side(
+                cones_flat,
+                ConeTypes.RIGHT,
+                car_pos,
+                car_dir,
+            )
+
+        with Timer("final config search", timer_no_print):
+            (
+                left_config,
+                right_config,
+                left_has_been_trimmed,
+                right_has_been_trimmed,
+            ) = calc_final_configs_for_left_and_right(
+                left_scores,
+                left_configs,
+                right_scores,
+                right_configs,
+                cones_flat,
+                car_pos,
+                car_dir,
+            )
 
         if not left_has_been_trimmed:
             left_config = self.remove_last_cone_in_config_if_not_of_type(
@@ -167,7 +192,6 @@ class TraceSorter:
 
         if len(cones) < 3:
             return no_result
-        from fsd_path_planning.utils.utils import Timer
 
         first_k = self.select_first_k_starting_cones(
             car_pos,
@@ -240,6 +264,8 @@ class TraceSorter:
         trace_distances, mask_is_valid = self.mask_cone_can_be_first_in_config(
             car_position, car_direction, cones, cone_type
         )
+        if index_to_skip is not None:
+            mask_is_valid[index_to_skip] = False
 
         trace_distances_copy = trace_distances.copy()
         trace_distances_copy[~mask_is_valid] = np.inf
@@ -275,23 +301,22 @@ class TraceSorter:
             cones_xy,
             car_position,
             car_direction,
-            self.max_dist_to_first * 1.3,
-            self.max_dist_to_first / 1.3,
+            self.max_dist_to_first * 1.5,
+            self.max_dist_to_first / 1.5,
         )
         angle_signs = np.sign(cone_relative_angles)
         valid_angle_sign = 1 if cone_type == ConeTypes.LEFT else -1
         mask_valid_side = angle_signs == valid_angle_sign
         mask_is_valid_angle = np.abs(cone_relative_angles) < np.pi - np.pi / 5
         mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 10
+        mask_is_right_color = cones[:, 2] == cone_type
+
+        mask_side = (
+            mask_valid_side * mask_is_valid_angle * mask_is_valid_angle_min
+        ) + mask_is_right_color
 
         mask_is_not_opposite_cone_type = cones[:, 2] != invert_cone_type(cone_type)
-        mask_is_valid = (
-            mask_is_valid_angle
-            * mask_is_in_ellipse
-            * mask_valid_side
-            * mask_is_valid_angle_min
-            * mask_is_not_opposite_cone_type
-        )
+        mask_is_valid = mask_is_in_ellipse * mask_side * mask_is_not_opposite_cone_type
 
         return trace_distances, mask_is_valid
 
@@ -316,13 +341,21 @@ class TraceSorter:
         if index_1 is None:
             return None
 
+        cones_to_car = cones[:, :2] - car_position
+        angle_to_car = vec_angle_between(cones_to_car, car_direction)
+
+        mask_should_not_be_selected = np.abs(angle_to_car) < np.pi / 2
+        idxs_to_skip = np.where(mask_should_not_be_selected)[0]
+        if index_1 not in idxs_to_skip:
+            idxs_to_skip = np.concatenate([idxs_to_skip, np.array([index_1])])
+
         # get the cone behind the car
         index_2 = self.select_starting_cone(
             car_position,
             car_direction,
             cones,
             cone_type,
-            index_to_skip=np.array([index_1]),
+            index_to_skip=idxs_to_skip,
         )
 
         if index_2 is None:
@@ -338,7 +371,7 @@ class TraceSorter:
             index_1, index_2 = index_2, index_1
 
         dist = np.linalg.norm(cone_dir_1)
-        if dist > self.max_dist * 1.1:
+        if dist > self.max_dist * 1.1 or dist < 1.4:
             return np.array([index_1], dtype=np.int_)
 
         two_cones = np.array([index_2, index_1], dtype=np.int_)
@@ -351,6 +384,12 @@ class TraceSorter:
             cone_type,
             index_to_skip=two_cones,
         )
+
+        car_to_index_2 = cones[index_2, :2] - car_position
+        angle_to_index_2 = vec_angle_between(car_to_index_2, car_direction)
+
+        if angle_to_index_2 > np.pi / 2:
+            return two_cones
 
         if index_3 is None:
             return two_cones

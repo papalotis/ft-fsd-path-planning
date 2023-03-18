@@ -63,8 +63,13 @@ class Timer:
         """
         interval = time.perf_counter() - self.start
         self.intervals.append(interval)
+
+        name = repr(self.name) if len(self.name) > 0 else ""
+
+        space_if_name = " " if len(name) > 0 else ""
+
         if self.print:
-            print(f"Block {self.name} took {interval * 1_000_000} μs")
+            print(f"Block {name}{space_if_name}took {interval * 1_000_000:.3f} μs")
 
     def get_cum_time(self) -> float:
         """
@@ -111,7 +116,7 @@ class Timer:
         """
         print(
             f"Mean time for block {self.name} is"
-            f" {self.get_mean_time() * 1_000_000:.3f} μs"
+            f" {self.get_mean_time() * 1_000_000:n.3f} μs"
         )
 
     def report(self) -> None:

@@ -100,35 +100,69 @@ def yield_config_pairs(
     left_scores: FloatArray,
     right_configs: IntArray,
     right_scores: FloatArray,
-) -> Iterable[tuple[int, tuple[IntArray, Optional[float], IntArray, Optional[float]]]]:
+) -> Iterable[tuple[int, tuple[IntArray, float, IntArray, float, bool, bool]]]:
+    max_configs = 100
+
+    left_configs = left_configs[:max_configs]
+    left_scores = left_scores[:max_configs]
+    right_configs = right_configs[:max_configs]
+    right_scores = right_scores[:max_configs]
+
     counter = count()
     left_zip = zip(left_configs, left_scores)
     right_zip = zip(right_configs, right_scores)
     for (left_config, left_score), (right_config, right_score) in product(
         left_zip, right_zip
     ):
-        left_config = left_config[left_config != -1]
-        right_config = right_config[right_config != -1]
+        left_config_clean = left_config[left_config != -1]
+        right_config_clean = right_config[right_config != -1]
 
-        try:
-            ratio = len(left_config) / len(right_config)
-        except ZeroDivisionError:
-            ratio = 1000
+        common_cone, left_intersection_idxs, right_intersection_idxs = np.intersect1d(
+            left_config_clean, right_config_clean, return_indices=True
+        )
+        if len(common_cone) > 0:
+            left_intersection_idx = left_intersection_idxs.min()
+            right_intersection_idx = right_intersection_idxs.min()
 
-        if ratio > 1.7:
-            # left is very long so we allow to consider it on its own
-            yield next(counter), (left_config, left_score, right_config[:0], left_score)
+            left_config_short = np.full(len(left_config), -1, dtype=np.int)
+            left_config_short[:left_intersection_idx] = left_config[
+                :left_intersection_idx
+            ]
 
-        if ratio < 0.58:
-            # right is very long so we allow to consider it on its own
+            right_config_short = np.full(len(right_config), -1, dtype=np.int)
+            right_config_short[:right_intersection_idx] = right_config[
+                :right_intersection_idx
+            ]
+
+            left_score_short = np.nan
+            right_score_short = np.nan
+
             yield next(counter), (
-                left_config[:0],
-                right_score,
+                left_config_short,
+                left_score_short,
                 right_config,
                 right_score,
+                True,
+                False,
             )
 
-        yield next(counter), (left_config, left_score, right_config, right_score)
+            yield next(counter), (
+                left_config,
+                left_score,
+                right_config_short,
+                right_score_short,
+                False,
+                True,
+            )
+        else:
+            yield next(counter), (
+                left_config,
+                left_score,
+                right_config,
+                right_score,
+                False,
+                False,
+            )
 
 
 def calc_final_configs_when_both_available(
@@ -142,116 +176,125 @@ def calc_final_configs_when_both_available(
 ) -> tuple[IntArray, IntArray, bool, bool]:
     # we need to pick the best one for each side
 
-    final_configurations = []
-    final_scores = []
-    final_has_been_trim_indicators = []
+    cone_types = np.unique(cones[:, 2])
+    if ConeTypes.UNKNOWN not in cone_types:
+        # no unknown cones, so we can just pick the best configuration
+        return (
+            left_configs[0],
+            right_configs[0],
+            False,
+            False,
+        )
+
+    final_left_configs = []
+    final_right_configs = []
+    final_left_scores = []
+    final_right_scores = []
+    final_left_has_been_shortened = []
+    final_right_has_been_shortened = []
 
     for _, x in yield_config_pairs(
         left_configs, left_scores, right_configs, right_scores
     ):
-        
-        left_config, left_score, right_config, right_score = x
-
-        left_config = left_config[left_config != -1]
-        right_config = right_config[right_config != -1]
-
-        # store so that we can later check if anything changed
-        left_config_original = left_config.copy()
-        right_config_original = right_config.copy()
-
-        left_config, right_config = handle_same_cone_in_both_configs(
-            cones,
+        (
             left_config,
+            left_score,
             right_config,
-        )
+            right_score,
+            left_shortened,
+            right_shortened,
+        ) = x
 
-        left_config, right_config = handle_edge_intersection_between_both_configs(
-            cones,
-            left_config,
-            right_config,
-        )
+        final_left_configs.append(left_config)
+        final_right_configs.append(right_config)
+        final_left_scores.append(left_score)
+        final_right_scores.append(right_score)
+        final_left_has_been_shortened.append(left_shortened)
+        final_right_has_been_shortened.append(right_shortened)
 
-        left_config_unchanged = np.array_equal(left_config, left_config_original)
-        right_config_unchanged = np.array_equal(right_config, right_config_original)
+    final_left_configs = np.array(final_left_configs)
+    final_right_configs = np.array(final_right_configs)
+    final_left_scores = np.array(final_left_scores)
+    final_right_scores = np.array(final_right_scores)
 
-        # the configs are sorted by best to worst, if we didn't change anything
-        # in the best config from the left and right, we can just return it
-        # and assume that the result is good enough
-        # if i == 0 and left_config_unchanged and right_config_unchanged:
-        #     # if nothing changed, we can just return the first result
-        #     return left_config, right_config
+    final_left_scores = score_new_configs(
+        cones,
+        final_left_configs,
+        final_left_scores,
+        ConeTypes.LEFT,
+        car_position,
+        car_direction,
+    )
 
-        if not left_config_unchanged:
-            left_score = score_config(
-                cones,
-                left_config,
-                ConeTypes.LEFT,
-                car_position,
-                car_direction,
-            )
+    final_right_scores = score_new_configs(
+        cones,
+        final_right_configs,
+        final_right_scores,
+        ConeTypes.RIGHT,
+        car_position,
+        car_direction,
+    )
 
-        if not right_config_unchanged:
-            right_score = score_config(
-                cones,
-                right_config,
-                ConeTypes.RIGHT,
-                car_position,
-                car_direction,
-            )
+    mask_left_is_inf = np.isinf(final_left_scores)
+    final_left_scores[mask_left_is_inf] = final_right_scores[mask_left_is_inf]
 
-        factor = 4.0 if None in (left_score, right_score) else 1.0
-        if left_score is None and right_score is None:
-            left_score = np.inf
-            right_score = np.inf
-        elif left_score is None:
-            left_score = right_score
-        elif right_score is None:
-            right_score = left_score
+    mask_right_is_inf = np.isinf(final_right_scores)
+    final_right_scores[mask_right_is_inf] = final_left_scores[mask_right_is_inf]
 
-        score = (left_score + right_score) * factor
+    final_configs_together = np.column_stack((final_left_configs, final_right_configs))
 
-        final_configurations.append((left_config, right_config))
-        final_scores.append(score)
-        final_has_been_trim_indicators.append(
-            (not left_config_unchanged, not right_config_unchanged)
-        )
+    number_of_cones_in_final_configs = np.sum(final_configs_together != -1, axis=1)
+    mask_under_six_cones = number_of_cones_in_final_configs < 6
+    factor_under_six = mask_under_six_cones * 2.0
+    factor_under_six[~mask_under_six_cones] = 1
+    
 
-    idx_best_score = np.argmin(final_scores)
-    if final_scores[idx_best_score] == np.inf:
-        return np.zeros(0, dtype=np.int), np.zeros(0, dtype=np.int), True, True
+    final_scores = (
+        final_left_scores + final_right_scores
+    ) * factor_under_six
 
-    left_config, right_config = final_configurations[idx_best_score]
-    left_has_been_trimmed, right_has_been_trimmed = final_has_been_trim_indicators[
-        idx_best_score
-    ]
+    assert np.sum(np.isnan(final_scores)) == 0, (final_left_scores, final_right_scores)
+
+    best_idx = np.argmin(final_scores)
+
+    left_config = final_left_configs[best_idx]
+    right_config = final_right_configs[best_idx]
+    left_has_been_trimmed = final_left_has_been_shortened[best_idx]
+    right_has_been_trimmed = final_right_has_been_shortened[best_idx]
 
     return left_config, right_config, left_has_been_trimmed, right_has_been_trimmed
 
 
-def score_config(
+def score_new_configs(
     cones: FloatArray,
-    config: IntArray,
+    configs: IntArray,
+    scores: FloatArray,
     cone_type: ConeTypes,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> Optional[float]:
-    config = config[config != -1]
-    # if len(config) < 2:
-    #     return np.inf
+) -> FloatArray:
+    mask_configs_to_score = np.isnan(scores)
+    mask_len_is_over_2 = np.sum(configs != -1, axis=1) > 2
 
-    if len(config) < 3:
-        return None
+    mask_config_compute_score = mask_configs_to_score & mask_len_is_over_2
 
-    return float(
-        cost_configurations(
-            cones,
-            config[None],
-            cone_type,
-            car_position,
-            car_direction,
-            return_individual_costs=False,
-        )[0]
+    configs_to_score = configs[mask_config_compute_score]
+
+    new_costs = cost_configurations(
+        cones,
+        configs_to_score,
+        cone_type,
+        car_position,
+        car_direction,
+        return_individual_costs=False,
     )
+
+    scores = scores.copy()
+    scores[mask_config_compute_score] = new_costs
+
+    scores[np.isnan(scores)] = np.inf
+
+    return scores
 
 
 def handle_same_cone_in_both_configs(

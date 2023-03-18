@@ -57,6 +57,9 @@ def main(
             raise
         results.append(out)
 
+        if timer.intervals[-1] > 0.1:
+            print(f"Frame {i} took {timer.intervals[-1]:.4f} seconds")
+
     if show_runtime_histogram:
         # skip the first few frames, because they include "warmup time"
         plt.hist(timer.intervals[10:])

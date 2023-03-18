@@ -10,16 +10,14 @@ from typing import Optional, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
-    create_adjacency_matrix,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
-    cost_configurations,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
-    find_all_end_configurations,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import \
+    create_adjacency_matrix
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
+    cost_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import \
+    find_all_end_configurations
 from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
+from fsd_path_planning.utils.utils import Timer
 
 
 def calc_scores_and_end_configurations(
@@ -58,45 +56,48 @@ def calc_scores_and_end_configurations(
         A list of indexes of the points in the optimal ordering, as well as the
         the costs of all end configurations and their corresponding indices
     """
-
-    adjacency_matrix, reachable_nodes = create_adjacency_matrix(
-        cones=trace,
-        n_neighbors=n_neighbors,
-        start_idx=start_idx,
-        max_dist=max_dist,
-        cone_type=cone_type,
-    )
+    no_print = True
+    with Timer("create_adjacency_matrix", no_print):
+        adjacency_matrix, reachable_nodes = create_adjacency_matrix(
+            cones=trace,
+            n_neighbors=n_neighbors,
+            start_idx=start_idx,
+            max_dist=max_dist,
+            cone_type=cone_type,
+        )
 
     target_length = min(reachable_nodes.shape[0], max_length)
 
     if first_k_indices_must_be is None:
         first_k_indices_must_be = np.arange(0)
 
-    all_end_configurations, _ = find_all_end_configurations(
-        trace,
-        cone_type,
-        start_idx,
-        adjacency_matrix,
-        target_length,
-        threshold_directional_angle,
-        threshold_absolute_angle,
-        first_k_indices_must_be,
-        vehicle_position,
-        vehicle_direction,
-        car_size=2.1,
-        # this is only used for testing/debugging/visualization purposes and should be
-        # set to False in production
-        store_all_end_configurations=False,
-    )
+    with Timer("find_all_end_configurations", no_print):
+        all_end_configurations, _ = find_all_end_configurations(
+            trace,
+            cone_type,
+            start_idx,
+            adjacency_matrix,
+            target_length,
+            threshold_directional_angle,
+            threshold_absolute_angle,
+            first_k_indices_must_be,
+            vehicle_position,
+            vehicle_direction,
+            car_size=2.1,
+            # this is only used for testing/debugging/visualization purposes and should be
+            # set to False in production
+            store_all_end_configurations=False,
+        )
 
-    costs = cost_configurations(
-        points=trace,
-        configurations=all_end_configurations,
-        cone_type=cone_type,
-        vehicle_position=vehicle_position,
-        vehicle_direction=vehicle_direction,
-        return_individual_costs=False,
-    )
+    with Timer("cost_configurations", no_print):
+        costs = cost_configurations(
+            points=trace,
+            configurations=all_end_configurations,
+            cone_type=cone_type,
+            vehicle_position=vehicle_position,
+            vehicle_direction=vehicle_direction,
+            return_individual_costs=False,
+        )
     costs_sort_idx = np.argsort(costs)
     costs = cast(FloatArray, costs[costs_sort_idx])
     all_end_configurations = cast(IntArray, all_end_configurations[costs_sort_idx])
