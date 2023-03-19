@@ -65,7 +65,7 @@ def main(
         plt.hist(timer.intervals[10:])
         plt.show()
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 10))
     ax.set_aspect("equal")
     # plot animation
     frames = []
@@ -120,7 +120,7 @@ def load_data_json(
         data_path = Path(__file__).parent / "fsg_19_2_laps.json"
 
     # extract data
-    data = json.loads(data_path.read_text())  # [:20]
+    data = json.loads(data_path.read_text())[:800]
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])

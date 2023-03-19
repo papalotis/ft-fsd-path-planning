@@ -9,25 +9,19 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    combine_and_sort_virtual_with_real,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
-    calc_final_configs_for_left_and_right,
-)
+from fsd_path_planning.cone_matching.functional_cone_matching import \
+    combine_and_sort_virtual_with_real
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
+    calc_final_configs_for_left_and_right
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
-    calc_scores_and_end_configurations,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
+    calc_scores_and_end_configurations
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    my_cdist_sq_euclidean,
-    points_inside_ellipse,
-    rotate,
-    vec_angle_between,
-)
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                my_cdist_sq_euclidean,
+                                                points_inside_ellipse, rotate,
+                                                vec_angle_between)
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -135,31 +129,32 @@ class TraceSorter:
                 car_dir,
             )
 
-        with Timer("final config search", timer_no_print):
-            (
-                left_config,
-                right_config,
-                left_has_been_trimmed,
-                right_has_been_trimmed,
-            ) = calc_final_configs_for_left_and_right(
-                left_scores,
-                left_configs,
-                right_scores,
-                right_configs,
-                cones_flat,
-                car_pos,
-                car_dir,
-            )
+        (
+            left_config,
+            right_config,
+            left_has_been_trimmed,
+            right_has_been_trimmed,
+        ) = calc_final_configs_for_left_and_right(
+            left_scores,
+            left_configs,
+            right_scores,
+            right_configs,
+            cones_flat,
+            car_pos,
+            car_dir,
+        )
+        left_config = left_config[left_config != -1]
+        right_config = right_config[right_config != -1]
 
-        if not left_has_been_trimmed:
-            left_config = self.remove_last_cone_in_config_if_not_of_type(
-                left_config, cones_flat, ConeTypes.LEFT
-            )
+        # if not left_has_been_trimmed:
+        #     left_config = self.remove_last_cone_in_config_if_not_of_type(
+        #         left_config, cones_flat, ConeTypes.LEFT
+        #     )
 
-        if not right_has_been_trimmed:
-            right_config = self.remove_last_cone_in_config_if_not_of_type(
-                right_config, cones_flat, ConeTypes.RIGHT
-            )
+        # if not right_has_been_trimmed:
+        #     right_config = self.remove_last_cone_in_config_if_not_of_type(
+        #         right_config, cones_flat, ConeTypes.RIGHT
+        #     )
 
         # remove any placeholder positions if they are present
         left_config = left_config[left_config != -1]

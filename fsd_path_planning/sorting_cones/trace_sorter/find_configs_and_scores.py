@@ -89,6 +89,16 @@ def calc_scores_and_end_configurations(
             store_all_end_configurations=False,
         )
 
+    # experimental remove last cone
+    idx_first_minus_one = np.argmax(all_end_configurations == -1, axis=1)
+    idx_first_minus_one[idx_first_minus_one == 0] = all_end_configurations.shape[1]
+    mask_first_minus_one = idx_first_minus_one > 3
+    idx_first_minus_one_masked = idx_first_minus_one[mask_first_minus_one]
+    all_end_configurations[
+        mask_first_minus_one, idx_first_minus_one_masked - 1
+    ] = -1
+
+
     with Timer("cost_configurations", no_print):
         costs = cost_configurations(
             points=trace,

@@ -50,8 +50,8 @@ def get_cone_sorting_config(
         max_dist_to_first=max_dist_to_first,
         max_length=max_length,
         threshold_directional_angle=np.deg2rad(40),
-        threshold_absolute_angle=np.deg2rad(55),
-        # threshold_absolute_angle=np.deg2rad(65),
+        # threshold_absolute_angle=np.deg2rad(55),
+        threshold_absolute_angle=np.deg2rad(65),
         use_unknown_cones=USE_UNKNOWN_CONES,
     )
 

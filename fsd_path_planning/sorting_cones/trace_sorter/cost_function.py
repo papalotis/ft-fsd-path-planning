@@ -7,15 +7,17 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
-from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
-    calc_distance_cost,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
-    number_cones_on_each_side_for_each_config,
-)
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
-from fsd_path_planning.utils.math_utils import angle_difference, vec_angle_between
+from fsd_path_planning.sorting_cones.trace_sorter.common import \
+    get_configurations_diff
+from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import \
+    calc_distance_cost
+from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import \
+    number_cones_on_each_side_for_each_config
+from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
+                                     SortableConeTypes)
+from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import (angle_difference,
+                                                vec_angle_between)
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -145,6 +147,48 @@ def calc_change_of_direction_cost(
     return out
 
 
+def calc_wrong_direction_cost(
+    points: FloatArray, configurations: IntArray, cone_type: ConeTypes
+) -> FloatArray:
+    """
+
+    Args:
+        points: The underlying points
+        configurations: An array of indices defining a configuration of the
+        provided points
+    Returns:
+        A cost for each configuration
+    """
+    out = np.zeros(configurations.shape[0])
+
+    unwanted_direction_sign = 1 if cone_type == ConeTypes.LEFT else -1
+
+    for i, c in enumerate(configurations):
+        c = c[c != -1]
+        if len(c) == 3:
+            continue
+
+        points_of_configuration = points[c]
+
+        diff_1 = points_of_configuration[1:] - points_of_configuration[:-1]
+
+        diff_1 = np.diff(points_of_configuration, axis=0)
+        angle = np.arctan2(diff_1[:, 1], diff_1[:, 0])
+        # angle = angle_from_2d_vector(diff_1)
+        difference = angle_difference(angle[:-1], angle[1:])
+
+        mask_wrong_direction = np.sign(difference) == unwanted_direction_sign
+        mask_threshold = np.abs(difference) > np.deg2rad(40)
+
+        mask = mask_wrong_direction & mask_threshold
+
+        cost_values = np.abs(difference[mask].sum())
+
+        out[i] = cost_values
+
+    return out
+
+
 def calc_cones_on_either_cost(
     points: FloatArray,
     configurations: IntArray,
@@ -196,6 +240,8 @@ def cost_configurations(
 
     timer_no_print = True
 
+    not timer_no_print and print(cone_type)
+
     with Timer("angle_cost", timer_no_print):
         angle_cost = calc_angle_cost_for_configuration(
             points_xy, configurations, cone_type
@@ -226,9 +272,14 @@ def cost_configurations(
             points_xy, configurations, cone_type
         )
 
+    with Timer("wrong_direction_cost", timer_no_print):
+        wrong_direction_cost = calc_wrong_direction_cost(
+            points_xy, configurations, cone_type
+        )
+
     not timer_no_print and print()
 
-    factors: FloatArray = np.array([1000.0, 200.0, 1200.0, 100.0, 100.0, 1000.0])
+    factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 100.0, 1000.0, 500.0])
     factors = factors / factors.sum()
     # print(configurations)
     final_costs = (
@@ -240,6 +291,7 @@ def cost_configurations(
                 initial_direction_cost,
                 change_of_direction_cost,
                 cones_on_either_cost,
+                wrong_direction_cost,
             ]
         )
         * factors
@@ -248,4 +300,5 @@ def cost_configurations(
     if return_individual_costs:
         return final_costs
 
+    return final_costs.sum(axis=-1)
     return final_costs.sum(axis=-1)

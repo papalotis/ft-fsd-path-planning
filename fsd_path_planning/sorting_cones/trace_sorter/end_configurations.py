@@ -10,12 +10,12 @@ import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast, lines_segments_intersect_indicator)
-from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
-                                     IntArray)
+    cast,
+    lines_segments_intersect_indicator,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (my_in1d, my_njit,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import my_in1d, my_njit, vec_angle_between
 
 my_njit = lambda x: x  # XXX: just for debugging
 
@@ -169,14 +169,14 @@ def neighbor_bool_mask_can_be_added_to_attempt(
         # threshold. there are two thresholds, one is the maximum angle in a specific direction
         # for blue cones that is counter-clockwise and for yellow cones that is clockwise
         # the second threshold is an absolute angle between the two vectors.
-        candidate_neighbor = trace[neighbors[i]]
+        candidate_neighbor_pos = trace[neighbors[i]]
         # XXX: There might be a bug where the can_be_added[i] is set to false and then
         # back to true
         if can_be_added[i] and position_in_stack >= 1:
             second_to_last_in_attempt = trace[current_attempt[position_in_stack - 1]]
             last_in_attempt = trace[current_attempt[position_in_stack]]
             second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
-            last_to_candidate = candidate_neighbor - last_in_attempt
+            last_to_candidate = candidate_neighbor_pos - last_in_attempt
             angle_1 = cast(
                 FLOAT,
                 np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0]),
@@ -205,25 +205,31 @@ def neighbor_bool_mask_can_be_added_to_attempt(
                 raise AssertionError("Unreachable code")
 
             # check if candidate causes change in direction in attempt
-            # if position_in_stack >= 2:
-            #     third_to_last = trace[current_attempt[position_in_stack - 2]]
-            #     third_to_last_to_second_to_last = (
-            #         second_to_last_in_attempt - third_to_last
-            #     )
-            #     angle_3 = cast(
-            #         FLOAT,
-            #         np.arctan2(
-            #             third_to_last_to_second_to_last[1],
-            #             third_to_last_to_second_to_last[0],
-            #         ),
-            #     )
-            #     difference_2 = angle_difference(angle_1, angle_3)
+            if position_in_stack >= 2:
+                third_to_last = trace[current_attempt[position_in_stack - 2]]
+                third_to_last_to_second_to_last = (
+                    second_to_last_in_attempt - third_to_last
+                )
+                angle_3 = cast(
+                    FLOAT,
+                    np.arctan2(
+                        third_to_last_to_second_to_last[1],
+                        third_to_last_to_second_to_last[0],
+                    ),
+                )
+                difference_2 = angle_difference(angle_1, angle_3)
+
+                if (
+                    np.sign(difference) != np.sign(difference_2)
+                    and np.abs(difference - difference_2) > 1.3
+                ):
+                    can_be_added[i] = False
 
         if can_be_added[i] and position_in_stack == 1:
             start = trace[current_attempt[0]]
-            diff = candidate_neighbor - start
+            diff = candidate_neighbor_pos - start
             direction_offset = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= direction_offset < np.pi / 2.5
+            can_be_added[i] &= direction_offset < np.pi / 2
 
         if can_be_added[i] and position_in_stack >= 0:
             # make sure that no intersection with car occurs
@@ -232,7 +238,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             car_end = car_position + car_direction_normalized * car_size
 
             can_be_added[i] &= not lines_segments_intersect_indicator(
-                last_in_attempt, candidate_neighbor, car_start, car_end
+                last_in_attempt, candidate_neighbor_pos, car_start, car_end
             )
 
     return can_be_added

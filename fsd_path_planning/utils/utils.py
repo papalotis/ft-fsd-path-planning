@@ -69,7 +69,7 @@ class Timer:
         space_if_name = " " if len(name) > 0 else ""
 
         if self.print:
-            print(f"Block {name}{space_if_name}took {interval * 1_000_000:.3f} μs")
+            print(f"Block {name}{space_if_name}took {interval * 1_000:.4f} ms")
 
     def get_cum_time(self) -> float:
         """
