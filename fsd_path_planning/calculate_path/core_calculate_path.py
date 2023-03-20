@@ -21,9 +21,11 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     circle_fit,
+    normalize_last_axis,
     rotate,
     trace_distance_to_next,
     unit_2d_vector_from_angle,
+    vec_angle_between,
 )
 from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 
@@ -308,7 +310,8 @@ class CalculatePath:
         Returns:
             The path for MPC
         """
-        path_with_enough_length = self.extend_path(path_update)
+        path_connected_to_car = self.connect_path_to_car(path_update)
+        path_with_enough_length = self.extend_path(path_connected_to_car)
         path_with_no_path_behind_car = self.remove_path_behind_car(
             path_with_enough_length
         )
@@ -376,6 +379,35 @@ class CalculatePath:
             self.input.position_global - path_length_fixed, axis=1
         )
         return distance_cost
+
+    def connect_path_to_car(self, path_update: FloatArray) -> FloatArray:
+        """
+        Connect the path update to the current path of the car. This is done by
+        calculating the distance between the last point of the path update and the
+        current position of the car. The path update is then shifted by this distance.
+        """
+        distance_to_first_point = np.linalg.norm(
+            self.input.position_global - path_update[0]
+        )
+
+        car_to_first_point = path_update[0] - self.input.position_global
+
+        angle_to_first_point = vec_angle_between(
+            car_to_first_point, self.input.direction_global
+        )
+
+        # there is path behind car or start is close enough
+        if distance_to_first_point < 0.5 or angle_to_first_point > np.pi / 2:
+            return path_update
+
+        new_point = (
+            self.input.position_global
+            + normalize_last_axis(car_to_first_point[None])[0] * 0.2
+        )
+
+        path_update = np.row_stack((new_point, path_update))
+
+        return path_update
 
     def remove_path_behind_car(self, path_length_fixed: FloatArray) -> FloatArray:
         """
