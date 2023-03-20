@@ -488,7 +488,7 @@ def quaternion_to_euler_angles(quaternion: np.ndarray) -> np.ndarray:
     return_value = np.stack([roll, pitch, yaw], axis=-1)
     return return_value
 
-
+@my_njit
 def points_inside_ellipse(
     points: np.ndarray,
     center: np.ndarray,
@@ -515,7 +515,7 @@ def points_inside_ellipse(
     centered_points = points - center
     # Calculate angle of the major direction with the x-axis
     # [1]
-    major_direction_angle = float(angle_from_2d_vector(major_direction))
+    major_direction_angle = np.arctan2(major_direction[1], major_direction[0])
     # Rotate the points around the center of the ellipse
     # [..., 2]
     rotated_points = rotate(centered_points, -major_direction_angle)
