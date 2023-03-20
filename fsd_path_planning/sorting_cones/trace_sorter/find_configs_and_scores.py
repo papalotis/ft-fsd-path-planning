@@ -89,15 +89,24 @@ def calc_scores_and_end_configurations(
             store_all_end_configurations=False,
         )
 
-    # experimental remove last cone
-    idx_first_minus_one = np.argmax(all_end_configurations == -1, axis=1)
-    idx_first_minus_one[idx_first_minus_one == 0] = all_end_configurations.shape[1]
-    mask_first_minus_one = idx_first_minus_one > 3
-    idx_first_minus_one_masked = idx_first_minus_one[mask_first_minus_one]
-    all_end_configurations[
-        mask_first_minus_one, idx_first_minus_one_masked - 1
-    ] = -1
+    # remove last cone from config, only if the last cone not of the type we are sorting
 
+    last_cone_in_each_config_idx = (
+        np.argmax(all_end_configurations == -1, axis=1) - 1
+    ) % all_end_configurations.shape[1]
+
+    last_cone_in_each_config = all_end_configurations[
+        np.arange(all_end_configurations.shape[0]), last_cone_in_each_config_idx
+    ]
+
+    mask_last_cone_is_not_of_type = trace[last_cone_in_each_config, 2] != cone_type
+    mask_config_has_over_3_cones = last_cone_in_each_config_idx > 2
+
+    mask_should_trim = mask_last_cone_is_not_of_type & mask_config_has_over_3_cones
+
+    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_should_trim]
+
+    all_end_configurations[mask_should_trim, last_cone_in_each_config_idx_masked] = -1
 
     with Timer("cost_configurations", no_print):
         costs = cost_configurations(

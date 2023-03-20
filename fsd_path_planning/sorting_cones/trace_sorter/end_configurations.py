@@ -10,15 +10,19 @@ import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast, lines_segments_intersect_indicator)
-from fsd_path_planning.types import (BoolArray, FloatArray, GenericArray,
-                                     IntArray)
+    cast,
+    lines_segments_intersect_indicator,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (my_in1d, my_njit,
-                                                points_inside_ellipse,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import (
+    my_in1d,
+    my_njit,
+    points_inside_ellipse,
+    vec_angle_between,
+)
 
-my_njit = lambda x: x  # XXX: just for debugging
+# my_njit = lambda x: x  # XXX: just for debugging
 
 
 @my_njit
@@ -124,17 +128,22 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
     # neighbor can be added if not in current attempt
     can_be_added = ~my_in1d(neighbors, current_attempt[: position_in_stack + 1])
-    
+
     if position_in_stack >= 1:
         neighbors_points = trace[neighbors]
         last_in_attempt = trace[current_attempt[position_in_stack]]
         second_to_last_in_attempt = trace[current_attempt[position_in_stack - 1]]
         second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
 
-        mask_in_ellipse = points_inside_ellipse(neighbors_points, last_in_attempt, major_direction=second_to_last_to_last, major_radius=6, minor_radius=3)
+        mask_in_ellipse = points_inside_ellipse(
+            neighbors_points,
+            last_in_attempt,
+            major_direction=second_to_last_to_last,
+            major_radius=6,
+            minor_radius=3,
+        )
 
         can_be_added = can_be_added & mask_in_ellipse
-        
 
     for i in range(len(can_be_added)):
         if not can_be_added[i]:
