@@ -7,17 +7,16 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import \
-    get_configurations_diff
-from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import \
-    calc_distance_cost
-from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import \
-    number_cones_on_each_side_for_each_config
-from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
-                                     SortableConeTypes)
+from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
+from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
+    calc_distance_cost,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
+    number_cones_on_each_side_for_each_config,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_difference,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import angle_difference, vec_angle_between
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -277,9 +276,11 @@ def cost_configurations(
             points_xy, configurations, cone_type
         )
 
+    # TODO: Add a cost for angle between last cone in config and two closest cones not in config
+
     not timer_no_print and print()
 
-    factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 100.0, 1000.0, 500.0])
+    factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
     factors = factors / factors.sum()
     # print(configurations)
     final_costs = (

@@ -4,14 +4,11 @@
 Description: Combines the results of the search along the left and right traces
 Project: fsd_path_planning
 """
-from itertools import count, product
-from typing import Iterable, Optional
+
+from typing import Optional
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
-    cost_configurations,
-)
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
     lines_segments_intersect_indicator,
 )
@@ -21,7 +18,6 @@ from fsd_path_planning.utils.math_utils import (
     angle_difference,
     angle_from_2d_vector,
     my_njit,
-    vec_angle_between,
 )
 
 
@@ -33,7 +29,7 @@ def calc_final_configs_for_left_and_right(
     cones: FloatArray,
     car_pos: FloatArray,
     car_dir: FloatArray,
-) -> tuple[IntArray, IntArray, bool, bool]:
+) -> tuple[IntArray, IntArray]:
     left_score_is_none = left_scores is None
     left_config_is_none = left_configs is None
     assert left_score_is_none == left_config_is_none
@@ -46,20 +42,16 @@ def calc_final_configs_for_left_and_right(
 
     # if both sides are None, we have no valid configuration
     empty_config = np.zeros(0, dtype=np.int)
-    empty_result = (empty_config, empty_config, True, True)
+    empty_result = (empty_config, empty_config)
 
     if n_non_none == 0:
         return empty_result
 
     if n_non_none == 1:
         # only one side has a valid configuration
-        return (
-            *calc_final_configs_when_only_one_side_has_configs(
-                left_configs,
-                right_configs,
-            ),
-            False,
-            False,
+        return calc_final_configs_when_only_one_side_has_configs(
+            left_configs,
+            right_configs,
         )
 
     # both sides have valid configurations
@@ -109,7 +101,7 @@ def calc_final_configs_when_both_available(
     cones: FloatArray,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> tuple[IntArray, IntArray, bool, bool]:
+) -> tuple[IntArray, IntArray]:
     # we need to pick the best one for each side
 
     left_config = left_configs[0]
@@ -118,22 +110,11 @@ def calc_final_configs_when_both_available(
     right_config = right_configs[0]
     right_config = right_config[right_config != -1]
 
-    original_left_config = left_config.copy()
-    original_right_config = right_config.copy()
-
     left_config, right_config = handle_same_cone_in_both_configs(
         cones, left_config, right_config
     )
 
-    left_has_been_trimmed = len(left_config) < len(original_left_config)
-    right_has_been_trimmed = len(right_config) < len(original_right_config)
-
-    return (
-        left_config,
-        right_config,
-        left_has_been_trimmed,
-        right_has_been_trimmed,
-    )
+    return (left_config, right_config)
 
 
 def handle_same_cone_in_both_configs(
@@ -188,18 +169,44 @@ def calc_new_length_for_configs_for_same_cone_intersection(
         in range(1, len(left_config) - 1)  # not first or last
         and right_intersection_index in range(1, len(right_config) - 1)
     ):
-        # XXX: currently we use the unsigned angle, in the future we should use the
-        # signed angle
+        # intersection happens in the middle of the config
         angle_left = calc_angle_change_at_position(
-            cones, left_config, left_intersection_index
+            cones[:, :2], left_config, left_intersection_index
         )
         angle_right = calc_angle_change_at_position(
-            cones, right_config, right_intersection_index
+            cones[:, :2], right_config, right_intersection_index
         )
-        angle_diff = abs(angle_left - angle_right)
-        if 0 and angle_diff > 0.2:
-            if angle_left > angle_right:
-                # we set the
+
+        sign_angle_left = np.sign(angle_left)
+        sign_angle_right = np.sign(angle_right)
+
+        absolute_angle_diff = abs(abs(angle_left) - abs(angle_right))
+
+        left_has_three = len(left_config) == 3
+        right_has_three = len(right_config) == 3
+
+        n_cones_diff = abs(len(left_config) - len(right_config))
+
+        if sign_angle_left == sign_angle_right:
+            if sign_angle_left == 1:
+                # this is a left corner, prefer the left
+                left_stop_idx = len(left_config)
+                right_stop_idx = right_intersection_index
+            else:
+                # this is a right corner, prefer the right
+                left_stop_idx = left_intersection_index
+                right_stop_idx = len(right_config)
+        elif n_cones_diff > 2:
+            # if the difference in number of cones is greater than 2, we assume that the
+            # longer config is the correct one
+            if len(left_config) > len(right_config):
+                left_stop_idx = len(left_config)
+                right_stop_idx = right_intersection_index
+            else:
+                left_stop_idx = left_intersection_index
+                right_stop_idx = len(right_config)
+        elif absolute_angle_diff > np.deg2rad(5):
+            if abs(angle_left) > abs(angle_right):
                 left_stop_idx = len(left_config)
                 right_stop_idx = right_intersection_index
             else:
@@ -243,64 +250,11 @@ def calc_angle_change_at_position(
     ]
 
     intersection_to_next = next_cone - intersection_cone
-    prev_to_intersection = intersection_cone - previous_cone
+    intersection_to_prev = previous_cone - intersection_cone
 
-    intersection_to_next_angle = angle_from_2d_vector(intersection_to_next)
-    prev_to_intersection_angle = angle_from_2d_vector(prev_to_intersection)
+    angle_intersection_to_next = angle_from_2d_vector(intersection_to_next)
+    angle_intersection_to_prev = angle_from_2d_vector(intersection_to_prev)
 
-    angle_diff = angle_difference(
-        intersection_to_next_angle, prev_to_intersection_angle
-    )
+    angle = angle_difference(angle_intersection_to_next, angle_intersection_to_prev)
 
-    return angle_diff
-
-
-def calculate_direction_at_position(
-    cones: FloatArray, config: IntArray, position: int
-) -> FloatArray:
-    if position == 0:
-        return cones[config[1], :2] - cones[config[0], :2]
-    elif position == len(config) - 1:
-        return cones[config[-1], :2] - cones[config[-2], :2]
-    else:
-        return cones[config[position + 1], :2] - cones[config[position - 1], :2]
-
-
-@my_njit
-def find_first_intersection_in_trace(
-    trace: np.ndarray, other_trace: np.ndarray
-) -> Optional[int]:
-    for i in range(len(trace) - 1):
-        for j in range(len(other_trace) - 1):
-            start_1 = trace[i]
-            end_1 = trace[i + 1]
-            start_2 = other_trace[j]
-            end_2 = other_trace[j + 1]
-
-            if lines_segments_intersect_indicator(start_1, end_1, start_2, end_2):
-                return i
-
-    return None
-
-
-def handle_edge_intersection_between_both_configs(
-    cones: FloatArray,
-    left_config: IntArray,
-    right_config: IntArray,
-):
-    left_trace = cones[left_config[left_config != -1], :2]
-    right_trace = cones[right_config[right_config != -1], :2]
-
-    left_intersection_index = find_first_intersection_in_trace(left_trace, right_trace)
-    right_intersection_index = find_first_intersection_in_trace(right_trace, left_trace)
-
-    if left_intersection_index is None != right_intersection_index is None:
-        print(np.array_repr(left_config), np.array_repr(right_config))
-        raise ValueError("Only one side has an intersection")
-
-    if left_intersection_index is not None:
-        left_config = left_config[:left_intersection_index]
-        right_config = right_config[:right_intersection_index]
-
-    return left_config, right_config
-    return left_config, right_config
+    return angle

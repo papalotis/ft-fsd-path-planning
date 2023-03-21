@@ -129,15 +129,15 @@ def load_data_json(
     ]
 
     if remove_color_info:
-        cones_observations_all_unkown = []
+        cones_observations_all_unknown = []
         for cones in cone_observations:
             new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
             new_observation[ConeTypes.UNKNOWN] = np.row_stack(
                 [c.reshape(-1, 2) for c in cones]
             )
-            cones_observations_all_unkown.append(new_observation)
+            cones_observations_all_unknown.append(new_observation)
 
-        cone_observations = cones_observations_all_unkown.copy()
+        cone_observations = cones_observations_all_unknown.copy()
 
     return positions, directions, cone_observations
 

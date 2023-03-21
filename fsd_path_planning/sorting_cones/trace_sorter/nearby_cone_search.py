@@ -7,19 +7,22 @@ edge of the track, we do not want to see any cones to the right of them.
 
 Project: fsd_path_planning
 """
+from collections import deque
 from sys import maxsize
 from typing import Optional
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    calculate_match_search_direction, calculate_search_direction_for_one,
-    cones_in_range_and_pov_mask)
+from fsd_path_planning.cone_matching.match_directions import (
+    calculate_search_direction_for_one,
+)
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (my_cdist_sq_euclidean, my_njit,
-                                                norm_of_last_axis,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import (
+    my_cdist_sq_euclidean,
+    my_njit,
+    vec_angle_between,
+)
 
 SEARCH_DIRECTIONS_CACHE_KEY_TYPE = tuple[int, int, int]
 SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
@@ -27,11 +30,12 @@ SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray
 
 # my_njit = lambda x: x  # for debugging only
 
+
 SENTINEL_VALUE = maxsize - 10
 
 
 @my_njit
-def create_seach_directions_cache() -> SEARCH_DIRECTIONS_CACHE_TYPE:
+def create_search_directions_cache() -> SEARCH_DIRECTIONS_CACHE_TYPE:
     return {(SENTINEL_VALUE, SENTINEL_VALUE, SENTINEL_VALUE): np.array([-1.0, -1.0])}
 
 
@@ -61,7 +65,7 @@ def pre_caluclate_search_directions(
     if existing_cache is not None:
         cache = existing_cache
     else:
-        cache = create_seach_directions_cache()
+        cache = create_search_directions_cache()
 
     for c in configs:
         c = c[c != -1]
@@ -312,27 +316,43 @@ def _impl_number_cones_on_each_side_for_each_config(
 
 class NearbyConeSearcher:
     def __init__(self) -> None:
-        self.caches_cache: dict[
-            tuple[bytes, ConeTypes], tuple[dict, dict, FloatArray, FloatArray]
-        ] = {}
+        self.caches_cache: deque[
+            tuple[tuple[int, ConeTypes], tuple[dict, dict, FloatArray, FloatArray]]
+        ] = deque(maxlen=20)
 
-    def get_caches(self, cones: np.ndarray, cone_type: ConeTypes) -> tuple[dict, dict]:
+    def get_caches(
+        self, cones: np.ndarray, cone_type: ConeTypes
+    ) -> tuple[dict, dict, FloatArray, FloatArray]:
         array_buffer = cones.tobytes()
-        cache_key = (array_buffer, cone_type)
-        if cache_key not in self.caches_cache:
+        array_hash = hash(array_buffer)
+        cache_key = (array_hash, cone_type)
+
+        try:
+            index_of_hashed_values = next(
+                i for i, (k, _) in enumerate(self.caches_cache) if k == cache_key
+            )
+        except StopIteration:
+            index_of_hashed_values = None
+        if index_of_hashed_values is None:
             cones_xy = cones[:, :2]
             distance_matrix_square = my_cdist_sq_euclidean(cones_xy, cones_xy)
             np.fill_diagonal(distance_matrix_square, 1e7)
             cones_to_cones = cones_xy - cones_xy[:, None]
 
-            self.caches_cache[cache_key] = (
-                create_seach_directions_cache(),
-                create_angle_cache(),
-                distance_matrix_square,
-                cones_to_cones,
+            self.caches_cache.append(
+                (
+                    cache_key,
+                    (
+                        create_search_directions_cache(),
+                        create_angle_cache(),
+                        distance_matrix_square,
+                        cones_to_cones,
+                    ),
+                )
             )
+            index_of_hashed_values = -1
 
-        return self.caches_cache[cache_key]
+        return self.caches_cache[index_of_hashed_values][1]
 
     def number_of_cones_on_each_side_for_each_config(
         self,
@@ -350,9 +370,11 @@ class NearbyConeSearcher:
 
 NEARBY_CONE_SEARCH_CACHE = NearbyConeSearcher()
 
+
 def clear_nearby_cone_search_cache() -> None:
     global NEARBY_CONE_SEARCH_CACHE
     NEARBY_CONE_SEARCH_CACHE = NearbyConeSearcher()
+
 
 def number_cones_on_each_side_for_each_config(
     cones: np.ndarray,
@@ -364,5 +386,3 @@ def number_cones_on_each_side_for_each_config(
     return NEARBY_CONE_SEARCH_CACHE.number_of_cones_on_each_side_for_each_config(
         cones, configs, cone_type, max_distance, max_angle
     )
-
-

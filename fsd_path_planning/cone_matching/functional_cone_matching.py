@@ -13,59 +13,21 @@ from typing import Literal, Tuple, cast
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
+from fsd_path_planning.cone_matching.match_directions import (
+    calculate_match_search_direction,
+)
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     my_cdist_sq_euclidean,
     my_njit,
-    normalize_last_axis,
     rotate,
+    trace_angles_between,
     vec_angle_between,
 )
 
 ic = lambda x: x  # pylint: disable=invalid-name
-
-
-@my_njit
-def calculate_search_direction_for_one(cones, idxs, cone_type):
-    """
-    Calculates the search direction for one cone
-    """
-    assert len(idxs) == 2
-
-    track_direction = cones[idxs[1]] - cones[idxs[0]]
-
-    rotation_angle = np.pi / 2 if cone_type == ConeTypes.RIGHT else -np.pi / 2
-
-    search_direction = rotate(track_direction, rotation_angle)
-
-    return search_direction / np.linalg.norm(search_direction)
-
-
-@my_njit
-def calculate_match_search_direction(
-    cones,
-    cone_type: ConeTypes,
-):
-    number_of_cones = len(cones)
-    assert number_of_cones > 1
-
-    cones_xy = cones[:, :2]
-
-    out = np.zeros((number_of_cones, 2))
-    out[0] = calculate_search_direction_for_one(cones_xy, np.array([0, 1]), cone_type)
-    out[-1] = calculate_search_direction_for_one(
-        cones_xy, np.array([-2, -1]), cone_type
-    )
-
-    for i in range(1, number_of_cones - 1):
-        out[i] = calculate_search_direction_for_one(
-            cones_xy, np.array([i - 1, i + 1]), cone_type
-        )
-
-    return out
 
 
 @my_njit
@@ -258,6 +220,7 @@ def insert_virtual_cones_to_existing(
     """
     Combine the virtual with the real cones into a single array.
     """
+    # print(locals())
     existing_cones, cones_to_insert = (
         (other_side_cones, other_side_virtual_cones)
         if len(other_side_cones) > len(other_side_virtual_cones)
@@ -314,6 +277,15 @@ def insert_virtual_cones_to_existing(
             axis=0,
         )
 
+        history.append(existing_cones.copy())
+
+    angles = trace_angles_between(existing_cones)
+    # print(np.rad2deg(angles))
+    mask_low_angles = angles < np.deg2rad(85)
+    mask_low_angles = np.concatenate([[False], mask_low_angles, [False]])
+
+    if mask_low_angles.any():
+        existing_cones = existing_cones[:][~mask_low_angles]
         history.append(existing_cones.copy())
 
     return existing_cones, history
@@ -647,4 +619,12 @@ def calculate_virtual_cones_for_both_sides(
         right_to_left_matches,
     )
 
+    return left_result, right_result
+    return left_result, right_result
+
+    return left_result, right_result
+    return left_result, right_result
+    return left_result, right_result
+
+    return left_result, right_result
     return left_result, right_result

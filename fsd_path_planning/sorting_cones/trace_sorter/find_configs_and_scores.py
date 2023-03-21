@@ -108,6 +108,17 @@ def calc_scores_and_end_configurations(
 
     all_end_configurations[mask_should_trim, last_cone_in_each_config_idx_masked] = -1
 
+    # remove identical configs
+    all_end_configurations = np.unique(all_end_configurations, axis=0)
+    # remove subsets
+    are_equal_mask = all_end_configurations[:, None] == all_end_configurations
+    are_minus_1_mask = all_end_configurations == -1
+    are_equal_mask = are_equal_mask | are_minus_1_mask
+
+    is_duplicate = are_equal_mask.all(axis=-1).sum(axis=0) > 1
+
+    all_end_configurations = all_end_configurations[~is_duplicate]
+
     with Timer("cost_configurations", no_print):
         costs = cost_configurations(
             points=trace,

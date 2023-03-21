@@ -9,8 +9,8 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from fsd_path_planning.cone_matching.functional_cone_matching import \
-    combine_and_sort_virtual_with_real
+# from fsd_path_planning.cone_matching.functional_cone_matching import \
+#     combine_and_sort_virtual_with_real
 from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
     calc_final_configs_for_left_and_right
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
@@ -131,9 +131,7 @@ class TraceSorter:
 
         (
             left_config,
-            right_config,
-            left_has_been_trimmed,
-            right_has_been_trimmed,
+            right_config
         ) = calc_final_configs_for_left_and_right(
             left_scores,
             left_configs,
@@ -146,15 +144,6 @@ class TraceSorter:
         left_config = left_config[left_config != -1]
         right_config = right_config[right_config != -1]
 
-        # if not left_has_been_trimmed:
-        #     left_config = self.remove_last_cone_in_config_if_not_of_type(
-        #         left_config, cones_flat, ConeTypes.LEFT
-        #     )
-
-        # if not right_has_been_trimmed:
-        #     right_config = self.remove_last_cone_in_config_if_not_of_type(
-        #         right_config, cones_flat, ConeTypes.RIGHT
-        #     )
 
         # remove any placeholder positions if they are present
         left_config = left_config[left_config != -1]
@@ -370,6 +359,8 @@ class TraceSorter:
             return np.array([index_1], dtype=np.int_)
 
         two_cones = np.array([index_2, index_1], dtype=np.int_)
+
+        return two_cones
 
         # find the third cone
         index_3 = self.select_starting_cone(
