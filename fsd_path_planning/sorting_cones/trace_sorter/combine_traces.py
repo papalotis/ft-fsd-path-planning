@@ -9,16 +9,12 @@ from typing import Optional
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    lines_segments_intersect_indicator,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
+    lines_segments_intersect_indicator
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_difference,
-    angle_from_2d_vector,
-    my_njit,
-)
+from fsd_path_planning.utils.math_utils import (angle_difference,
+                                                angle_from_2d_vector, my_njit)
 
 
 def calc_final_configs_for_left_and_right(
@@ -163,7 +159,42 @@ def calc_new_length_for_configs_for_same_cone_intersection(
     left_intersection_index: int,
     right_intersection_index: int,
 ) -> tuple[int, int]:
+    cones_xy = cones[:, :2]
+    if left_intersection_index > 0 and right_intersection_index > 0:
+        prev_left = left_config[left_intersection_index - 1]
+        prev_right = right_config[right_intersection_index - 1]
+        intersection_cone = left_config[left_intersection_index]
+
+        dist_intersection_to_prev_left = np.linalg.norm(
+            cones_xy[intersection_cone] - cones_xy[prev_left]
+        )
+        dist_intersection_to_prev_right = np.linalg.norm(
+            cones_xy[intersection_cone] - cones_xy[prev_right]
+        )
+
+        low_distance = 3.0
+        left_dist_is_very_low = dist_intersection_to_prev_left < low_distance
+        right_dist_is_very_low = dist_intersection_to_prev_right < low_distance
+        any_distance_very_low = left_dist_is_very_low or right_dist_is_very_low
+        both_distances_very_low = left_dist_is_very_low and right_dist_is_very_low
+
+        if any_distance_very_low and not both_distances_very_low:
+            if left_dist_is_very_low:
+                left_stop_idx = len(left_config)
+                right_stop_idx = right_intersection_index
+            else:
+                left_stop_idx = left_intersection_index
+                right_stop_idx = len(right_config)
+        else:
+            left_stop_idx = None
+            right_stop_idx = None
+    else:
+        left_stop_idx = None
+        right_stop_idx = None
+        
+
     if (
+        left_stop_idx is None and right_stop_idx is None and
         left_config[left_intersection_index] == right_config[right_intersection_index]
         and left_intersection_index
         in range(1, len(left_config) - 1)  # not first or last
@@ -215,7 +246,7 @@ def calc_new_length_for_configs_for_same_cone_intersection(
         else:
             left_stop_idx = left_intersection_index
             right_stop_idx = right_intersection_index
-    else:
+    elif left_stop_idx is None and right_stop_idx is None:
         # if the intersection is the last cone in the config, we assume that this is
         # an error because the configuration could not continue, so we only remove it
         # from that side
