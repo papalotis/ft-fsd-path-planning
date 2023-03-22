@@ -9,12 +9,16 @@ from typing import Optional
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import \
-    lines_segments_intersect_indicator
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
+    lines_segments_intersect_indicator,
+)
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_difference,
-                                                angle_from_2d_vector, my_njit)
+from fsd_path_planning.utils.math_utils import (
+    angle_difference,
+    angle_from_2d_vector,
+    my_njit,
+)
 
 
 def calc_final_configs_for_left_and_right(
@@ -191,11 +195,12 @@ def calc_new_length_for_configs_for_same_cone_intersection(
     else:
         left_stop_idx = None
         right_stop_idx = None
-        
 
     if (
-        left_stop_idx is None and right_stop_idx is None and
-        left_config[left_intersection_index] == right_config[right_intersection_index]
+        left_stop_idx is None
+        and right_stop_idx is None
+        and left_config[left_intersection_index]
+        == right_config[right_intersection_index]
         and left_intersection_index
         in range(1, len(left_config) - 1)  # not first or last
         and right_intersection_index in range(1, len(right_config) - 1)

@@ -11,17 +11,22 @@ import numpy as np
 
 # from fsd_path_planning.cone_matching.functional_cone_matching import \
 #     combine_and_sort_virtual_with_real
-from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import \
-    calc_final_configs_for_left_and_right
+from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
+    calc_final_configs_for_left_and_right,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import \
-    calc_scores_and_end_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
+    calc_scores_and_end_configurations,
+)
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                my_cdist_sq_euclidean,
-                                                points_inside_ellipse, rotate,
-                                                vec_angle_between)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    my_cdist_sq_euclidean,
+    points_inside_ellipse,
+    rotate,
+    vec_angle_between,
+)
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -60,6 +65,14 @@ class TraceSorter:
         self, cones_by_type: list[FloatArray]
     ) -> FloatArray:
         """Ravel the cones_by_type_array"""
+
+        if (
+            isinstance(cones_by_type, np.ndarray)
+            and cones_by_type.ndim == 2
+            and cones_by_type.shape[1] == 3
+        ):
+            return cones_by_type
+
         n_all_cones = sum(map(len, cones_by_type))
 
         # (x, y, color)
@@ -129,10 +142,7 @@ class TraceSorter:
                 car_dir,
             )
 
-        (
-            left_config,
-            right_config
-        ) = calc_final_configs_for_left_and_right(
+        (left_config, right_config) = calc_final_configs_for_left_and_right(
             left_scores,
             left_configs,
             right_scores,
@@ -143,7 +153,6 @@ class TraceSorter:
         )
         left_config = left_config[left_config != -1]
         right_config = right_config[right_config != -1]
-
 
         # remove any placeholder positions if they are present
         left_config = left_config[left_config != -1]

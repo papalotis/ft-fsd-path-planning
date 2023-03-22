@@ -488,6 +488,7 @@ def quaternion_to_euler_angles(quaternion: np.ndarray) -> np.ndarray:
     return_value = np.stack([roll, pitch, yaw], axis=-1)
     return return_value
 
+
 @my_njit
 def points_inside_ellipse(
     points: np.ndarray,
