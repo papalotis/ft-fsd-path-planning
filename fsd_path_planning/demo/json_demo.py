@@ -39,6 +39,15 @@ def main(
 
     timer = Timer(noprint=True)
 
+    # run planner once to "warm up" the JIT compiler / load all cached jit functions
+    try:
+        planner.calculate_path_in_global_frame(
+            cone_observations[0], positions[0], directions[0]
+        )
+    except Exception:
+        print("Error during warmup")
+        raise
+
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations)),
         total=len(positions),
