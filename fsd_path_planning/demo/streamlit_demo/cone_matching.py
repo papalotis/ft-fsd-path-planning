@@ -437,6 +437,8 @@ def show_final_matching(
     fig = plt.gcf()
     st.pyplot(fig)  # type: ignore
 
+    return left_to_right_match, right_to_left_match
+
 
 def run() -> None:
     st.markdown(
@@ -463,6 +465,18 @@ def run() -> None:
     position, direction, cones_by_type = get_cones_for_configuration(
         st.session_state.track_configuration, do_shuffle=False
     )
+
+    use_sort_result = st.checkbox(
+        "Use previous sort results",
+        key="use_sort_results",
+        value=st.session_state.track_configuration == st.session_state.sort_track,
+        help="When the same track in the demo is picked for sorting and matching, the sorting results can be used for matching. If set to false, the full configuration is used for matching.",
+        disabled=st.session_state.track_configuration != st.session_state.sort_track,
+    )
+
+    if use_sort_result:
+        cones_by_type[ConeTypes.LEFT] = st.session_state.left_sorted_cones
+        cones_by_type[ConeTypes.RIGHT] = st.session_state.right_sorted_cones
 
     plt.subplots()
     visualize_configuration(
@@ -651,10 +665,16 @@ def run() -> None:
     """
     )
 
-    show_final_matching(
+    left_to_right_matches, right_to_left_matches = show_final_matching(
         left_with_virtual,
         right_with_virtual,
         major_radius,
         minor_radius,
         max_search_angle,
     )
+
+    st.session_state["left_with_virtual"] = left_with_virtual
+    st.session_state["left_to_right_matches"] = left_to_right_matches
+    st.session_state["right_with_virtual"] = right_with_virtual
+    st.session_state["right_to_left_matches"] = right_to_left_matches
+    st.session_state["match_track"] = st.session_state.track_configuration
