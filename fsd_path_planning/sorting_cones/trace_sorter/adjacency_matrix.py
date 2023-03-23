@@ -9,10 +9,31 @@ from typing import Tuple, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
+from fsd_path_planning.sorting_cones.trace_sorter.common import \
+    breadth_first_order
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.math_utils import calc_pairwise_distances
+
+LAST_MATRIX_CALC_HASH = None
+LAST_MATRIX_CALC_DISTANCE_MATRIX = None
+
+
+def calculate_distance_matrix(cones_xy: FloatArray) -> FloatArray:
+    global LAST_MATRIX_CALC_HASH
+    global LAST_MATRIX_CALC_DISTANCE_MATRIX
+    input_hash = hash(cones_xy.tobytes())
+    if input_hash != LAST_MATRIX_CALC_HASH:
+        LAST_MATRIX_CALC_HASH = input_hash
+        LAST_MATRIX_CALC_DISTANCE_MATRIX = calc_pairwise_distances(
+            cones_xy, dist_to_self=np.inf
+        )
+
+    return LAST_MATRIX_CALC_DISTANCE_MATRIX.copy()
+
+
+LAST_IDXS_CALCULATED = None
+LAST_IDXS_HASH = None
 
 
 def find_k_closest_in_point_cloud(pairwise_distances: FloatArray, k: int) -> IntArray:
@@ -27,7 +48,14 @@ def find_k_closest_in_point_cloud(pairwise_distances: FloatArray, k: int) -> Int
     Returns:
         np.array: An (n,k) array containing the indices of the `k` closest points.
     """
-    return cast(IntArray, np.argsort(pairwise_distances, axis=1)[:, :k])
+    global LAST_IDXS_CALCULATED
+    global LAST_IDXS_HASH
+    input_hash = hash((pairwise_distances.tobytes(), k))
+    if input_hash != LAST_IDXS_HASH:
+        LAST_IDXS_HASH = input_hash
+        LAST_IDXS_CALCULATED = np.argsort(pairwise_distances, axis=1)[:, :k]
+
+    return LAST_IDXS_CALCULATED.copy()
 
 
 def create_adjacency_matrix(
@@ -56,9 +84,7 @@ def create_adjacency_matrix(
     cones_xy = cones[:, :2]
     cones_color = cones[:, 2]
 
-    pairwise_distances: FloatArray = calc_pairwise_distances(
-        cones_xy, dist_to_self=np.inf
-    )
+    pairwise_distances: FloatArray = calculate_distance_matrix(cones_xy)
 
     mask_is_other_cone_type = cones_color == invert_cone_type(cone_type)
     pairwise_distances[mask_is_other_cone_type, :] = np.inf
@@ -84,9 +110,6 @@ def create_adjacency_matrix(
     # remove all edges that don't have a revere i.e. convert to undirected graph
     adjacency_matrix = np.logical_and(adjacency_matrix, adjacency_matrix.T)
 
-    # adjacency_matrix = filter_adjacency_matrix_remove_lateral_connections(
-    #     adjacency_matrix_raw, trace, np.deg2rad(1)
-    # )
     reachable_nodes = breadth_first_order(adjacency_matrix, start_idx)
 
     # completely disconnect nodes that are not reachable from start node
@@ -97,10 +120,10 @@ def create_adjacency_matrix(
 
     # if we are sorting left (blue) cones, then we want to disconnect
     # all right (yellow) cones
-    nodes_to_disconnect[cones_color == invert_cone_type(cone_type)] = True
+    # nodes_to_disconnect[cones_color == invert_cone_type(cone_type)] = True
 
     # disconnect the remaining nodes in both directions
-    adjacency_matrix[:, nodes_to_disconnect] = 0
-    adjacency_matrix[nodes_to_disconnect, :] = 0
+    # adjacency_matrix[:, nodes_to_disconnect] = 0
+    # adjacency_matrix[nodes_to_disconnect, :] = 0
 
     return adjacency_matrix, reachable_nodes

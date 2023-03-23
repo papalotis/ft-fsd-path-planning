@@ -11,15 +11,13 @@ from typing import Any, Dict, Type
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.calculate_path.core_calculate_path import (
-    CalculatePath as CalculatePath,
-)
-
+from fsd_path_planning.calculate_path.core_calculate_path import \
+    CalculatePath as CalculatePath
 # for reexport
-from fsd_path_planning.calculate_path.skidpad_calculate_path import SkidpadCalculatePath
-from fsd_path_planning.cone_matching.core_cone_matching import (
-    ConeMatching as ConeMatching,
-)
+from fsd_path_planning.calculate_path.skidpad_calculate_path import \
+    SkidpadCalculatePath
+from fsd_path_planning.cone_matching.core_cone_matching import \
+    ConeMatching as ConeMatching
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting
 from fsd_path_planning.utils.mission_types import MissionTypes
 

@@ -13,14 +13,10 @@ class ConeTypes(IntEnum):
     """
 
     UNKNOWN = 0
-    YELLOW = 1
-    RIGHT = 1
-    BLUE = 2
-    LEFT = 2
-    ORANGE_SMALL = 3
-    START_FINISH_AREA = 3
-    ORANGE_BIG = 4
-    START_FINISH_LINE = 4
+    RIGHT = YELLOW = 1
+    LEFT = BLUE = 2
+    START_FINISH_AREA = ORANGE_SMALL = 3
+    START_FINISH_LINE = ORANGE_BIG = 4
 
 
 def invert_cone_type(cone_type: ConeTypes) -> ConeTypes:

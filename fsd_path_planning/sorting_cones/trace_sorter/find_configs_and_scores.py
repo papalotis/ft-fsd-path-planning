@@ -10,16 +10,14 @@ from typing import Optional, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
-    create_adjacency_matrix,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
-    cost_configurations,
-)
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
-    find_all_end_configurations,
-)
-from fsd_path_planning.types import FloatArray, IntArray, SortableConeTypes
+from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import \
+    create_adjacency_matrix
+from fsd_path_planning.sorting_cones.trace_sorter.cost_function import \
+    cost_configurations
+from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import \
+    find_all_end_configurations
+from fsd_path_planning.types import (BoolArray, FloatArray, IntArray,
+                                     SortableConeTypes)
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -35,7 +33,8 @@ def calc_scores_and_end_configurations(
     max_dist: float = np.inf,
     max_length: int = sys.maxsize,
     first_k_indices_must_be: Optional[IntArray] = None,
-) -> tuple[FloatArray, IntArray]:
+    return_history: bool = False,
+) -> tuple[FloatArray, IntArray, Optional[tuple[IntArray, BoolArray]]]:
     """
     Sorts a set of points such that the sum of the angles between the points is minimal.
     If a point is too far away, from any neighboring points, it is considered an outlier
@@ -75,7 +74,7 @@ def calc_scores_and_end_configurations(
         first_k_indices_must_be = np.arange(0)
 
     with Timer("find_all_end_configurations", no_print):
-        all_end_configurations, _ = find_all_end_configurations(
+        all_end_configurations, history = find_all_end_configurations(
             trace,
             cone_type,
             start_idx,
@@ -89,38 +88,9 @@ def calc_scores_and_end_configurations(
             car_size=2.1,
             # this is only used for testing/debugging/visualization purposes and should be
             # set to False in production
-            store_all_end_configurations=False,
+            store_all_end_configurations=return_history,
         )
 
-    # remove last cone from config, only if the last cone not of the type we are sorting
-
-    last_cone_in_each_config_idx = (
-        np.argmax(all_end_configurations == -1, axis=1) - 1
-    ) % all_end_configurations.shape[1]
-
-    last_cone_in_each_config = all_end_configurations[
-        np.arange(all_end_configurations.shape[0]), last_cone_in_each_config_idx
-    ]
-
-    mask_last_cone_is_not_of_type = trace[last_cone_in_each_config, 2] != cone_type
-    mask_config_has_over_3_cones = last_cone_in_each_config_idx > 2
-
-    mask_should_trim = mask_last_cone_is_not_of_type & mask_config_has_over_3_cones
-
-    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_should_trim]
-
-    all_end_configurations[mask_should_trim, last_cone_in_each_config_idx_masked] = -1
-
-    # remove identical configs
-    all_end_configurations = np.unique(all_end_configurations, axis=0)
-    # remove subsets
-    are_equal_mask = all_end_configurations[:, None] == all_end_configurations
-    are_minus_1_mask = all_end_configurations == -1
-    are_equal_mask = are_equal_mask | are_minus_1_mask
-
-    is_duplicate = are_equal_mask.all(axis=-1).sum(axis=0) > 1
-
-    all_end_configurations = all_end_configurations[~is_duplicate]
 
     with Timer("cost_configurations", no_print):
         costs = cost_configurations(
@@ -135,4 +105,5 @@ def calc_scores_and_end_configurations(
     costs = cast(FloatArray, costs[costs_sort_idx])
     all_end_configurations = cast(IntArray, all_end_configurations[costs_sort_idx])
 
-    return (costs, all_end_configurations)
+    return (costs, all_end_configurations, history)
+    return (costs, all_end_configurations, history)

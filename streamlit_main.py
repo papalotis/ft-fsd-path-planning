@@ -48,16 +48,7 @@ STRING_TO_FUNCTION = {
 with st.sidebar:
     st.markdown("# Path Planning")
 
-    modes = list(chain(STRING_TO_FUNCTION, map(str.lower, STRING_TO_FUNCTION)))
-    try:
-        mode = st.experimental_get_query_params()["mode"][0]
-        index_mode = list(modes).index(mode) % len(STRING_TO_FUNCTION)
-    except (KeyError, ValueError):
-        index_mode = 0
-
-    page_function = STRING_TO_FUNCTION[
-        st.selectbox("Mode", STRING_TO_FUNCTION, index=index_mode)
-    ]
+    page_function = STRING_TO_FUNCTION[st.radio("Mode", STRING_TO_FUNCTION)]
 
     st.markdown("---")
     st.session_state.track_configuration = st.selectbox(

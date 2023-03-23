@@ -130,16 +130,32 @@ class CalculatePath:
         return_value: int = np.sum(matches_of_side != -1)
         return return_value
 
+    def side_score(self, side: ConeTypes) -> tuple:
+        matches_of_side = (
+            self.input.left_to_right_matches
+            if side == ConeTypes.LEFT
+            else self.input.right_to_left_matches
+        )
+        matches_of_side_filtered = matches_of_side[matches_of_side != -1]
+        n_matches = len(matches_of_side_filtered)
+        n_indices_sum = matches_of_side_filtered.sum()
+
+        # first pick side with most matches, if both same number of matches, pick side
+        # where the indices increase the most
+        return n_matches, n_indices_sum
+
     def select_side_to_use(self) -> Tuple[FloatArray, IntArray, FloatArray]:
         "Select the main side to use for path calculation"
+
+        side_to_pick = max([ConeTypes.LEFT, ConeTypes.RIGHT], key=self.side_score)
+
         side_to_use, matches_to_other_side, other_side_cones = (
             (
                 self.input.left_cones,
                 self.input.left_to_right_matches,
                 self.input.right_cones,
             )
-            if self.number_of_matches_on_one_side(ConeTypes.LEFT)
-            > self.number_of_matches_on_one_side(ConeTypes.RIGHT)
+            if side_to_pick == ConeTypes.LEFT
             else (
                 self.input.right_cones,
                 self.input.right_to_left_matches,

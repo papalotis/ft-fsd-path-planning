@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+
 from fsd_path_planning import MissionTypes
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
 from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
@@ -46,7 +47,7 @@ def show_base_points(
         right_base_points.append(right_cone)
 
     middle_array = np.array(middle)
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -148,7 +149,7 @@ def run() -> None:
     middle between the cones and their matches.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -169,7 +170,7 @@ def run() -> None:
     with much finer resolution.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -207,7 +208,7 @@ def run() -> None:
     the second derivative to smooth it out.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,

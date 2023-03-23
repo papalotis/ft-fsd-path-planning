@@ -271,6 +271,7 @@ def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
 
 # Calculates the angle of each vector in `vecs`
 # TODO: Look into fixing return type when a single vector is provided (return float)
+@my_njit
 def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     """
     Calculates the angle of each vector in `vecs`. If `vecs` is just a single 2d vector
@@ -290,15 +291,17 @@ def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     Returns:
         np.array: The angle of each vector in `vecs`
     """
-    if vecs.shape == (2,):
-        return np.arctan2(vecs[1], vecs[0])
-    if vecs.shape[-1] == 2:
-        vecs_flat = vecs.reshape(-1, vecs.shape[-1])
+    assert vecs.shape[-1] == 2, "vecs must be a 2d vector"
 
-        angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
-        return angles.reshape(vecs.shape[:-1])
+    vecs_flat = vecs.reshape(-1, 2)
 
-    raise ValueError("vecs can either be a 2d vector or an array of 2d vectors")
+    angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
+    return_value = angles.reshape(vecs.shape[:-1])
+
+    # if vecs.ndim == 1:
+    #     return return_value[0]
+
+    return return_value
 
 
 @my_njit

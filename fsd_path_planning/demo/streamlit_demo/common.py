@@ -4,11 +4,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from fsd_path_planning.types import FloatArray
-from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
+
+from fsd_path_planning.types import FloatArray
+from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import (rotate,
+                                                unit_2d_vector_from_angle)
 
 
 def calculate_pose_triangle_position(
@@ -39,7 +41,7 @@ def visualize_configuration(
     do_show: bool,
 ) -> tuple[Figure, Axes]:
     position_triangle = calculate_pose_triangle_position(position, direction, 1)
-    fig, ax = plt.subplots()
+    ax = plt.gca()
     ax.fill(*position_triangle.T, color="red", label="Vehicle Pose")
 
     marker_string = "-o" if with_lines else "o"
@@ -52,7 +54,7 @@ def visualize_configuration(
             *cones.T,
             marker_string,
             color=color,
-            label="LEFT" if cone_type == ConeTypes.LEFT else "RIGHT",
+            label=cone_type.name.replace("_", " ").title(),
         )
         if with_cone_index:
             for i, (x, y) in enumerate(cones):
@@ -60,12 +62,12 @@ def visualize_configuration(
     ax.set_xticks([])
     ax.set_yticks([])
     ax.axis("equal")
-    ax.legend(loc="upper left")
+    # ax.legend(loc="upper left")
 
     if do_show:
-        st.pyplot(fig)  # type: ignore
+        st.pyplot(plt.gcf())  # type: ignore
 
-    return fig, ax
+    return ax
 
 
 def get_cones_for_configuration(
@@ -210,13 +212,17 @@ def get_cones_for_configuration(
         cones_left = cones_left[rng.random(len(cones_left)).argsort()]
         cones_right = cones_right[rng.random(len(cones_right)).argsort()]
 
-    cones = [np.zeros((0, 2)), cones_left, cones_right]
+    cones = [np.zeros((0, 2)) for _ in ConeTypes]
+    # cones = [np.zeros((0, 2)), cones_left, cones_right]
     cones[ConeTypes.LEFT] = cones_left
     cones[ConeTypes.RIGHT] = cones_right
     return vehicle_position, vehicle_direction, cones
 
 
 def create_animation(frames: list[go.Frame]) -> go.Figure:
+    if len(frames) == 0:
+        return go.Figure()
+
     return go.Figure(
         data=frames[0]["data"],
         layout=go.Layout(

@@ -5,19 +5,12 @@ import numpy as np
 import streamlit as st
 
 from fsd_path_planning.cone_matching.functional_cone_matching import (
-    calculate_match_search_direction,
-    calculate_matches_for_side,
-    calculate_positions_of_virtual_cones,
-    combine_and_sort_virtual_with_real,
-    find_boolean_mask_of_all_potential_matches,
-    select_best_match_candidate,
-)
+    calculate_match_search_direction, calculate_matches_for_side,
+    calculate_positions_of_virtual_cones, combine_and_sort_virtual_with_real,
+    find_boolean_mask_of_all_potential_matches, select_best_match_candidate)
 from fsd_path_planning.demo.streamlit_demo.common import (
-    CONE_TYPE_TO_COLOR,
-    create_animation,
-    get_cones_for_configuration,
-    visualize_configuration,
-)
+    CONE_TYPE_TO_COLOR, create_animation, get_cones_for_configuration,
+    visualize_configuration)
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
@@ -61,9 +54,10 @@ def show_search_direction(
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
+    plt.subplots()
     visualize_configuration(
         np.full(2, np.inf),
-        np.array([1, 0]),
+        np.array([1.0, 0]),
         cones_by_type,
         with_cone_index=False,
         with_lines=False,
@@ -162,9 +156,10 @@ def show_potential_matches(
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
+    plt.subplots()
     visualize_configuration(
         np.full(2, np.inf),
-        np.array([1, 0]),
+        np.array([1.0, 0.0]),
         cones_by_type,
         with_cone_index=False,
         with_lines=False,
@@ -234,9 +229,10 @@ def show_best_match_candidate(
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
+    plt.subplots()
     visualize_configuration(
         np.full(2, np.inf),
-        np.array([1, 0]),
+        np.array([1.0, 0.0]),
         cones_by_type,
         with_cone_index=False,
         with_lines=False,
@@ -281,9 +277,10 @@ def show_virtual_cones(
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
+    plt.subplots()
     visualize_configuration(
         np.full(2, np.inf),
-        np.array([1, 0]),
+        np.array([1.0, 0]),
         cones_by_type,
         with_cone_index=False,
         with_lines=False,
@@ -364,6 +361,7 @@ def show_merging(
     cones_by_type[ConeTypes.LEFT] = combined_left
     cones_by_type[ConeTypes.RIGHT] = combined_right
 
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -465,6 +463,8 @@ def run() -> None:
     position, direction, cones_by_type = get_cones_for_configuration(
         st.session_state.track_configuration, do_shuffle=False
     )
+
+    plt.subplots()
     visualize_configuration(
         position,
         direction,

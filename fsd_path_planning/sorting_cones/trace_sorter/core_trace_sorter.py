@@ -30,6 +30,30 @@ from fsd_path_planning.utils.math_utils import (
 from fsd_path_planning.utils.utils import Timer
 
 
+def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
+    """Ravel the cones_by_type_array"""
+
+    if (
+        isinstance(cones_by_type, np.ndarray)
+        and cones_by_type.ndim == 2
+        and cones_by_type.shape[1] == 3
+    ):
+        return cones_by_type
+
+    n_all_cones = sum(map(len, cones_by_type))
+
+    # (x, y, color)
+    out = np.empty((n_all_cones, 3))
+    n_start = 0
+    for cone_type in ConeTypes:
+        n_cones = len(cones_by_type[cone_type])
+        out[n_start : n_start + n_cones, :2] = cones_by_type[cone_type].reshape(-1, 2)
+        out[n_start : n_start + n_cones, 2] = cone_type
+        n_start += n_cones
+
+    return out
+
+
 class TraceSorter:
     """
     Wraps the trace sorting functionality into a class
@@ -61,33 +85,6 @@ class TraceSorter:
         self.threshold_directional_angle = threshold_directional_angle
         self.threshold_absolute_angle = threshold_absolute_angle
 
-    def flatten_cones_by_type_array(
-        self, cones_by_type: list[FloatArray]
-    ) -> FloatArray:
-        """Ravel the cones_by_type_array"""
-
-        if (
-            isinstance(cones_by_type, np.ndarray)
-            and cones_by_type.ndim == 2
-            and cones_by_type.shape[1] == 3
-        ):
-            return cones_by_type
-
-        n_all_cones = sum(map(len, cones_by_type))
-
-        # (x, y, color)
-        out = np.empty((n_all_cones, 3))
-        n_start = 0
-        for cone_type in ConeTypes:
-            n_cones = len(cones_by_type[cone_type])
-            out[n_start : n_start + n_cones, :2] = cones_by_type[cone_type].reshape(
-                -1, 2
-            )
-            out[n_start : n_start + n_cones, 2] = cone_type
-            n_start += n_cones
-
-        return out
-
     def remove_last_cone_in_config_if_not_of_type(
         self, config: IntArray, cones: FloatArray, cone_type: ConeTypes
     ) -> IntArray:
@@ -110,7 +107,7 @@ class TraceSorter:
         car_dir: FloatArray,
     ) -> tuple[FloatArray, FloatArray]:
         timer_no_print = True
-        cones_flat = self.flatten_cones_by_type_array(cones_by_type)
+        cones_flat = flatten_cones_by_type_array(cones_by_type)
 
         # mask_cones_close = (
         #     my_cdist_sq_euclidean(car_pos[None], cones_flat[:, :2])[0] < 25**2
@@ -225,7 +222,7 @@ class TraceSorter:
         except NoPathError:
             return no_result
 
-        return return_value
+        return return_value[:2]
 
     def invert_cone_type(self, cone_type: ConeTypes) -> ConeTypes:
         """
