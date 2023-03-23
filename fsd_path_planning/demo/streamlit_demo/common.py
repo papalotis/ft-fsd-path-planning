@@ -9,8 +9,7 @@ from matplotlib.figure import Figure
 
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (rotate,
-                                                unit_2d_vector_from_angle)
+from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 
 
 def calculate_pose_triangle_position(

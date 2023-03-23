@@ -563,7 +563,6 @@ def find_all_end_configurations(
 
     end_configurations = end_configurations[~is_duplicate]
 
-
     if len(end_configurations) == 0:
         raise NoPathError("Could not create a valid trace using the provided points")
 

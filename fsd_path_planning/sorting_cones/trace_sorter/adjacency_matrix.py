@@ -9,8 +9,7 @@ from typing import Tuple, cast
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import \
-    breadth_first_order
+from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.math_utils import calc_pairwise_distances

@@ -4,7 +4,10 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ![An animation demoing the path planning algorithm](animation.gif)
 
-This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season.
+This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season. In March 2023, a further development of this algorithm was published. The new version has two main improvements:
+
+- The algorithm can now work without color. It can use cones for which the color is known and cones for which the color is unknown.
+- Performance improvements. The algorithm is faster, with the main focus of improvement being the cone sorting step.
 
 You can find an **interactive demo** of the algorithm <a href="https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/" target="_blank">here.</a>
 
@@ -20,7 +23,7 @@ Parts that are specific to the FaSTTUBe pipeline have been removed. The algorith
 The algorithm requires the following inputs:
 
 - The car's current position and orientation in the slam map
-- The position of the colored cones in the slam map
+- The position of the (optionally colored) cones in the slam map
 
 The algorithm outputs:
 
@@ -32,8 +35,6 @@ It is only used if the path calculation has failed.
 
 The parts of the pipeline are also available as individual classes, so if you only
 want to use parts of it you can do so.
-
-No color inference is performed, if there are cones for which the position is known, but the color is not, they are ignored.
 
 The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, and Numba.
 

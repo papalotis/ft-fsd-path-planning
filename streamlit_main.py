@@ -9,7 +9,7 @@ from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
 
-st.set_page_config(page_title="FT Path Planning", page_icon="🏎")
+st.set_page_config(page_title="FT Path Planning", page_icon="🏎️")
 
 
 @st.cache  # type: ignore

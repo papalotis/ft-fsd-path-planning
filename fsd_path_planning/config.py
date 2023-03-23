@@ -11,19 +11,19 @@ from typing import Any, Dict, Type
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.calculate_path.core_calculate_path import \
-    CalculatePath as CalculatePath
+from fsd_path_planning.calculate_path.core_calculate_path import (
+    CalculatePath as CalculatePath,
+)
+
 # for reexport
-from fsd_path_planning.calculate_path.skidpad_calculate_path import \
-    SkidpadCalculatePath
-from fsd_path_planning.cone_matching.core_cone_matching import \
-    ConeMatching as ConeMatching
+from fsd_path_planning.calculate_path.skidpad_calculate_path import SkidpadCalculatePath
+from fsd_path_planning.cone_matching.core_cone_matching import (
+    ConeMatching as ConeMatching,
+)
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting
 from fsd_path_planning.utils.mission_types import MissionTypes
 
 KwargsType = Dict[str, Any]
-
-USE_UNKNOWN_CONES = True
 
 
 def get_cone_sorting_config(
@@ -31,26 +31,14 @@ def get_cone_sorting_config(
 ) -> KwargsType:
     """Create cone sorting kwargs."""
 
-    if USE_UNKNOWN_CONES:
-        max_n_neighbors = 5
-        max_dist = 6.5
-        max_dist_to_first = 6.0
-        max_length = 11
-    else:
-        max_n_neighbors = 3
-        max_dist = 8.0
-        max_dist_to_first = 8.0
-        max_length = 15
-
     return dict(
-        max_n_neighbors=max_n_neighbors,
-        max_dist=max_dist,
-        max_dist_to_first=max_dist_to_first,
-        max_length=max_length,
+        max_n_neighbors=5,
+        max_dist=6.5,
+        max_dist_to_first=6.0,
+        max_length=12,
         threshold_directional_angle=np.deg2rad(40),
-        # threshold_absolute_angle=np.deg2rad(55),
         threshold_absolute_angle=np.deg2rad(65),
-        use_unknown_cones=USE_UNKNOWN_CONES,
+        use_unknown_cones=True,
     )
 
 
