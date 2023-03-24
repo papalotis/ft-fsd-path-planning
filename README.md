@@ -22,6 +22,8 @@ List of contributors:
 
 The intention of this repository is to provide teams entering the driverless category with a path planning algorithm, so that they can get up and running as fast as possible. Teams are encouraged to use this repository as a basis and adapt it to their own pipeline, as well as make changes that will improve the algorithm's performance.
 
+The algorithm differs from other common path planning approaches in that can very robustly handle one side of the track not being visible, for example the inside of a corner. This is a common problem in the driverless category, especially for new teams with less sophisticated detection pipelines.
+
 Parts that are specific to the FaSTTUBe pipeline have been removed. The algorithm is now a standalone library that can be used in any pipeline. It is a Python package that can be installed using pip.
 
 The algorithm requires the following inputs:
@@ -81,3 +83,5 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 # the columns represent the spline parameter (distance along path), x, y and path curvature
 
 ```
+
+Take a look at this notebook for a more detailed example: [simple_application.ipynb](https://github.com/papalotis/ft-fsd-path-planning/blob/main/fsd_path_planning/demo/simple_application.ipynb)
