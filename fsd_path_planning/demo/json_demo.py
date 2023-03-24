@@ -45,9 +45,14 @@ def main(
         data_path, remove_color_info=remove_color_info
     )
 
-    results = []
-
-    timer = Timer(noprint=True)
+    if not numba_cache_files_exist():
+        print(
+            """
+It looks like this is the first time you are running this demo. It will take around a 
+minute to compile the numba functions. If you want to estimate the runtime of the
+planner, you should run the demo one more time after it is finished.
+"""
+        )
 
     # run planner once to "warm up" the JIT compiler / load all cached jit functions
     try:
@@ -57,6 +62,9 @@ def main(
     except Exception:
         print("Error during warmup")
         raise
+
+    results = []
+    timer = Timer(noprint=True)
 
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations)),
@@ -129,6 +137,16 @@ def main(
         anim.save(absolute_path_str, fps=data_rate)
 
     plt.show()
+
+
+def numba_cache_files_exist() -> bool:
+    package_file = Path(__file__).parent.parent
+    try:
+        next(package_file.glob("**/*.nbc"))
+    except StopIteration:
+        return False
+
+    return True
 
 
 def load_data_json(
