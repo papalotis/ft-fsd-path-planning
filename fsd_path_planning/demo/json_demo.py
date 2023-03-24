@@ -30,9 +30,8 @@ try:
 except TypeError:
     app = typer.Typer()
 
-app.command()
 
-
+@app.command()
 def main(
     data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
     data_rate: float = 10,

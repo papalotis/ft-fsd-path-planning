@@ -351,11 +351,8 @@ def run() -> None:
 Cone sorting is the process of sorting a set of cones into a sequence of cones. The goal
 of this process is to put the SLAM cones in the order of the track direction.
 
-Left and right sides are sorted independently from each other.
-
-The sorting algorithm runs on only a subset of all available cones. The only cones within
-a specific range from the vehicle pose are considered. This is done to reduce computation
-time.
+Left and right sides are sorted independently from each other and are combined in the 
+final step if the color of the cones is not known.
 
 Like the rest of the algorithms, the sorting algorithm has been designed to be completely
 stateless.
@@ -367,6 +364,7 @@ The core cone sorting algorithm consists of the following steps:
 - Apply graph search to find all possible configurations
 - Calculate the cost of each configuration
 - Select the configuration with the lowest cost
+- Handle common cones between the two sides (if applicable)
 """
     )
 
@@ -406,8 +404,6 @@ demo you can choose whether to use the color information or not.
         np.random.default_rng(0).shuffle(new_cones_by_type[ConeTypes.UNKNOWN], axis=0)
         cones_by_type = new_cones_by_type
 
-    cones_flat = flatten_cones_by_type_array(cones_by_type)
-
     show_lines = st.checkbox("Show lines", help="Show lines between consecutive cones")
     visualize_configuration(
         position,
@@ -437,7 +433,7 @@ demo you can choose whether to use the color information or not.
 
     maximum_distance = st.slider(
         "Maximum distance",
-        4.0,
+        2.0,
         10.0,
         help="Maximum distance for a cone to be considered a starting cone",
     )

@@ -150,8 +150,8 @@ def run() -> None:
     final_path, path_update = pathing.run_path_calculation()
 
     cone_by_type_w_virtual = [np.zeros((0, 2)) for _ in ConeTypes]
-    cone_by_type_w_virtual[ConeTypes.YELLOW] = left_cones
-    cone_by_type_w_virtual[ConeTypes.BLUE] = right_cones
+    cone_by_type_w_virtual[ConeTypes.LEFT] = left_cones
+    cone_by_type_w_virtual[ConeTypes.RIGHT] = right_cones
 
     st.markdown(
         """
@@ -171,7 +171,7 @@ def run() -> None:
         do_show=False,
     )
 
-    show_base_points(right_to_left_index, position, direction, cone_by_type_w_virtual)
+    show_base_points(left_to_right_index, position, direction, cone_by_type_w_virtual)
 
     st.markdown(
         """
