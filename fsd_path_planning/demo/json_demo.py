@@ -12,14 +12,25 @@ try:
     import matplotlib.pyplot as plt
     import typer
 except ImportError:
-    print("Please install typer and matplotlib: pip install typer matplotlib")
-    raise SystemExit(1)
+    print(
+        "\n\nThis demo requires matplotlib and typer to be installed. You can install"
+        " them with by using the [demo] extra.\n\n"
+    )
+    raise
 
 try:
     from tqdm import tqdm
 except ImportError:
     print("You can get a progress bar by installing tqdm: pip install tqdm")
     tqdm = lambda x, total=None: x
+
+
+try:
+    app = typer.Typer(pretty_exceptions_enable=False)
+except TypeError:
+    app = typer.Typer()
+
+app.command()
 
 
 def main(
@@ -152,4 +163,4 @@ def load_data_json(
 
 
 if __name__ == "__main__":
-    typer.run(main)
+    app()

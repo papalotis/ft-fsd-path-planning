@@ -141,3 +141,5 @@ frames/
 fsd_path_planning/demo/*.json
 
 media/
+
+*.ipynb
