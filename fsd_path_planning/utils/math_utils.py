@@ -50,7 +50,7 @@ def vec_dot(vecs1: np.ndarray, vecs2: np.ndarray) -> np.ndarray:
 @my_njit
 def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
     original_shape = arr.shape
-    arr_row_col = arr.flatten().reshape(-1, arr.shape[-1])
+    arr_row_col = np.ascontiguousarray(arr).reshape(-1, arr.shape[-1])
     result = np.empty(arr_row_col.shape[0])
     for i in range(arr_row_col.shape[0]):
         vec = arr_row_col[i]
@@ -78,6 +78,9 @@ def vec_angle_between(
         np.ndarray: A vector, such that each element i contains the angle between
         vectors vecs1[i] and vecs2[i]
     """
+    assert vecs1.shape[-1] == 2
+    assert vecs2.shape[-1] == 2
+
     cos_theta = vec_dot(vecs1, vecs2)
 
     cos_theta /= norm_of_last_axis(vecs1) * norm_of_last_axis(vecs2)
@@ -93,6 +96,7 @@ def vec_angle_between(
     return np.arccos(cos_theta)
 
 
+@my_njit
 def rotate(points: np.ndarray, theta: float) -> np.ndarray:
     """
     Rotates the points in `points` by angle `theta` around the origin
@@ -267,6 +271,7 @@ def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
 
 # Calculates the angle of each vector in `vecs`
 # TODO: Look into fixing return type when a single vector is provided (return float)
+@my_njit
 def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     """
     Calculates the angle of each vector in `vecs`. If `vecs` is just a single 2d vector
@@ -286,25 +291,35 @@ def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     Returns:
         np.array: The angle of each vector in `vecs`
     """
-    if vecs.shape == (2,):
-        return np.arctan2(vecs[1], vecs[0])
-    if vecs.ndim == 2 and vecs.shape[-1] == 2:
-        return np.arctan2(vecs[:, 1], vecs[:, 0])
-    raise ValueError("vecs can either be a 2d vector or an array of 2d vectors")
+    assert vecs.shape[-1] == 2, "vecs must be a 2d vector"
+
+    vecs_flat = vecs.reshape(-1, 2)
+
+    angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
+    return_value = angles.reshape(vecs.shape[:-1])
+
+    # if vecs.ndim == 1:
+    #     return return_value[0]
+
+    return return_value
 
 
-def normalize(vecs: np.ndarray, axis: int = -1) -> np.ndarray:
+@my_njit
+def normalize_last_axis(vecs: np.ndarray) -> np.ndarray:
     """
     Returns a normalized version of vecs
 
     Args:
         vecs (np.ndarray): The vectors to normalize
-        axis (int, optional): The axis to use for lengths. Defaults to -1.
-
     Returns:
         np.ndarray: The normalized vectors
     """
-    return vecs / np.linalg.norm(vecs, axis=axis, keepdims=True)
+    vecs_flat = vecs.reshape(-1, vecs.shape[-1])
+    out = np.zeros(vecs.shape, dtype=vecs.dtype)
+    for i, vec in enumerate(vecs_flat):
+        out[i] = vec / np.linalg.norm(vec)
+
+    return out.reshape(vecs.shape)
 
 
 @my_njit
@@ -477,6 +492,7 @@ def quaternion_to_euler_angles(quaternion: np.ndarray) -> np.ndarray:
     return return_value
 
 
+@my_njit
 def points_inside_ellipse(
     points: np.ndarray,
     center: np.ndarray,
@@ -503,7 +519,7 @@ def points_inside_ellipse(
     centered_points = points - center
     # Calculate angle of the major direction with the x-axis
     # [1]
-    major_direction_angle = float(angle_from_2d_vector(major_direction))
+    major_direction_angle = np.arctan2(major_direction[1], major_direction[0])
     # Rotate the points around the center of the ellipse
     # [..., 2]
     rotated_points = rotate(centered_points, -major_direction_angle)
@@ -647,3 +663,19 @@ if __name__ == "__main__":
 
     p1, p2, p3 = np.array([0, 0.0]), np.array([0, 1.0]), np.array([0.0, 2.0])
     print(center_of_circle_from_3_points(p1, p2, p3))
+
+
+# @my_njit
+def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
+    """
+    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    The order of the angles *is* important.
+
+    Args:
+        angle1: First angle.
+        angle2: Second angle.
+
+    Returns:
+        The difference between the two angles.
+    """
+    return (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi  # type: ignore

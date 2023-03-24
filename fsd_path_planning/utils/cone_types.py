@@ -13,11 +13,22 @@ class ConeTypes(IntEnum):
     """
 
     UNKNOWN = 0
-    YELLOW = 1
-    RIGHT = 1
-    BLUE = 2
-    LEFT = 2
-    ORANGE_SMALL = 3
-    START_FINISH_AREA = 3
-    ORANGE_BIG = 4
-    START_FINISH_LINE = 4
+    RIGHT = YELLOW = 1
+    LEFT = BLUE = 2
+    START_FINISH_AREA = ORANGE_SMALL = 3
+    START_FINISH_LINE = ORANGE_BIG = 4
+
+
+def invert_cone_type(cone_type: ConeTypes) -> ConeTypes:
+    """
+    Inverts the cone type. E.g. LEFT -> RIGHT
+    Args:
+        cone_type: The cone type to invert
+    Returns:
+        ConeTypes: The inverted cone type
+    """
+    if cone_type == ConeTypes.LEFT:
+        return ConeTypes.RIGHT
+    if cone_type == ConeTypes.RIGHT:
+        return ConeTypes.LEFT
+    return cone_type

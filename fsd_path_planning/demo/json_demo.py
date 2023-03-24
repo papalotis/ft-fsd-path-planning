@@ -3,15 +3,20 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
+from fsd_path_planning.utils.utils import Timer
 
 try:
     import matplotlib.animation
     import matplotlib.pyplot as plt
     import typer
 except ImportError:
-    print("Please install typer and matplotlib: pip install typer matplotlib")
-    raise SystemExit(1)
+    print(
+        "\n\nThis demo requires matplotlib and typer to be installed. You can install"
+        " them with by using the [demo] extra.\n\n"
+    )
+    raise
 
 try:
     from tqdm import tqdm
@@ -20,89 +25,141 @@ except ImportError:
     tqdm = lambda x, total=None: x
 
 
-def main(data_path: Optional[Path] = None, data_rate: float = 10) -> None:
+try:
+    app = typer.Typer(pretty_exceptions_enable=False)
+except TypeError:
+    app = typer.Typer()
+
+
+@app.command()
+def main(
+    data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
+    data_rate: float = 10,
+    remove_color_info: bool = False,
+    show_runtime_histogram: bool = False,
+    output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
+) -> None:
     planner = PathPlanner(MissionTypes.trackdrive)
 
-    if data_path is None:
-        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
-
-    # extract data
-    data = json.loads(data_path.read_text())
-
-    positions = np.array([d["car_position"] for d in data])
-    directions = np.array([d["car_direction"] for d in data])
-    cone_observations = [[np.array(c) for c in d["slam_cones"]] for d in data]
-
-    paths = np.array(
-        [
-            planner.calculate_path_in_global_frame(
-                cones,
-                position,
-                direction,
-            )
-            for (position, direction, cones) in tqdm(
-                zip(positions, directions, cone_observations), total=len(positions)
-            )
-        ]
+    positions, directions, cone_observations = load_data_json(
+        data_path, remove_color_info=remove_color_info
     )
 
+    results = []
+
+    timer = Timer(noprint=True)
+
+    # run planner once to "warm up" the JIT compiler / load all cached jit functions
+    try:
+        planner.calculate_path_in_global_frame(
+            cone_observations[0], positions[0], directions[0]
+        )
+    except Exception:
+        print("Error during warmup")
+        raise
+
+    for i, (position, direction, cones) in tqdm(
+        enumerate(zip(positions, directions, cone_observations)),
+        total=len(positions),
+        desc="Calculating paths",
+    ):
+        try:
+            with timer:
+                out = planner.calculate_path_in_global_frame(
+                    cones,
+                    position,
+                    direction,
+                    return_intermediate_results=True,
+                )
+        except Exception:
+            print(f"Error at frame {i}")
+            raise
+        results.append(out)
+
+        if timer.intervals[-1] > 0.1:
+            print(f"Frame {i} took {timer.intervals[-1]:.4f} seconds")
+
+    if show_runtime_histogram:
+        # skip the first few frames, because they include "warmup time"
+        plt.hist(timer.intervals[10:])
+        plt.show()
+
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.set_aspect("equal")
     # plot animation
-    fig = plt.figure()
-
-    xmin = np.min(positions[:, 0])
-    xmax = np.max(positions[:, 0])
-    ymin = np.min(positions[:, 1])
-    ymax = np.max(positions[:, 1])
-
-    x_range = xmax - xmin
-    y_range = ymax - ymin
-    if x_range > y_range:
-        ymax = ymin + x_range
-    else:
-        xmax = xmin + y_range
-
-    ax = plt.axes(
-        xlim=(xmin - 5, xmax + 5),
-        ylim=(ymin - 5, ymax + 5),
-    )
-    (yellow_cones,) = ax.plot([], [], "yo", label="Yellow cones")
-    (blue_cones,) = ax.plot([], [], "bo", label="Blue cones")
-    (path,) = ax.plot([], [], "r-", label="Path")
-    (position,) = ax.plot([], [], "go", label="Position")
-
-    def init():
-        yellow_cones.set_data([], [])
-        blue_cones.set_data([], [])
-        path.set_data([], [])
-        position.set_data([], [])
-        return yellow_cones, blue_cones, path, position
-
-    def animate(i):
-        yellow_cones.set_data(
-            cone_observations[i][ConeTypes.YELLOW][:, 0],
-            cone_observations[i][ConeTypes.YELLOW][:, 1],
+    frames = []
+    for i in tqdm(range(len(results)), desc="Generating animation"):
+        co = cone_observations[i]
+        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, "yo")
+        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, "bo")
+        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, "ko")
+        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, "y-")
+        (blue_cones_sorted,) = plt.plot(*results[i][1].T, "b-")
+        (path,) = plt.plot(*results[i][0][:, 1:3].T, "r-")
+        (position,) = plt.plot(*positions[i], "go")
+        title = plt.text(
+            0.5,
+            1.01,
+            f"Frame {i}",
+            ha="center",
+            va="bottom",
+            transform=ax.transAxes,
+            fontsize="large",
         )
-        blue_cones.set_data(
-            cone_observations[i][ConeTypes.BLUE][:, 0],
-            cone_observations[i][ConeTypes.BLUE][:, 1],
+        frames.append(
+            [
+                yellow_cones,
+                blue_cones,
+                unknown_cones,
+                yellow_cones_sorted,
+                blue_cones_sorted,
+                path,
+                position,
+                title,
+            ]
         )
-        path.set_data(paths[i][:, 1], paths[i][:, 2])
-        position.set_data(positions[i][0], positions[i][1])
-        return yellow_cones, blue_cones, path, position
 
-    anim = matplotlib.animation.FuncAnimation(
-        fig,
-        animate,
-        init_func=init,
-        frames=len(positions),
-        interval=1 / data_rate * 1000,
-        blit=True,
+    anim = matplotlib.animation.ArtistAnimation(
+        fig, frames, interval=1 / data_rate * 1000, blit=True, repeat_delay=1000
     )
 
-    # anim.save(..., fps=data_rate)
+    if output_path is not None:
+        absolute_path_str = str(output_path.absolute())
+        typer.echo(f"Saving animation to {absolute_path_str}")
+        anim.save(absolute_path_str, fps=data_rate)
 
     plt.show()
 
 
+def load_data_json(
+    data_path: Optional[Path] = None,
+    remove_color_info: bool = False,
+) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
+    if data_path is None:
+        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
+
+    # extract data
+    data = json.loads(data_path.read_text())[:]
+
+    positions = np.array([d["car_position"] for d in data])
+    directions = np.array([d["car_direction"] for d in data])
+    cone_observations = [
+        [np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data
+    ]
+
+    if remove_color_info:
+        cones_observations_all_unknown = []
+        for cones in cone_observations:
+            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
+            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
+                [c.reshape(-1, 2) for c in cones]
+            )
+            cones_observations_all_unknown.append(new_observation)
+
+        cone_observations = cones_observations_all_unknown.copy()
+
+    return positions, directions, cone_observations
+
+
 if __name__ == "__main__":
-    typer.run(main)
+    app()

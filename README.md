@@ -2,9 +2,16 @@
 
 FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
-![An animation demoing the path planning algorithm](animation.gif)
+<!-- ![An animation demoing the path planning algorithm](animation.gif) -->
 
-This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season.
+| With color information | Without color information |
+| ---------------------- | ------------------------- |
+|  ![An animation demoing the path planning algorithm](fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](fsg_no_color.gif)                   |
+
+This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season. In March 2023, a further development of this algorithm was published. The new version has two main improvements:
+
+- The algorithm can now work without color. It can use cones for which the color is known and cones for which the color is unknown at the same time.
+- Performance improvements. The algorithm is faster, with the main focus of improvement being the cone sorting step.
 
 You can find an **interactive demo** of the algorithm <a href="https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/" target="_blank">here.</a>
 
@@ -20,7 +27,7 @@ Parts that are specific to the FaSTTUBe pipeline have been removed. The algorith
 The algorithm requires the following inputs:
 
 - The car's current position and orientation in the slam map
-- The position of the colored cones in the slam map
+- The position of the (optionally colored) cones in the slam map
 
 The algorithm outputs:
 
@@ -33,8 +40,6 @@ It is only used if the path calculation has failed.
 The parts of the pipeline are also available as individual classes, so if you only
 want to use parts of it you can do so.
 
-No color inference is performed, if there are cones for which the position is known, but the color is not, they are ignored.
-
 The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, and Numba.
 
 ## Installation
@@ -42,7 +47,25 @@ The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, 
 The package can be installed using pip:
 
 ```bash
-pip install git+ssh://git@github.com/papalotis/ft-fsd-path-planning.git
+pip install "fsd-path-planning[demo] @ git+ssh://git@github.com/papalotis/ft-fsd-path-planning.git"
+```
+
+This will also install the dependencies needed to run the demo (cli, matplotlib, streamlit, etc.). If you don't want to install the demo dependencies, you can install the package without the `demo` extra:
+
+```bash
+pip install "fsd-path-planning @ git+ssh://git@github.com/papalotis/ft-fsd-path-planning.git"
+```
+
+## Performance
+
+The algorithm is fast enough to run in real-time on a Jetson Xavier AGX 16GB on MAXN power mode. On that platform, the algorithm takes on average around 10ms for the entire algorithm to run from start to finish. You can run the demo to get an idea of the performance on your hardware.
+
+*Note that the first time that you run the algorithm, it will take around 30-60 seconds to compile all the Numba functions. Run the demo a second time to get a real indicator on performance.*
+
+Run the following command to run the demo on your machine:
+
+```bash
+python -m fsd_path_planning.demo
 ```
 
 ## Basic usage
@@ -57,10 +80,4 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 # path is a Nx4 numpy array, where N is the number of points in the path
 # the columns represent the spline parameter (distance along path), x, y and path curvature
 
-```
-
-Run the following command to run the demo on your machine:
-
-```bash
-python -m fsd_path_planning.demo
 ```

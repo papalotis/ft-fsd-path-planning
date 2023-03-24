@@ -1,4 +1,3 @@
-from itertools import chain
 from pathlib import Path
 
 import streamlit as st
@@ -9,7 +8,7 @@ from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
 
-st.set_page_config(page_title="FT Path Planning", page_icon="🏎")
+st.set_page_config(page_title="FT Path Planning", page_icon="🏎️")
 
 
 @st.cache  # type: ignore
@@ -48,19 +47,10 @@ STRING_TO_FUNCTION = {
 with st.sidebar:
     st.markdown("# Path Planning")
 
-    modes = list(chain(STRING_TO_FUNCTION, map(str.lower, STRING_TO_FUNCTION)))
-    try:
-        mode = st.experimental_get_query_params()["mode"][0]
-        index_mode = list(modes).index(mode) % len(STRING_TO_FUNCTION)
-    except (KeyError, ValueError):
-        index_mode = 0
-
-    page_function = STRING_TO_FUNCTION[
-        st.selectbox("Mode", STRING_TO_FUNCTION, index=index_mode)
-    ]
+    page_function = STRING_TO_FUNCTION[st.radio("Mode", STRING_TO_FUNCTION)]
 
     st.markdown("---")
-    st.session_state.track_configuration = st.selectbox(
+    st.session_state.track_configuration = st.radio(
         "Configuration",
         (
             "Straight",

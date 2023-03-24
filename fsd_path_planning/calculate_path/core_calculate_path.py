@@ -10,21 +10,22 @@ from dataclasses import dataclass, field
 from typing import List, Tuple, cast
 
 import numpy as np
-from fsd_path_planning.calculate_path.path_calculator_helpers import (
-    PathCalculatorHelpers,
-)
-from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
+from icecream import ic  # pylint: disable=unused-import
+
+from fsd_path_planning.calculate_path.path_calculator_helpers import \
+    PathCalculatorHelpers
+from fsd_path_planning.calculate_path.path_parameterization import \
+    PathParameterizer
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    circle_fit,
-    rotate,
-    trace_distance_to_next,
-    unit_2d_vector_from_angle,
-)
-from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
-from icecream import ic  # pylint: disable=unused-import
+from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
+                                                circle_fit,
+                                                normalize_last_axis, rotate,
+                                                trace_distance_to_next,
+                                                unit_2d_vector_from_angle,
+                                                vec_angle_between)
+from fsd_path_planning.utils.spline_fit import (SplineEvaluator,
+                                                SplineFitterFactory)
 
 SplineEvalByType = List[SplineEvaluator]
 
@@ -127,16 +128,32 @@ class CalculatePath:
         return_value: int = np.sum(matches_of_side != -1)
         return return_value
 
+    def side_score(self, side: ConeTypes) -> tuple:
+        matches_of_side = (
+            self.input.left_to_right_matches
+            if side == ConeTypes.LEFT
+            else self.input.right_to_left_matches
+        )
+        matches_of_side_filtered = matches_of_side[matches_of_side != -1]
+        n_matches = len(matches_of_side_filtered)
+        n_indices_sum = matches_of_side_filtered.sum()
+
+        # first pick side with most matches, if both same number of matches, pick side
+        # where the indices increase the most
+        return n_matches, n_indices_sum
+
     def select_side_to_use(self) -> Tuple[FloatArray, IntArray, FloatArray]:
         "Select the main side to use for path calculation"
+
+        side_to_pick = max([ConeTypes.LEFT, ConeTypes.RIGHT], key=self.side_score)
+
         side_to_use, matches_to_other_side, other_side_cones = (
             (
                 self.input.left_cones,
                 self.input.left_to_right_matches,
                 self.input.right_cones,
             )
-            if self.number_of_matches_on_one_side(ConeTypes.LEFT)
-            > self.number_of_matches_on_one_side(ConeTypes.RIGHT)
+            if side_to_pick == ConeTypes.LEFT
             else (
                 self.input.right_cones,
                 self.input.right_to_left_matches,
@@ -207,10 +224,15 @@ class CalculatePath:
         the length of the path required by MPC. The path will be trimmed to the correct length
         in another step
         """
+        try:
+            path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
+                der=0, max_u=self.scalars.mpc_path_length * 1.5
+            )
+        except Exception:
+            print(repr(final_path))
+            print(repr(self.input))
+            raise
 
-        path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
-            der=0, max_u=self.scalars.mpc_path_length * 1.5
-        )
         return path_length_fixed
 
     def extend_path(self, path_update: FloatArray) -> FloatArray:
@@ -251,7 +273,7 @@ class CalculatePath:
         center_x, center_y, radius = circle_fit(relevant_path)
         center = np.array([center_x, center_y])
 
-        radius_to_use = max(radius, 10)
+        radius_to_use = min(max(radius, 10), 200)
 
         relevant_path_centered = relevant_path - center
         # find the orientation of the path part, to know if the circular arc should be
@@ -274,6 +296,7 @@ class CalculatePath:
         new_points = new_points_raw - new_points_raw[0] + path_update[-1]
         # to avoid overlapping when spline fitting, we need to first n points
         new_points = new_points[10:]
+
         return np.row_stack((path_update, new_points))
 
     def create_path_for_mpc_from_path_update(
@@ -301,14 +324,19 @@ class CalculatePath:
         Returns:
             The path for MPC
         """
-        path_with_enough_length = self.extend_path(path_update)
+        path_connected_to_car = self.connect_path_to_car(path_update)
+        path_with_enough_length = self.extend_path(path_connected_to_car)
         path_with_no_path_behind_car = self.remove_path_behind_car(
             path_with_enough_length
         )
-
-        path_length_fixed = self.refit_path_for_mpc_with_safety_factor(
-            path_with_no_path_behind_car
-        )
+        try:
+            path_length_fixed = self.refit_path_for_mpc_with_safety_factor(
+                path_with_no_path_behind_car
+            )
+        except Exception:
+            print("path update")
+            print(repr(path_update))
+            raise
 
         path_with_length_for_mpc = self.remove_path_not_in_prediction_horizon(
             path_length_fixed
@@ -365,6 +393,35 @@ class CalculatePath:
             self.input.position_global - path_length_fixed, axis=1
         )
         return distance_cost
+
+    def connect_path_to_car(self, path_update: FloatArray) -> FloatArray:
+        """
+        Connect the path update to the current path of the car. This is done by
+        calculating the distance between the last point of the path update and the
+        current position of the car. The path update is then shifted by this distance.
+        """
+        distance_to_first_point = np.linalg.norm(
+            self.input.position_global - path_update[0]
+        )
+
+        car_to_first_point = path_update[0] - self.input.position_global
+
+        angle_to_first_point = vec_angle_between(
+            car_to_first_point, self.input.direction_global
+        )
+
+        # there is path behind car or start is close enough
+        if distance_to_first_point < 0.5 or angle_to_first_point > np.pi / 2:
+            return path_update
+
+        new_point = (
+            self.input.position_global
+            + normalize_last_axis(car_to_first_point[None])[0] * 0.2
+        )
+
+        path_update = np.row_stack((new_point, path_update))
+
+        return path_update
 
     def remove_path_behind_car(self, path_length_fixed: FloatArray) -> FloatArray:
         """
@@ -424,9 +481,12 @@ class CalculatePath:
     def run_path_calculation(self) -> Tuple[FloatArray, FloatArray]:
         """Calculate path."""
 
-        if len(self.input.left_cones) < 2 and len(self.input.right_cones) < 2:
-            # extract x, y from previously calculated path
-            center_along_match_connection = self.previous_paths[-1][:, 1:3]
+        if len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
+            if len(self.previous_paths) > 0:
+                # extract x, y from previously calculated path
+                center_along_match_connection = self.previous_paths[-1][:, 1:3]
+            else:
+                center_along_match_connection = self.calculate_trivial_path()
         else:
             (
                 side_to_use,
@@ -448,7 +508,14 @@ class CalculatePath:
             path_update_too_far_away
         )
 
-        path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
+        try:
+            path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
+        except ValueError:
+            # there is a bug with the path extrapolation which leads to the spline
+            # fit failing, in this case we just use the previous path
+            path_parameterization = self.do_all_mpc_parameter_calculations(
+                self.previous_paths[-1][:, 1:3]
+            )
 
         self.previous_paths.append(path_parameterization)
 

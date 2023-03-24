@@ -129,3 +129,17 @@ dmypy.json
 .pyre/
 
 .vscode/
+
+frames/
+
+*.mp4
+
+.ruff_cache/
+
+*.gif
+
+fsd_path_planning/demo/*.json
+
+media/
+
+*.ipynb

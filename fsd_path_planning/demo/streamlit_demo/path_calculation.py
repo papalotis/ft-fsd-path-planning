@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+
 from fsd_path_planning import MissionTypes
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
 from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
@@ -46,7 +47,7 @@ def show_base_points(
         right_base_points.append(right_cone)
 
     middle_array = np.array(middle)
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -93,16 +94,28 @@ def run() -> None:
         st.session_state.track_configuration, do_shuffle=False
     )
 
-    matching = create_default_cone_matching(MissionTypes.trackdrive)
+    use_match_result = st.checkbox(
+        "Use previous match results",
+        value=st.session_state.track_configuration == st.session_state.match_track,
+        help="When the same track in the demo is picked for matching and path calculation, the matching results can be used for path calculation. If set to false, the full configuration is used for path calculation.",
+        disabled=st.session_state.track_configuration != st.session_state.match_track,
+    )
 
-    matching.set_new_input(ConeMatchingInput(cones_by_type, position, direction))
+    if not use_match_result:
+        matching = create_default_cone_matching(MissionTypes.trackdrive)
+        matching.set_new_input(ConeMatchingInput(cones_by_type, position, direction))
 
-    (
-        left_cones,
-        right_cones,
-        left_to_right_index,
-        right_to_left_index,
-    ) = matching.run_cone_matching()
+        (
+            left_cones,
+            right_cones,
+            left_to_right_index,
+            right_to_left_index,
+        ) = matching.run_cone_matching()
+    else:
+        left_cones = st.session_state["left_with_virtual"]
+        right_cones = st.session_state["right_with_virtual"]
+        left_to_right_index = st.session_state["left_to_right_matches"]
+        right_to_left_index = st.session_state["right_to_left_matches"]
 
     pathing = create_default_pathing(MissionTypes.trackdrive)
     desired_path_length = st.slider(
@@ -137,8 +150,8 @@ def run() -> None:
     final_path, path_update = pathing.run_path_calculation()
 
     cone_by_type_w_virtual = [np.zeros((0, 2)) for _ in ConeTypes]
-    cone_by_type_w_virtual[ConeTypes.YELLOW] = left_cones
-    cone_by_type_w_virtual[ConeTypes.BLUE] = right_cones
+    cone_by_type_w_virtual[ConeTypes.LEFT] = left_cones
+    cone_by_type_w_virtual[ConeTypes.RIGHT] = right_cones
 
     st.markdown(
         """
@@ -148,7 +161,7 @@ def run() -> None:
     middle between the cones and their matches.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -158,7 +171,7 @@ def run() -> None:
         do_show=False,
     )
 
-    show_base_points(right_to_left_index, position, direction, cone_by_type_w_virtual)
+    show_base_points(left_to_right_index, position, direction, cone_by_type_w_virtual)
 
     st.markdown(
         """
@@ -169,7 +182,7 @@ def run() -> None:
     with much finer resolution.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,
@@ -207,7 +220,7 @@ def run() -> None:
     the second derivative to smooth it out.
     """
     )
-
+    plt.subplots()
     visualize_configuration(
         position,
         direction,

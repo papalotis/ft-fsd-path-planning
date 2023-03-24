@@ -13,7 +13,9 @@ from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath as CalculatePath,
-)  # for reexport
+)
+
+# for reexport
 from fsd_path_planning.calculate_path.skidpad_calculate_path import SkidpadCalculatePath
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching as ConeMatching,
@@ -28,17 +30,15 @@ def get_cone_sorting_config(
     mission: MissionTypes,  # pylint: disable=unused-argument
 ) -> KwargsType:
     """Create cone sorting kwargs."""
+
     return dict(
-        max_n_neighbors=3,
-        max_dist=11,
-        max_dist_to_first=8,
-        max_range=30,
-        max_angle=(np.pi / 50) * 49,
-        max_length=15,
-        max_length_backwards=5,
-        max_backwards_index=3,
+        max_n_neighbors=5,
+        max_dist=6.5,
+        max_dist_to_first=6.0,
+        max_length=12,
         threshold_directional_angle=np.deg2rad(40),
-        threshold_absolute_angle=np.deg2rad(70),
+        threshold_absolute_angle=np.deg2rad(65),
+        use_unknown_cones=True,
     )
 
 
@@ -69,7 +69,7 @@ def create_default_pathing(mission: MissionTypes) -> CalculatePath:
         configured for
 
     Returns:
-        path_calculation: The created pathing instance
+        The created path calculation instance
     """
     path_calculation_kwargs = get_path_calculation_config(mission)
     cone_fitting_kwargs = get_cone_fitting_config(mission)

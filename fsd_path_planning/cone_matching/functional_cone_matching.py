@@ -8,106 +8,29 @@ Project: fsd_path_planning
 """
 
 
-from itertools import chain
 from typing import Literal, Tuple, cast
 
 import numpy as np
+from icecream import ic  # pylint: disable=unused-import
+
+from fsd_path_planning.cone_matching.match_directions import (
+    calculate_match_search_direction,
+)
+from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     my_cdist_sq_euclidean,
-    normalize,
+    my_njit,
     rotate,
+    trace_angles_between,
     vec_angle_between,
 )
-from icecream import ic  # pylint: disable=unused-import
 
 ic = lambda x: x  # pylint: disable=invalid-name
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 
-if True:
-    from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-        number_of_intersections_in_trace,
-    )
-
-
-def calculate_match_search_direction(
-    cones: FloatArray,
-    cone_type: ConeTypes,
-) -> FloatArray:
-    """
-    Calculate the direction where the cones match should be. This is the direction
-    perpendicular to the vector which points from the previous cone to the next cone.
-
-    For the first and last cone the direction is perpendicular the vector from the
-    next/last cone.
-    """
-    number_of_cones = len(cones)
-
-    assert number_of_cones > 1
-    rotation_angle = np.pi / 2 if cone_type == ConeTypes.RIGHT else -np.pi / 2
-
-    if number_of_cones >= 3:
-        # (N-2, 1)
-        configurations_end = np.arange(number_of_cones - 2)[:, None]
-        # (N-2, 1)
-        configurations_start = configurations_end + 2
-        # (N-2, 2)
-        configurations = np.hstack([configurations_start, configurations_end])
-
-        directions = np.squeeze(get_configurations_diff(cones, configurations))
-        directions = np.atleast_2d(directions)
-
-        mask_distance_too_large = np.linalg.norm(directions, axis=1) > 12
-
-        mask_next_together = np.column_stack(
-            [mask_distance_too_large[:-1], mask_distance_too_large[1:]]
-        )
-        mask_next_together = np.where(np.all(mask_next_together, axis=1))[0] + 2
-
-        if len(mask_next_together) > 0:
-            idx_start = chain([0], mask_next_together)
-            idx_end = chain(mask_next_together, [number_of_cones])
-
-            directions_list: list[FloatArray] = []
-
-            for idx_start_, idx_end_ in zip(idx_start, idx_end):
-                result = calculate_match_search_direction(
-                    cones[idx_start_:idx_end_], cone_type
-                )
-                directions_list.append(result)
-
-            directions = np.row_stack(directions_list)
-            return directions
-
-        directions_rotated_normalized = rotate(normalize(directions), rotation_angle)
-        directions_rotated_normalized = np.atleast_2d(directions_rotated_normalized)
-
-    else:
-        directions_rotated_normalized = np.zeros((0, 2))
-
-    direction_first_to_second = normalize(cones[1] - cones[0])
-    direction_second_last_to_last = normalize(cones[-1] - cones[-2])
-    search_direction_first_normalized = rotate(
-        direction_first_to_second, rotation_angle
-    )
-    search_direction_last_normalized = rotate(
-        direction_second_last_to_last, rotation_angle
-    )
-
-    all_search_directions = np.row_stack(
-        [
-            search_direction_first_normalized,
-            directions_rotated_normalized,
-            search_direction_last_normalized,
-        ]
-    )
-
-    return all_search_directions
-
-
+@my_njit
 def cones_in_range_and_pov_mask(
     cones: FloatArray,
     search_directions: FloatArray,
@@ -123,20 +46,21 @@ def cones_in_range_and_pov_mask(
     """
     search_range_squared = search_range * search_range
 
-    # (M, 2), (N, 2) -> (M,N)
+    # # (M, 2), (N, 2) -> (M,N)
     dist_from_cones_to_other_side_squared: FloatArray = my_cdist_sq_euclidean(
         other_side_cones, cones
     )
+
     # (M, N)
     dist_mask: BoolArray = dist_from_cones_to_other_side_squared < search_range_squared
 
     # (M, 1, 2) - (N, 2) -> (M, N, 2)
-    vec_from_cones_to_other_side = other_side_cones[:, None] - cones
+    vec_from_cones_to_other_side = np.expand_dims(other_side_cones, axis=1) - cones
 
     # (N, 2) -> (M, N, 2)
     search_directions_broadcasted: FloatArray = np.broadcast_to(
         search_directions, vec_from_cones_to_other_side.shape
-    )
+    ).copy()  # copy is needed in numba, otherwise a reshape error occurs
 
     # (M, N, 2), (M, N, 2) -> (M, N)
     angles_to_car = vec_angle_between(
@@ -296,6 +220,7 @@ def insert_virtual_cones_to_existing(
     """
     Combine the virtual with the real cones into a single array.
     """
+    # print(locals())
     existing_cones, cones_to_insert = (
         (other_side_cones, other_side_virtual_cones)
         if len(other_side_cones) > len(other_side_virtual_cones)
@@ -352,6 +277,15 @@ def insert_virtual_cones_to_existing(
             axis=0,
         )
 
+        history.append(existing_cones.copy())
+
+    angles = trace_angles_between(existing_cones)
+    # print(np.rad2deg(angles))
+    mask_low_angles = angles < np.deg2rad(85)
+    mask_low_angles = np.concatenate([[False], mask_low_angles, [False]])
+
+    if mask_low_angles.any():
+        existing_cones = existing_cones[:][~mask_low_angles]
         history.append(existing_cones.copy())
 
     return existing_cones, history
@@ -685,4 +619,12 @@ def calculate_virtual_cones_for_both_sides(
         right_to_left_matches,
     )
 
+    return left_result, right_result
+    return left_result, right_result
+
+    return left_result, right_result
+    return left_result, right_result
+    return left_result, right_result
+
+    return left_result, right_result
     return left_result, right_result
