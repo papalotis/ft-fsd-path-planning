@@ -1,4 +1,3 @@
-from itertools import chain
 from pathlib import Path
 
 import streamlit as st
@@ -51,7 +50,7 @@ with st.sidebar:
     page_function = STRING_TO_FUNCTION[st.radio("Mode", STRING_TO_FUNCTION)]
 
     st.markdown("---")
-    st.session_state.track_configuration = st.selectbox(
+    st.session_state.track_configuration = st.radio(
         "Configuration",
         (
             "Straight",
