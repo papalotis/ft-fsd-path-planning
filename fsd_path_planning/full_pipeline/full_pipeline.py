@@ -9,22 +9,22 @@ Description: A class that runs the whole path planning pipeline.
 
 Project: fsd_path_planning
 """
-from typing import List, Union
+from typing import Any, List, Union
 
 import numpy as np
 
-from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
-from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
+from fsd_path_planning.calculate_path.core_calculate_path import \
+    PathCalculationInput
+from fsd_path_planning.cone_matching.core_cone_matching import \
+    ConeMatchingInput
 from fsd_path_planning.config import (
     create_default_cone_matching_with_non_monotonic_matches,
-    create_default_pathing,
-    create_default_sorting,
-)
-from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput,
-)
+    create_default_pathing, create_default_sorting)
+from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import \
+    ConeSortingInput
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.math_utils import unit_2d_vector_from_angle
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
 
@@ -37,11 +37,21 @@ class PathPlanner:
         )
         self.pathing = create_default_pathing(mission)
 
+    def _convert_direction_to_array(self, direction: Any) -> FloatArray:
+        direction = np.squeeze(np.array(direction))
+        if direction.shape == (2,):
+            return direction
+
+        if direction.shape in [(1,), ()]:
+            return unit_2d_vector_from_angle(direction)
+
+        raise ValueError("direction must be a float or a 2 element array")
+
     def calculate_path_in_global_frame(
         self,
         cones: List[FloatArray],
         vehicle_position: FloatArray,
-        vehicle_direction: FloatArray,
+        vehicle_direction: Union[FloatArray, float],
         return_intermediate_results: bool = False,
     ) -> Union[
         FloatArray,
@@ -71,6 +81,8 @@ class PathPlanner:
             A Nx4 array of waypoints in global frame. Each waypoint is a 4 element array
             (spline_parameter, path_x, path_y, curvature).
         """
+        vehicle_direction = self._convert_direction_to_array(vehicle_direction)
+
         noprint = True
 
         # run cone sorting
