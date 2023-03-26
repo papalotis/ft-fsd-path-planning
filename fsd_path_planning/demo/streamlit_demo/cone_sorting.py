@@ -435,6 +435,7 @@ demo you can choose whether to use the color information or not.
         "Maximum distance",
         2.0,
         10.0,
+        5.0,
         help="Maximum distance for a cone to be considered a starting cone",
     )
 

@@ -12,20 +12,22 @@ from typing import List, Tuple, cast
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 
-from fsd_path_planning.calculate_path.path_calculator_helpers import \
-    PathCalculatorHelpers
-from fsd_path_planning.calculate_path.path_parameterization import \
-    PathParameterizer
+from fsd_path_planning.calculate_path.path_calculator_helpers import (
+    PathCalculatorHelpers,
+)
+from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (angle_from_2d_vector,
-                                                circle_fit,
-                                                normalize_last_axis, rotate,
-                                                trace_distance_to_next,
-                                                unit_2d_vector_from_angle,
-                                                vec_angle_between)
-from fsd_path_planning.utils.spline_fit import (SplineEvaluator,
-                                                SplineFitterFactory)
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    circle_fit,
+    normalize_last_axis,
+    rotate,
+    trace_distance_to_next,
+    unit_2d_vector_from_angle,
+    vec_angle_between,
+)
+from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 
 SplineEvalByType = List[SplineEvaluator]
 

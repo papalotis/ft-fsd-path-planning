@@ -13,15 +13,16 @@ from typing import Any, List, Union
 
 import numpy as np
 
-from fsd_path_planning.calculate_path.core_calculate_path import \
-    PathCalculationInput
-from fsd_path_planning.cone_matching.core_cone_matching import \
-    ConeMatchingInput
+from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
+from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
 from fsd_path_planning.config import (
     create_default_cone_matching_with_non_monotonic_matches,
-    create_default_pathing, create_default_sorting)
-from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import \
-    ConeSortingInput
+    create_default_pathing,
+    create_default_sorting,
+)
+from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
+    ConeSortingInput,
+)
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import unit_2d_vector_from_angle
