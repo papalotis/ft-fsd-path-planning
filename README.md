@@ -58,6 +58,16 @@ This will also install the dependencies needed to run the demo (cli, matplotlib,
 pip install "fsd-path-planning @ git+https://git@github.com/papalotis/ft-fsd-path-planning.git"
 ```
 
+You can also clone the repository and install the package locally:
+
+```bash
+git clone https://github.com/papalotis/ft-fsd-path-planning.git
+cd ft-fsd-path-planning
+pip install -e .[demo]
+```
+
+You can again skip the `[demo]` extra if you don't want to install the demo dependencies.
+
 ## Performance
 
 The algorithm is fast enough to run in real-time on a Jetson Xavier AGX 16GB on MAXN power mode. On that platform, the algorithm takes on average around 10ms for the entire algorithm to run from start to finish. You can run the demo to get an idea of the performance on your hardware.
