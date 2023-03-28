@@ -110,3 +110,6 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 ```
 
 Take a look at this notebook for a more detailed example: [simple_application.ipynb](https://github.com/papalotis/ft-fsd-path-planning/blob/main/fsd_path_planning/demo/simple_application.ipynb)
+
+There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
+At FaSTTUBe we create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
