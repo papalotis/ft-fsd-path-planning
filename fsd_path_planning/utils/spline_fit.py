@@ -5,7 +5,7 @@ Description:
 
 Project: fsd_path_planning
 """
-
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 

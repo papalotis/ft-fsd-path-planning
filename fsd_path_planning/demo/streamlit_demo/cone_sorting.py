@@ -1,3 +1,4 @@
+from __future__ import annotations
 from itertools import zip_longest
 from typing import Optional
 

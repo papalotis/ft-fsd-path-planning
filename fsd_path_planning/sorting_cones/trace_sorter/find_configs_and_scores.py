@@ -5,6 +5,7 @@ Description: This file provides the core algorithm for sorting a trace of cones 
 plausible track
 Project: fsd_path_planning
 """
+from __future__ import annotations
 import sys
 from typing import Optional, cast
 

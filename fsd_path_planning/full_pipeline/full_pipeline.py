@@ -9,6 +9,7 @@ Description: A class that runs the whole path planning pipeline.
 
 Project: fsd_path_planning
 """
+from __future__ import annotations
 from typing import Any, List, Union
 
 import numpy as np

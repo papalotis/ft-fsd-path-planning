@@ -6,6 +6,7 @@ Class for the flow control of the cone sorting calculation.
 Description: Entry point for Pathing/ConeSorting
 Project: fsd_path_planning
 """
+from __future__ import annotations
 from typing import Iterable, List, Optional, cast
 
 import numpy as np

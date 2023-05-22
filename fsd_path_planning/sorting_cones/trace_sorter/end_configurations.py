@@ -4,6 +4,7 @@
 Description: This File calculates all the possible paths
 Project: fsd_path_planning
 """
+from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np

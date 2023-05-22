@@ -4,7 +4,7 @@
 Description: Combines the results of the search along the left and right traces
 Project: fsd_path_planning
 """
-
+from __future__ import annotations
 from typing import Optional
 
 import numpy as np
@@ -41,7 +41,7 @@ def calc_final_configs_for_left_and_right(
     n_non_none = sum(x is not None for x in (left_scores, right_scores))
 
     # if both sides are None, we have no valid configuration
-    empty_config = np.zeros(0, dtype=np.int)
+    empty_config = np.zeros(0, dtype=int)
     empty_result = (empty_config, empty_config)
 
     if n_non_none == 0:
@@ -72,7 +72,7 @@ def calc_final_configs_when_only_one_side_has_configs(
     left_configs: Optional[IntArray],
     right_configs: Optional[IntArray],
 ) -> tuple[IntArray, IntArray]:
-    empty_config = np.zeros(0, dtype=np.int)
+    empty_config = np.zeros(0, dtype=int)
 
     left_config_is_none = left_configs is None
     right_config_is_none = right_configs is None

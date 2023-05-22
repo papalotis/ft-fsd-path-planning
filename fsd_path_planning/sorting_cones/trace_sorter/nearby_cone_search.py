@@ -7,9 +7,10 @@ edge of the track, we do not want to see any cones to the right of them.
 
 Project: fsd_path_planning
 """
+from __future__ import annotations
 from collections import deque
 from sys import maxsize
-from typing import Optional
+from typing import Optional, Tuple, Dict
 
 import numpy as np
 
@@ -24,8 +25,8 @@ from fsd_path_planning.utils.math_utils import (
     vec_angle_between,
 )
 
-SEARCH_DIRECTIONS_CACHE_KEY_TYPE = tuple[int, int, int]
-SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
+SEARCH_DIRECTIONS_CACHE_KEY_TYPE = Tuple[int, int, int]
+SEARCH_DIRECTIONS_CACHE_TYPE = Dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
 
 
 # my_njit = lambda x: x  # for debugging only
@@ -110,8 +111,8 @@ def find_nearby_cones_for_idxs(
     return sorted_set_diff(all_idxs, idxs)
 
 
-ANGLE_MASK_CACHE_KEY_TYPE = tuple[tuple[int, int, int], int, int]
-ANGLE_MASK_CACHE_TYPE = dict[ANGLE_MASK_CACHE_KEY_TYPE, tuple[bool, bool]]
+ANGLE_MASK_CACHE_KEY_TYPE = Tuple[Tuple[int, int, int], int, int]
+ANGLE_MASK_CACHE_TYPE = Dict[ANGLE_MASK_CACHE_KEY_TYPE, Tuple[bool, bool]]
 
 
 @my_njit
