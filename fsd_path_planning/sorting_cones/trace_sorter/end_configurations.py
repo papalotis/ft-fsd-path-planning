@@ -533,10 +533,9 @@ def find_all_end_configurations(
         end_configurations = end_configurations[mask_keep]
 
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
-
     end_configurations = end_configurations[mask_length_is_atleast_3]
 
-    # remove last cone from config, only if the last cone not of the type we are sorting
+    # remove last cone from config if it is of unknown or orange type
     last_cone_in_each_config_idx = (
         np.argmax(end_configurations == -1, axis=1) - 1
     ) % end_configurations.shape[1]
@@ -546,13 +545,14 @@ def find_all_end_configurations(
     ]
 
     mask_last_cone_is_not_of_type = points[last_cone_in_each_config, 2] != cone_type
-    mask_config_has_over_3_cones = last_cone_in_each_config_idx > 2
 
-    mask_should_trim = mask_last_cone_is_not_of_type & mask_config_has_over_3_cones
+    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_last_cone_is_not_of_type]
 
-    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_should_trim]
+    end_configurations[mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked] = -1
 
-    end_configurations[mask_should_trim, last_cone_in_each_config_idx_masked] = -1
+    # keep only configs with at least 3 cones
+    mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
+    end_configurations = end_configurations[mask_length_is_atleast_3]
 
     # remove identical configs
     end_configurations = np.unique(end_configurations, axis=0)
