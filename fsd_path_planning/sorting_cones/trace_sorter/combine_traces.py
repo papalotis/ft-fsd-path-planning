@@ -5,6 +5,7 @@ Description: Combines the results of the search along the left and right traces
 Project: fsd_path_planning
 """
 from __future__ import annotations
+
 from typing import Optional
 
 import numpy as np

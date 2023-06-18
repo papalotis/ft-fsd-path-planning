@@ -10,6 +10,7 @@ Description: A class that runs the whole path planning pipeline.
 Project: fsd_path_planning
 """
 from __future__ import annotations
+
 from typing import Any, List, Union
 
 import numpy as np
@@ -21,9 +22,7 @@ from fsd_path_planning.config import (
     create_default_pathing,
     create_default_sorting,
 )
-from fsd_path_planning.sorting_cones.utils.cone_sorting_dataclasses import (
-    ConeSortingInput,
-)
+from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import unit_2d_vector_from_angle

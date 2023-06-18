@@ -8,9 +8,10 @@ edge of the track, we do not want to see any cones to the right of them.
 Project: fsd_path_planning
 """
 from __future__ import annotations
+
 from collections import deque
 from sys import maxsize
-from typing import Optional, Tuple, Dict
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 

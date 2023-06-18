@@ -6,6 +6,7 @@ plausible track
 Project: fsd_path_planning
 """
 from __future__ import annotations
+
 from typing import Optional, Tuple
 
 import numpy as np

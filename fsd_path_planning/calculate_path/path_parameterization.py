@@ -11,6 +11,10 @@ from dataclasses import dataclass
 from typing import Tuple, cast
 
 import numpy as np
+from icecream import ic  # pylint: disable=unused-import
+from scipy.ndimage import uniform_filter1d
+
+from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import (
     Numeric,
     angle_from_2d_vector,
@@ -19,9 +23,6 @@ from fsd_path_planning.utils.math_utils import (
     trace_distance_to_next,
 )
 from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
-from fsd_path_planning.types import FloatArray, IntArray
-from icecream import ic  # pylint: disable=unused-import
-from scipy.ndimage import uniform_filter1d
 
 
 @dataclass

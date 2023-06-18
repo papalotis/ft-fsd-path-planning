@@ -8,6 +8,7 @@ Project: fsd_path_planning
 """
 
 from __future__ import annotations
+
 from typing import Literal, Tuple, cast
 
 import numpy as np

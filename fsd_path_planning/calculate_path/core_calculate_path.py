@@ -7,6 +7,7 @@ Description: Last step in Pathing pipeline
 Project: fsd_path_planning
 """
 from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import List, Tuple, cast
 
