@@ -96,28 +96,11 @@ def run() -> None:
         st.session_state.track_configuration, do_shuffle=False
     )
 
-    use_match_result = st.checkbox(
-        "Use previous match results",
-        value=st.session_state.track_configuration == st.session_state.match_track,
-        help="When the same track in the demo is picked for matching and path calculation, the matching results can be used for path calculation. If set to false, the full configuration is used for path calculation.",
-        disabled=st.session_state.track_configuration != st.session_state.match_track,
-    )
-
-    if not use_match_result:
-        matching = create_default_cone_matching(MissionTypes.trackdrive)
-        matching.set_new_input(ConeMatchingInput(cones_by_type, position, direction))
-
-        (
-            left_cones,
-            right_cones,
-            left_to_right_index,
-            right_to_left_index,
-        ) = matching.run_cone_matching()
-    else:
-        left_cones = st.session_state["left_with_virtual"]
-        right_cones = st.session_state["right_with_virtual"]
-        left_to_right_index = st.session_state["left_to_right_matches"]
-        right_to_left_index = st.session_state["right_to_left_matches"]
+    
+    left_cones = st.session_state["left_with_virtual"]
+    right_cones = st.session_state["right_with_virtual"]
+    left_to_right_index = st.session_state["left_to_right_matches"]
+    right_to_left_index = st.session_state["right_to_left_matches"]
 
     pathing = create_default_pathing(MissionTypes.trackdrive)
     desired_path_length = st.slider(

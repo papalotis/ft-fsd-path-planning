@@ -475,17 +475,9 @@ def run() -> None:
         st.session_state.track_configuration, do_shuffle=False
     )
 
-    use_sort_result = st.checkbox(
-        "Use previous sort results",
-        key="use_sort_results",
-        value=st.session_state.track_configuration == st.session_state.sort_track,
-        help="When the same track in the demo is picked for sorting and matching, the sorting results can be used for matching. If set to false, the full configuration is used for matching.",
-        disabled=st.session_state.track_configuration != st.session_state.sort_track,
-    )
-
-    if use_sort_result:
-        cones_by_type[ConeTypes.LEFT] = st.session_state.left_sorted_cones
-        cones_by_type[ConeTypes.RIGHT] = st.session_state.right_sorted_cones
+   
+    cones_by_type[ConeTypes.LEFT] = st.session_state.left_sorted_cones
+    cones_by_type[ConeTypes.RIGHT] = st.session_state.right_sorted_cones
 
     plt.subplots()
     visualize_configuration(

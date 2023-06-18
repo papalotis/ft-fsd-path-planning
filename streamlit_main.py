@@ -45,11 +45,6 @@ STRING_TO_FUNCTION = {
 
 
 with st.sidebar:
-    st.markdown("# Path Planning")
-
-    page_function = STRING_TO_FUNCTION[st.radio("Mode", STRING_TO_FUNCTION)]
-
-    st.markdown("---")
     st.session_state.track_configuration = st.radio(
         "Configuration",
         (
@@ -64,5 +59,7 @@ with st.sidebar:
         ),
     )
 
-
-page_function()
+tabs = st.tabs(list(STRING_TO_FUNCTION.keys()))
+for tab, page_function in zip(tabs, STRING_TO_FUNCTION.values()):
+    with tab:
+        page_function()
