@@ -92,15 +92,14 @@ class SplineFitterFactory:
 
     def fit(self, trace: np.ndarray, periodic: bool = False) -> SplineEvaluator:
         """
-        Fit a trace and returns a closure that can evaluate the fitted spline at
-        different positions. The maximal spline degree is 2.
+        Fit a trace and returns a SplineEvaluator that can evaluate the fitted spline at
+        different positions.
 
         Args:
             trace (np.ndarray): The trace to fit
 
         Returns:
-            Callable[[int, float]: A closure that when called evalues
-            the fitted spline on the provided positions.
+            A instance of SplineEvaluator that can be used to evaluate the spline
         """
         if len(trace) < 2:
             return NullSplineEvaluator(
