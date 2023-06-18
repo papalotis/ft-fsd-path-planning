@@ -109,4 +109,3 @@ def calc_scores_and_end_configurations(
     all_end_configurations = cast(IntArray, all_end_configurations[costs_sort_idx])
 
     return (costs, all_end_configurations, history)
-    return (costs, all_end_configurations, history)
