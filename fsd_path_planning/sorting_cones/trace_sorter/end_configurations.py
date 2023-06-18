@@ -546,9 +546,13 @@ def find_all_end_configurations(
 
     mask_last_cone_is_not_of_type = points[last_cone_in_each_config, 2] != cone_type
 
-    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_last_cone_is_not_of_type]
+    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[
+        mask_last_cone_is_not_of_type
+    ]
 
-    end_configurations[mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked] = -1
+    end_configurations[
+        mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked
+    ] = -1
 
     # keep only configs with at least 3 cones
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
