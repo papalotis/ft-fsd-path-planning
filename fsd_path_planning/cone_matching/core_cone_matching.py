@@ -30,8 +30,8 @@ class ConeMatchingInput:
     sorted_cones: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
-    slam_position: FloatArray = np.zeros(2)
-    slam_direction: FloatArray = np.zeros(2)
+    slam_position: FloatArray = field(default_factory=lambda: np.zeros((2)))
+    slam_direction: FloatArray = field(default_factory=lambda: np.zeros((2)))
 
 
 @dataclass
@@ -42,8 +42,8 @@ class ConeMatchingState:
     max_search_range: float
     max_search_angle: float
     matches_should_be_monotonic: bool
-    sorted_left: FloatArray = field(default=np.zeros((0, 2)))
-    sorted_right: FloatArray = field(default=np.zeros((0, 2)))
+    sorted_left: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
+    sorted_right: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
     position_global: FloatArray = field(init=False)
     direction_global: FloatArray = field(init=False)
 

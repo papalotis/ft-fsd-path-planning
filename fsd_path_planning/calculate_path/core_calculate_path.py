@@ -39,12 +39,12 @@ class PathCalculationInput:
     """Dataclass holding calculation variables."""
 
     # pylint: disable=too-many-instance-attributes
-    left_cones: FloatArray = field(default=np.zeros((0, 2)))
-    right_cones: FloatArray = field(default=np.zeros((0, 2)))
-    left_to_right_matches: IntArray = field(default=np.zeros(0, dtype=int))
-    right_to_left_matches: IntArray = field(default=np.zeros(0, dtype=int))
-    position_global: FloatArray = np.zeros(2)
-    direction_global: FloatArray = np.array([1, 0])
+    left_cones: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
+    right_cones: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
+    left_to_right_matches: IntArray = field(default_factory=lambda: np.zeros(0, dtype=int))
+    right_to_left_matches: IntArray = field(default_factory=lambda: np.zeros(0, dtype=int))
+    position_global: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
+    direction_global: FloatArray = field(default_factory=lambda: np.array([1, 0]))
 
 
 @dataclass

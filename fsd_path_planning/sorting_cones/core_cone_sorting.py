@@ -25,8 +25,8 @@ class ConeSortingInput:
     slam_cones: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
-    slam_position: FloatArray = np.zeros(2)
-    slam_direction: FloatArray = np.zeros(2)
+    slam_position: FloatArray = field(default_factory=lambda: np.zeros((2)))
+    slam_direction: FloatArray = field(default_factory=lambda: np.zeros((2)))
 
 
 @dataclass
@@ -40,11 +40,13 @@ class ConeSortingState:
     max_dist_to_first: float
     max_length: int
     use_unknown_cones: bool
-    position_global: FloatArray = np.zeros((2,))
-    direction_global: FloatArray = np.array([0, 1.0])
+    position_global: FloatArray = field(default_factory=lambda: np.zeros(2))
+    direction_global: FloatArray = field(default_factory=lambda: np.array([0, 1.0]))
     cones_by_type_array: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
+
+    
 
 
 class ConeSorting:

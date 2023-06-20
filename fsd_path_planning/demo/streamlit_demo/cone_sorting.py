@@ -35,12 +35,14 @@ from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate
 from fsd_path_planning.utils.utils import Timer
 
 
+
 def get_points_on_ellipse(thetas: FloatArray, a: float, b: float) -> np.ndarray:
     x = a * np.cos(thetas)
     y = b * np.sin(thetas)
     return np.column_stack([x, y])
 
 
+@st.cache_data
 def show_starting_cone(
     position: FloatArray,
     direction: FloatArray,
@@ -93,9 +95,11 @@ def show_starting_cone(
     return out
 
 
+@st.cache_data
 def plot_adjacency_matrix(
-    adjacency_matrix: BoolArray, cones: FloatArray, ax: Axes
+    adjacency_matrix: BoolArray, cones: FloatArray
 ) -> None:
+    ax = plt.gca() 
     ax.axis("equal")
     ax.set_xticks([])
     ax.set_yticks([])
@@ -106,7 +110,7 @@ def plot_adjacency_matrix(
             if is_neighbor:
                 ax.plot(*np.array([cone, neighbor]).T, "-k", alpha=0.2)
 
-
+@st.cache_data
 def show_adjacency_matrix(
     cones_by_type: list[FloatArray],
     start_indices: list[Optional[int]],
@@ -129,13 +133,14 @@ def show_adjacency_matrix(
         adjacency_matrices[cone_type] = adjacency_matrix
 
         ax_to_use = ax[i] if show_two_plots else ax
-        plot_adjacency_matrix(adjacency_matrix, cones_flat, ax_to_use)
+        plt.sca(ax_to_use)
+        plot_adjacency_matrix(adjacency_matrix, cones_flat)
 
     st.pyplot(fig)  # type: ignore
 
     return adjacency_matrices
 
-
+@st.cache_data
 def show_graph_search(
     cones_by_type: list[FloatArray],
     adjacency_matrices: list[Optional[BoolArray]],
@@ -240,7 +245,7 @@ def show_graph_search(
 
     return all_end_configs
 
-
+@st.cache_data
 def show_costs(
     cones_by_type: list[Optional[FloatArray]],
     end_configurations_by_type: list[Optional[IntArray]],
