@@ -41,8 +41,12 @@ class PathCalculationInput:
     # pylint: disable=too-many-instance-attributes
     left_cones: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
     right_cones: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
-    left_to_right_matches: IntArray = field(default_factory=lambda: np.zeros(0, dtype=int))
-    right_to_left_matches: IntArray = field(default_factory=lambda: np.zeros(0, dtype=int))
+    left_to_right_matches: IntArray = field(
+        default_factory=lambda: np.zeros(0, dtype=int)
+    )
+    right_to_left_matches: IntArray = field(
+        default_factory=lambda: np.zeros(0, dtype=int)
+    )
     position_global: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
     direction_global: FloatArray = field(default_factory=lambda: np.array([1, 0]))
 
@@ -93,6 +97,9 @@ class CalculatePath:
         )
 
         self.previous_paths = []
+        self.mpc_paths = []
+        self.path_is_trivial_list = []
+        self.path_updates = []
 
     def calculate_initial_path(self) -> FloatArray:
         """
@@ -521,6 +528,7 @@ class CalculatePath:
                 self.previous_paths[-1][:, 1:3]
             )
 
-        self.previous_paths.append(path_parameterization)
+        self.store_paths(path_update, path_parameterization, False)
+        self.previous_paths = self.previous_paths[-10:] + [path_parameterization]
 
         return path_parameterization, center_along_match_connection
