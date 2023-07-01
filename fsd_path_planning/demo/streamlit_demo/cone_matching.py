@@ -28,11 +28,19 @@ from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
 def naive_search_directions(
     left_cones: FloatArray, right_cones: FloatArray
 ) -> tuple[FloatArray, FloatArray]:
-    left_rotated = rotate(normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2)
-    right_rotated = rotate(normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2)
+    
+    if len(left_cones) > 0:
+        left_rotated = rotate(normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2)
+        left_rotated = np.row_stack((left_rotated, left_rotated[-1]))
+    else:
+        left_rotated = np.zeros((0, 2))
 
-    left_rotated = np.row_stack((left_rotated, left_rotated[-1]))
-    right_rotated = np.row_stack((right_rotated, right_rotated[-1]))
+    if len(right_cones) > 0:
+        right_rotated = rotate(normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2)
+        right_rotated = np.row_stack((right_rotated, right_rotated[-1]))
+    else:
+        right_rotated = np.zeros((0, 2))
+
 
     return left_rotated, right_rotated
 
@@ -475,7 +483,6 @@ def run() -> None:
         st.session_state.track_configuration, do_shuffle=False
     )
 
-   
     cones_by_type[ConeTypes.LEFT] = st.session_state.left_sorted_cones
     cones_by_type[ConeTypes.RIGHT] = st.session_state.right_sorted_cones
 

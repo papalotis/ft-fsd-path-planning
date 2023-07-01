@@ -35,14 +35,13 @@ from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate
 from fsd_path_planning.utils.utils import Timer
 
 
-
 def get_points_on_ellipse(thetas: FloatArray, a: float, b: float) -> np.ndarray:
     x = a * np.cos(thetas)
     y = b * np.sin(thetas)
     return np.column_stack([x, y])
 
 
-@st.cache_data
+#@st.cache_data
 def show_starting_cone(
     position: FloatArray,
     direction: FloatArray,
@@ -95,11 +94,9 @@ def show_starting_cone(
     return out
 
 
-@st.cache_data
-def plot_adjacency_matrix(
-    adjacency_matrix: BoolArray, cones: FloatArray
-) -> None:
-    ax = plt.gca() 
+#@st.cache_data
+def plot_adjacency_matrix(adjacency_matrix: BoolArray, cones: FloatArray) -> None:
+    ax = plt.gca()
     ax.axis("equal")
     ax.set_xticks([])
     ax.set_yticks([])
@@ -110,7 +107,8 @@ def plot_adjacency_matrix(
             if is_neighbor:
                 ax.plot(*np.array([cone, neighbor]).T, "-k", alpha=0.2)
 
-@st.cache_data
+
+#@st.cache_data
 def show_adjacency_matrix(
     cones_by_type: list[FloatArray],
     start_indices: list[Optional[int]],
@@ -140,7 +138,8 @@ def show_adjacency_matrix(
 
     return adjacency_matrices
 
-@st.cache_data
+
+#@st.cache_data
 def show_graph_search(
     cones_by_type: list[FloatArray],
     adjacency_matrices: list[Optional[BoolArray]],
@@ -245,7 +244,8 @@ def show_graph_search(
 
     return all_end_configs
 
-@st.cache_data
+
+#@st.cache_data
 def show_costs(
     cones_by_type: list[Optional[FloatArray]],
     end_configurations_by_type: list[Optional[IntArray]],
@@ -300,7 +300,7 @@ def show_costs(
         mx, Mx = np.min(cones_flat[:, 0]) - border, np.max(cones_flat[:, 0]) + border
         my, My = np.min(cones_flat[:, 1]) - border, np.max(cones_flat[:, 1]) + border
 
-        sm, sM = max([(mx, Mx), (my, My)], key=lambda x: x[1] - x[0])
+        sm, sM = max([(mx, Mx), (my, My)], key=lambda x: abs(x[1] - x[0]))
 
         best_config = end_configurations[idx_sort_cost[0]]
         final_out[cone_type] = cones_flat[best_config[best_config != -1]][:, :2]
@@ -331,8 +331,8 @@ def show_costs(
                 for i, (x, y, cone_t) in enumerate(cones_flat[configuration], start=1):
                     ax.text(x - text_offset, y - text_offset, str(i))
 
-                ax.set_xlim(sm, sM)
-                ax.set_ylim(sm, sM)
+                # ax.set_xlim(sm, sM)
+                # ax.set_ylim(sm, sM)
                 ax.set_aspect("equal")
             else:
                 ax.spines["top"].set_visible(False)

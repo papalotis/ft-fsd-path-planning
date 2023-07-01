@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -207,6 +208,74 @@ def get_cones_for_configuration(
             ]
         )
         cones_right = np.zeros((0, 2))
+    elif configuration == "Custom":
+        json_text = str(st.session_state["json_text"])
+            
+
+        with st.sidebar:
+            if len(json_text) == 0:
+                st.info(
+                    "Enter a JSON string in the sidebar to load a custom configuration."
+                )
+                st.stop()
+
+            try:
+                json_dict = json.loads(json_text)
+            except json.JSONDecodeError as e:
+                st.error(
+                    "The JSON string could not be parsed.\n\n Error message: " + str(e)
+                )
+                st.stop()
+
+            if not isinstance(json_dict, dict):
+                st.error("The JSON string does not represent a dict.")
+                st.stop()
+
+            required_keys = [
+                "vehicle_position",
+                "vehicle_direction",
+                "cones_left",
+                "cones_right",
+            ]
+            missing_keys = [key for key in required_keys if key not in json_dict]
+            if len(missing_keys) > 0:
+                st.error(
+                    "The JSON string is missing the following keys: "
+                    + ", ".join(missing_keys)
+                )
+
+            vehicle_position = np.array(json_dict["vehicle_position"])
+            vehicle_direction = np.array(json_dict["vehicle_direction"])
+            cones_left = np.array(json_dict["cones_left"])
+            cones_right = np.array(json_dict["cones_right"])
+
+            assert vehicle_position.shape == (
+                2,
+            ), "The vehicle position should be a list of two numbers."
+            assert vehicle_direction.shape == (
+                2,
+            ), "The vehicle direction should be a list of two numbers."
+            assert (
+                cones_left.ndim == 2
+            ), "The cones should be a list of lists of two numbers."
+            assert (
+                cones_left.shape[1] == 2
+            ), "The cones should be a list of lists of two numbers."
+            assert (
+                cones_left.shape[0] > 0
+            ), "The cones should be a list of lists of two numbers."
+            assert (
+                cones_right.ndim == 2
+            ), "The cones should be a list of lists of two numbers."
+            assert (
+                cones_right.shape[1] == 2
+            ), "The cones should be a list of lists of two numbers."
+            assert (
+                cones_right.shape[0] > 0
+            ), "The cones should be a list of lists of two numbers."
+
+    else:
+        raise ValueError("Unknown configuration")
 
     # shuffle
     if do_shuffle:

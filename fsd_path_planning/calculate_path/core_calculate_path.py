@@ -458,7 +458,7 @@ class CalculatePath:
             cum_dist > self.scalars.mpc_path_length
         )
         if len(mask_cum_distance_over_mcp_path_length) <= 1:
-            return self.mpc_paths[-1]
+            return self.previous_paths[-1] 
 
         first_point_over_distance = cast(
             int, mask_cum_distance_over_mcp_path_length.argmax()

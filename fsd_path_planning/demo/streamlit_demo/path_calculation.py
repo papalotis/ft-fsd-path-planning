@@ -96,7 +96,6 @@ def run() -> None:
         st.session_state.track_configuration, do_shuffle=False
     )
 
-    
     left_cones = st.session_state["left_with_virtual"]
     right_cones = st.session_state["right_with_virtual"]
     left_to_right_index = st.session_state["left_to_right_matches"]

@@ -46,8 +46,6 @@ class ConeSortingState:
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
 
-    
-
 
 class ConeSorting:
     """Class that takes all Pathing/ConeSorting responsibilities."""
