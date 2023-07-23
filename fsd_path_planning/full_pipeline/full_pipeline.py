@@ -11,7 +11,7 @@ Project: fsd_path_planning
 """
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List, Union, Optional
 
 import numpy as np
 
@@ -37,6 +37,7 @@ class PathPlanner:
             mission
         )
         self.pathing = create_default_pathing(mission)
+        self.global_path: Optional[FloatArray] = None
 
     def _convert_direction_to_array(self, direction: Any) -> FloatArray:
         direction = np.squeeze(np.array(direction))
@@ -47,6 +48,9 @@ class PathPlanner:
             return unit_2d_vector_from_angle(direction)
 
         raise ValueError("direction must be a float or a 2 element array")
+
+    def set_global_path(self, global_path):
+        self.global_path = global_path
 
     def calculate_path_in_global_frame(
         self,
@@ -120,6 +124,7 @@ class PathPlanner:
                 right_to_left_match,
                 vehicle_position,
                 vehicle_direction,
+                self.global_path,
             )
             self.pathing.set_new_input(path_calculation_input)
             final_path, _ = self.pathing.run_path_calculation()

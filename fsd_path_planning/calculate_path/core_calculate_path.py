@@ -9,7 +9,7 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Tuple, cast
+from typing import List, Tuple, cast, Optional
 
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import
@@ -49,6 +49,7 @@ class PathCalculationInput:
     )
     position_global: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
     direction_global: FloatArray = field(default_factory=lambda: np.array([1, 0]))
+    global_path: Optional[FloatArray] = field(default=None)
 
 
 @dataclass
@@ -458,7 +459,7 @@ class CalculatePath:
             cum_dist > self.scalars.mpc_path_length
         )
         if len(mask_cum_distance_over_mcp_path_length) <= 1:
-            return self.previous_paths[-1] 
+            return self.previous_paths[-1]
 
         first_point_over_distance = cast(
             int, mask_cum_distance_over_mcp_path_length.argmax()
@@ -498,7 +499,7 @@ class CalculatePath:
                 center_along_match_connection = self.previous_paths[-1][:, 1:3]
             else:
                 center_along_match_connection = self.calculate_trivial_path()
-        else:
+        elif self.input.global_path is None:
             (
                 side_to_use,
                 matches_to_other_side,
@@ -510,6 +511,22 @@ class CalculatePath:
             center_along_match_connection = self.calculate_centerline_points_of_matches(
                 side_to_use, matches_to_other_side, match_on_other_side
             )
+        else:
+            distance = np.linalg.norm(
+                self.input.position_global - self.input.global_path, axis=1
+            )
+
+            idx_closest_point_to_path = distance.argmin()
+
+            roll_value = (
+                    -idx_closest_point_to_path + len(self.input.global_path) // 3
+            )
+
+            path_rolled = np.roll(self.input.global_path, roll_value, axis=0)
+            distance_rolled = np.roll(distance, roll_value)
+            mask_distance = distance_rolled < 30
+            path_rolled = path_rolled[mask_distance]
+            center_along_match_connection = path_rolled
 
         path_update_too_far_away = self.fit_matches_as_spline(
             center_along_match_connection
