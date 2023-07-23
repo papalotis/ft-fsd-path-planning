@@ -23,20 +23,20 @@ class SkidpadCalculatePath(CalculatePath):
 
     def __init__(
         self,
-        path_frame_id: str,
         smoothing: float,
         predict_every: float,
-        minimum_velocity: float,
         maximal_distance_for_valid_path: float,
         max_deg: int,
+        mpc_path_length: float,
+        mpc_prediction_horizon: int,
     ):
         super().__init__(
-            path_frame_id,
             smoothing,
             predict_every,
-            minimum_velocity,
             maximal_distance_for_valid_path,
             max_deg,
+            mpc_path_length,
+            mpc_prediction_horizon,
         )
 
         self.index_along_path = 0
@@ -44,7 +44,7 @@ class SkidpadCalculatePath(CalculatePath):
     def fit_matches_as_spline(
         self, center_along_match_connection: FloatArray
     ) -> FloatArray:
-        global_path = self.input.global_path_xy
+        global_path = self.input.global_path
         if global_path is None:
             return self.calculate_trivial_path()
         # we need to do the calculation completely on our own
