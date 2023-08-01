@@ -97,7 +97,15 @@ class CalculatePath:
             smoothing, predict_every, max_deg
         )
 
-        self.previous_paths = []
+        path_parameterizer = PathParameterizer(
+            prediction_horizon=self.scalars.mpc_prediction_horizon
+        )
+
+        self.previous_paths = [
+            path_parameterizer.parameterize_path(
+                self.calculate_initial_path(), None, None, False
+            )
+        ]
         self.mpc_paths = []
         self.path_is_trivial_list = []
         self.path_updates = []
@@ -240,9 +248,12 @@ class CalculatePath:
             path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
                 der=0, max_u=self.scalars.mpc_path_length * 1.5
             )
-        except Exception:
-            print(repr(final_path))
-            print(repr(self.input))
+        except Exception as e:
+            print(e)
+            mask = np.all(final_path[:-1] == final_path[1:], axis=1)
+            print(np.where(mask))
+            # print(repr(final_path))
+            # print(repr(self.input))
             raise
 
         return path_length_fixed
@@ -285,30 +296,41 @@ class CalculatePath:
         center_x, center_y, radius = circle_fit(relevant_path)
         center = np.array([center_x, center_y])
 
-        radius_to_use = min(max(radius, 10), 200)
+        radius_to_use = min(max(radius, 10), 100)
 
-        relevant_path_centered = relevant_path - center
-        # find the orientation of the path part, to know if the circular arc should be
-        # clockwise or counterclockwise
-        three_points = relevant_path_centered[
-            [0, int(len(relevant_path_centered) / 2), -1]
-        ]
+        if radius_to_use < 80:
+            # ic(center_x, center_y, radius_to_use)
+            relevant_path_centered = relevant_path - center
+            # find the orientation of the path part, to know if the circular arc should be
+            # clockwise or counterclockwise
+            three_points = relevant_path_centered[
+                [0, int(len(relevant_path_centered) / 2), -1]
+            ]
 
-        # https://en.wikipedia.org/wiki/Curve_orientation#Orientation_of_a_simple_polygon
-        homogeneous_points = np.column_stack((np.ones(3), three_points))
-        orientation = np.linalg.det(homogeneous_points)
-        orientation_sign = np.sign(orientation)
+            # https://en.wikipedia.org/wiki/Curve_orientation#Orientation_of_a_simple_polygon
+            homogeneous_points = np.column_stack((np.ones(3), three_points))
+            orientation = np.linalg.det(homogeneous_points)
+            orientation_sign = np.sign(orientation)
 
-        # create the circular arc
-        start_angle = float(angle_from_2d_vector(three_points[0]))
-        end_angle = start_angle + orientation_sign * np.pi
-        new_points_angles = np.linspace(start_angle, end_angle)
-        new_points_raw = unit_2d_vector_from_angle(new_points_angles) * radius_to_use
+            # create the circular arc
+            start_angle = float(angle_from_2d_vector(three_points[0]))
+            end_angle = start_angle + orientation_sign * np.pi
+            new_points_angles = np.linspace(start_angle, end_angle)
+            new_points_raw = (
+                unit_2d_vector_from_angle(new_points_angles) * radius_to_use
+            )
 
-        new_points = new_points_raw - new_points_raw[0] + path_update[-1]
-        # to avoid overlapping when spline fitting, we need to first n points
-        new_points = new_points[10:]
+            new_points = new_points_raw - new_points_raw[0] + path_update[-1]
+            # ic(new_points)
+            # to avoid overlapping when spline fitting, we need to first n points
+        else:
+            second_last_point = path_update[-2]
+            last_point = path_update[-1]
+            direction = last_point - second_last_point
+            direction = direction / np.linalg.norm(direction)
+            new_points = last_point + direction * np.arange(30)[:, None]
 
+        new_points = new_points[1:]
         return np.row_stack((path_update, new_points))
 
     def create_path_for_mpc_from_path_update(
@@ -347,7 +369,6 @@ class CalculatePath:
             )
         except Exception:
             print("path update")
-            print(repr(path_update))
             raise
 
         path_with_length_for_mpc = self.remove_path_not_in_prediction_horizon(
@@ -492,7 +513,6 @@ class CalculatePath:
 
     def run_path_calculation(self) -> Tuple[FloatArray, FloatArray]:
         """Calculate path."""
-
         if len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
             if len(self.previous_paths) > 0:
                 # extract x, y from previously calculated path
@@ -518,9 +538,7 @@ class CalculatePath:
 
             idx_closest_point_to_path = distance.argmin()
 
-            roll_value = (
-                    -idx_closest_point_to_path + len(self.input.global_path) // 3
-            )
+            roll_value = -idx_closest_point_to_path + len(self.input.global_path) // 3
 
             path_rolled = np.roll(self.input.global_path, roll_value, axis=0)
             distance_rolled = np.roll(distance, roll_value)
