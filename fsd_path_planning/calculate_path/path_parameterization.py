@@ -145,8 +145,11 @@ class PathParameterizer:
         path_length = distances_between_points.sum()
         mean_point_distance = distances_between_points[:10].mean()
         predict_every = path_length / self._state.prediction_horizon / 3
+        try:
+            skip_factor = max(int(predict_every / mean_point_distance), 1)
+        except ValueError:
+            skip_factor = 1
 
-        skip_factor = max(int(predict_every / mean_point_distance), 1)
         path_skipped = path[::skip_factor]
 
         # very little smoothing, because we assume that the incoming points are already
