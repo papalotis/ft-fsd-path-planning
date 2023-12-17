@@ -7,10 +7,16 @@ Description: Skidpad requires a special case for path calculation. This file pro
 a class that overwrites the path calculation for the skidpad track.
 Project: fsd_path_planning
 """
-import numpy as np
-from icecream import ic  # pylint: disable=unused-import
+from typing import Tuple
 
-from fsd_path_planning.calculate_path.core_calculate_path import CalculatePath
+import numpy as np
+from icecream import ic
+
+from fsd_path_planning.calculate_path.core_calculate_path import (
+    CalculatePath,
+    PathCalculationInput,
+)
+from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
@@ -38,16 +44,20 @@ class SkidpadCalculatePath(CalculatePath):
             mpc_path_length,
             mpc_prediction_horizon,
         )
-
         self.index_along_path = 0
 
+    def set_new_input(self, new_input: PathCalculationInput) -> None:
+        super().set_new_input(new_input)
+
+        self.input.global_path = BASE_SKIDPAD_PATH
+
     def fit_matches_as_spline(
-        self, center_along_match_connection: FloatArray
+        self,
+        center_along_match_connection: FloatArray,  # pylint: disable=unused-argument
     ) -> FloatArray:
         global_path = self.input.global_path
         if global_path is None:
             return self.calculate_trivial_path()
-        # we need to do the calculation completely on our own
 
         # estimate sampling rate
         mean_distance = np.mean(trace_distance_to_next(global_path[:10]))
@@ -64,8 +74,3 @@ class SkidpadCalculatePath(CalculatePath):
         final_index = index_to_use + int(40 / mean_distance)
 
         return global_path[index_to_use:final_index]
-
-    def refit_path_for_mpc_with_safety_factor(
-        self, final_path: FloatArray
-    ) -> FloatArray:
-        return final_path

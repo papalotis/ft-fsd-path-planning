@@ -9,7 +9,7 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Tuple, cast, Optional
+from typing import List, Optional, Tuple, cast
 
 import numpy as np
 from icecream import ic  # pylint: disable=unused-import

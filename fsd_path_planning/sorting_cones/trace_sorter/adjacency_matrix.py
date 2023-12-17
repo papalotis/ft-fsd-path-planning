@@ -67,7 +67,7 @@ def create_adjacency_matrix(
     """
     Creates the adjacency matrix that defines the possible points each point can be connected with
     Args:
-        trace: The trace containing all the points
+        cones: The trace containing all the points
         n_neighbors: The maximum number of neighbors each node can have
         start_idx: The index from which the trace starts
         max_dist: The maximum distance two points can have in order for them to

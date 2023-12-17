@@ -41,7 +41,7 @@ def get_points_on_ellipse(thetas: FloatArray, a: float, b: float) -> np.ndarray:
     return np.column_stack([x, y])
 
 
-#@st.cache_data
+# @st.cache_data
 def show_starting_cone(
     position: FloatArray,
     direction: FloatArray,
@@ -94,7 +94,7 @@ def show_starting_cone(
     return out
 
 
-#@st.cache_data
+# @st.cache_data
 def plot_adjacency_matrix(adjacency_matrix: BoolArray, cones: FloatArray) -> None:
     ax = plt.gca()
     ax.axis("equal")
@@ -108,7 +108,7 @@ def plot_adjacency_matrix(adjacency_matrix: BoolArray, cones: FloatArray) -> Non
                 ax.plot(*np.array([cone, neighbor]).T, "-k", alpha=0.2)
 
 
-#@st.cache_data
+# @st.cache_data
 def show_adjacency_matrix(
     cones_by_type: list[FloatArray],
     start_indices: list[Optional[int]],
@@ -139,7 +139,7 @@ def show_adjacency_matrix(
     return adjacency_matrices
 
 
-#@st.cache_data
+# @st.cache_data
 def show_graph_search(
     cones_by_type: list[FloatArray],
     adjacency_matrices: list[Optional[BoolArray]],
@@ -245,7 +245,7 @@ def show_graph_search(
     return all_end_configs
 
 
-#@st.cache_data
+# @st.cache_data
 def show_costs(
     cones_by_type: list[Optional[FloatArray]],
     end_configurations_by_type: list[Optional[IntArray]],

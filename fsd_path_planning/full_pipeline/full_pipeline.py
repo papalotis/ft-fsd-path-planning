@@ -11,7 +11,7 @@ Project: fsd_path_planning
 """
 from __future__ import annotations
 
-from typing import Any, List, Union, Optional
+from typing import Any, List, Optional, Union
 
 import numpy as np
 
@@ -22,6 +22,7 @@ from fsd_path_planning.config import (
     create_default_pathing,
     create_default_sorting,
 )
+from fsd_path_planning.skidpad.skidpad_relocalizer import SkidpadRelocalizer
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -32,6 +33,8 @@ from fsd_path_planning.utils.utils import Timer
 
 class PathPlanner:
     def __init__(self, mission: MissionTypes):
+        self.mission = mission
+        self.skidpad_relocalizer = SkidpadRelocalizer()
         self.cone_sorting = create_default_sorting(mission)
         self.cone_matching = create_default_cone_matching_with_non_monotonic_matches(
             mission
@@ -90,30 +93,50 @@ class PathPlanner:
 
         noprint = True
 
-        # run cone sorting
-        with Timer("Cone sorting", noprint=noprint):
-            cone_sorting_input = ConeSortingInput(
-                cones, vehicle_position, vehicle_direction
-            )
-            self.cone_sorting.set_new_input(cone_sorting_input)
-            sorted_left, sorted_right = self.cone_sorting.run_cone_sorting()
+        if self.mission == MissionTypes.skidpad:
+            # attempt to relocalize
+            with Timer("Relocalization", noprint=noprint):
+                self.skidpad_relocalizer.attempt_relocalization_calculation(
+                    cones, vehicle_position, vehicle_direction
+                )
 
-        # run cone matching
-        with Timer("Cone matching", noprint=noprint):
-            matched_cones_input = [np.zeros((0, 2)) for _ in ConeTypes]
-            matched_cones_input[ConeTypes.LEFT] = sorted_left
-            matched_cones_input[ConeTypes.RIGHT] = sorted_right
+            if self.skidpad_relocalizer.is_relocalized:
+                (
+                    vehicle_position,
+                    vehicle_direction,
+                ) = self.skidpad_relocalizer.transform_to_skidpad_frame(
+                    vehicle_position, vehicle_direction
+                )
 
-            cone_matching_input = ConeMatchingInput(
-                matched_cones_input, vehicle_position, vehicle_direction
-            )
-            self.cone_matching.set_new_input(cone_matching_input)
-            (
-                left_cones_with_virtual,
-                right_cones_with_virtual,
-                left_to_right_match,
-                right_to_left_match,
-            ) = self.cone_matching.run_cone_matching()
+            sorted_left, sorted_right = np.zeros((2, 0, 2))
+            left_cones_with_virtual, right_cones_with_virtual = np.zeros((2, 0, 2))
+            left_to_right_match, right_to_left_match = np.zeros((2, 0), dtype=int)
+
+        else:
+            # run cone sorting
+            with Timer("Cone sorting", noprint=noprint):
+                cone_sorting_input = ConeSortingInput(
+                    cones, vehicle_position, vehicle_direction
+                )
+                self.cone_sorting.set_new_input(cone_sorting_input)
+                sorted_left, sorted_right = self.cone_sorting.run_cone_sorting()
+
+            # run cone matching
+            with Timer("Cone matching", noprint=noprint):
+                matched_cones_input = [np.zeros((0, 2)) for _ in ConeTypes]
+                matched_cones_input[ConeTypes.LEFT] = sorted_left
+                matched_cones_input[ConeTypes.RIGHT] = sorted_right
+
+                cone_matching_input = ConeMatchingInput(
+                    matched_cones_input, vehicle_position, vehicle_direction
+                )
+                self.cone_matching.set_new_input(cone_matching_input)
+                (
+                    left_cones_with_virtual,
+                    right_cones_with_virtual,
+                    left_to_right_match,
+                    right_to_left_match,
+                ) = self.cone_matching.run_cone_matching()
 
         # run path calculation
         with Timer("Path calculation", noprint=noprint):
@@ -128,6 +151,20 @@ class PathPlanner:
             )
             self.pathing.set_new_input(path_calculation_input)
             final_path, _ = self.pathing.run_path_calculation()
+
+        if (
+            self.mission == MissionTypes.skidpad
+            and self.skidpad_relocalizer.is_relocalized
+        ):
+            # convert path points back to global frame
+            path_xy = final_path[:, 1:3]
+            fake_yaw = np.zeros(len(path_xy))
+
+            path_xy, _ = self.skidpad_relocalizer.transform_to_original_frame(
+                path_xy, fake_yaw
+            )
+
+            final_path[:, 1:3] = path_xy
 
         if return_intermediate_results:
             return (

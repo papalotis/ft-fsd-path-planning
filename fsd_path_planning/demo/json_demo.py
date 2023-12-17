@@ -33,6 +33,25 @@ except TypeError:
     app = typer.Typer()
 
 
+def select_mission_by_filename(filename: str) -> MissionTypes:
+    is_skidpad = "skidpad" in filename
+
+    if is_skidpad:
+        print(
+            'The filename contains "skidpad", so we assume that the mission is skidpad.'
+        )
+        return MissionTypes.skidpad
+
+    return MissionTypes.trackdrive
+
+
+def get_filename(data_path: Path | None) -> Path:
+    if data_path is None:
+        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
+
+    return data_path
+
+
 @app.command()
 def main(
     data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
@@ -41,7 +60,11 @@ def main(
     show_runtime_histogram: bool = False,
     output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
 ) -> None:
-    planner = PathPlanner(MissionTypes.trackdrive)
+    data_path = get_filename(data_path)
+
+    mission = select_mission_by_filename(data_path.name)
+
+    planner = PathPlanner(mission)
 
     positions, directions, cone_observations = load_data_json(
         data_path, remove_color_info=remove_color_info
@@ -81,6 +104,9 @@ planner, you should run the demo one more time after it is finished.
                     direction,
                     return_intermediate_results=True,
                 )
+        except KeyboardInterrupt:
+            print(f"Interrupted by user on frame {i}")
+            break
         except Exception:
             print(f"Error at frame {i}")
             raise
@@ -103,6 +129,10 @@ planner, you should run the demo one more time after it is finished.
         (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, "yo")
         (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, "bo")
         (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, "ko")
+        (orange_small_cones,) = plt.plot(*co[ConeTypes.ORANGE_SMALL].T, "o", c="orange")
+        (orange_big_cones,) = plt.plot(
+            *co[ConeTypes.ORANGE_BIG].T, "o", c="darkorange", markersize=10
+        )
         (yellow_cones_sorted,) = plt.plot(*results[i][2].T, "y-")
         (blue_cones_sorted,) = plt.plot(*results[i][1].T, "b-")
         (path,) = plt.plot(*results[i][0][:, 1:3].T, "r-")
@@ -121,6 +151,8 @@ planner, you should run the demo one more time after it is finished.
                 yellow_cones,
                 blue_cones,
                 unknown_cones,
+                orange_small_cones,
+                orange_big_cones,
                 yellow_cones_sorted,
                 blue_cones_sorted,
                 path,
@@ -152,12 +184,9 @@ def numba_cache_files_exist() -> bool:
 
 
 def load_data_json(
-    data_path: Optional[Path] = None,
+    data_path: Path,
     remove_color_info: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
-    if data_path is None:
-        data_path = Path(__file__).parent / "fsg_19_2_laps.json"
-
     # extract data
     data = json.loads(data_path.read_text())[:]
 

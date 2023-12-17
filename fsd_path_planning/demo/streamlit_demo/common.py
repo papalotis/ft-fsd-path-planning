@@ -210,7 +210,6 @@ def get_cones_for_configuration(
         cones_right = np.zeros((0, 2))
     elif configuration == "Custom":
         json_text = str(st.session_state["json_text"])
-            
 
         with st.sidebar:
             if len(json_text) == 0:

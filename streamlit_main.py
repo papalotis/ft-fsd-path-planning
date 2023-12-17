@@ -59,7 +59,6 @@ with st.sidebar:
             "Custom",
         ),
     )
-    
 
     # only show text area if custom is selected
     if st.session_state.track_configuration == "Custom":
