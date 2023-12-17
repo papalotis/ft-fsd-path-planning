@@ -7,6 +7,9 @@ from fsd_path_planning.demo.streamlit_demo.cone_sorting import run as run_sortin
 from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
+from fsd_path_planning.demo.streamlit_demo.skidpad_relocalization import (
+    run as run_skidpad,
+)
 
 st.set_page_config(page_title="FT Path Planning", page_icon="🏎️")
 
@@ -23,15 +26,17 @@ def run_welcome() -> None:
 ## Path Planning Demo
 
 Welcome to the path planning app. The goal of this app is to visualize the algorithms
-that are used in the 2021/22 formula student season by FaSTTUBe (Formula Student Team TU Berlin).
+that were used in the 2022/23 formula student season by FaSTTUBe (Formula Student Team TU Berlin).
 
-The path planning algorithm is split ito three parts:
+The path planning algorithm is split into three parts:
 
 - Cone Sorting
 - Cone Matching
 - Path Calculation
 
-In the sidebar of the app you can select the algorithm you want to explore.
+There is a special page for visualizing the algorithms that run when the Skidpad mission is selected.
+
+At the top of the page you can select the algorithm you want to explore.
 """.strip()
     )
 
@@ -40,6 +45,12 @@ STRING_TO_FUNCTION = {
     "Welcome": run_welcome,
     "Sorting": run_sorting,
     "Matching": run_matching,
+    "Path calculation": run_path_calculation,
+}
+
+STRING_TO_FUNCTION_SKIDPAD = {
+    "Welcome": run_welcome,
+    "Relocalization": run_skidpad,
     "Path calculation": run_path_calculation,
 }
 
@@ -54,6 +65,7 @@ with st.sidebar:
             "Corner Missing Blue Alt",
             "Hairpin",
             "Hairpin Extreme",
+            "Skidpad",
             # "FS Spain 19 Full",
             # "Wrong sort",
             "Custom",
@@ -76,7 +88,13 @@ if st.session_state.track_configuration == "Custom":
     )
 
 
-tabs = st.tabs(list(STRING_TO_FUNCTION.keys()))
-for tab, page_function in zip(tabs, STRING_TO_FUNCTION.values()):
+string_to_function_to_use = (
+    STRING_TO_FUNCTION_SKIDPAD
+    if st.session_state.track_configuration == "Skidpad"
+    else STRING_TO_FUNCTION
+)
+
+tabs = st.tabs(list(string_to_function_to_use.keys()))
+for tab, page_function in zip(tabs, string_to_function_to_use.values()):
     with tab:
         page_function()

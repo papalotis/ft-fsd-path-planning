@@ -27,7 +27,7 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     out = []
     idxs = range(len(points))
 
-    max_powerset_size = 4
+    max_powerset_size = 5
     max_actual_powerset_size = min(max_powerset_size, len(points))
 
     rng = np.random.RandomState(42)
