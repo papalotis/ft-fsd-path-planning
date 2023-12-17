@@ -137,6 +137,9 @@ planner, you should run the demo one more time after it is finished.
         (blue_cones_sorted,) = plt.plot(*results[i][1].T, "b-")
         (path,) = plt.plot(*results[i][0][:, 1:3].T, "r-")
         (position,) = plt.plot(*positions[i], "go")
+        (direction,) = plt.plot(
+            *np.array([positions[i], positions[i] + directions[i]]).T, "g-"
+        )
         title = plt.text(
             0.5,
             1.01,
@@ -157,6 +160,7 @@ planner, you should run the demo one more time after it is finished.
                 blue_cones_sorted,
                 path,
                 position,
+                direction,
                 title,
             ]
         )

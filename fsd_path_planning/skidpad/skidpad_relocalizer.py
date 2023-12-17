@@ -237,6 +237,13 @@ class SkidpadRelocalizer:
         cones_array = np.row_stack(cones)
         cones_array_xy = cones_array[:, :2]
 
+        # only keep 20 closest cones
+        # this is an optimization to speed up the calculation
+        # because otherwise we enter combinatorics hell :)
+        distances = np.linalg.norm(cones_array_xy - vehicle_position, axis=1)
+        idxs = np.argsort(distances)[:20]
+        cones_array_xy = cones_array_xy[idxs]
+
         # calculate the centers of the circles
         # print(cones_array_xy)
         potential_circles = circle_fit_powerset(cones_array_xy)
@@ -250,15 +257,18 @@ class SkidpadRelocalizer:
             return False
 
         # calculate the transformation
-        (
-            transform_to_skidpad_frame,
-            transform_to_original_frame,
-        ) = calculate_transformation(
-            self.reference_centers,
-            circle_centers,
-            self._original_vehicle_position,
-            self._original_vehicle_direction,
-        )
+        try:
+            (
+                transform_to_skidpad_frame,
+                transform_to_original_frame,
+            ) = calculate_transformation(
+                self.reference_centers,
+                circle_centers,
+                self._original_vehicle_position,
+                self._original_vehicle_direction,
+            )
+        except IndexError:
+            return False
 
         # save the transformation
         self._transform_to_skidpad_frame = transform_to_skidpad_frame

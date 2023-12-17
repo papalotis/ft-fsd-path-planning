@@ -22,11 +22,15 @@ from fsd_path_planning.config import (
     create_default_pathing,
     create_default_sorting,
 )
+from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.skidpad.skidpad_relocalizer import SkidpadRelocalizer
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import unit_2d_vector_from_angle
+from fsd_path_planning.utils.math_utils import (
+    angle_from_2d_vector,
+    unit_2d_vector_from_angle,
+)
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
 
@@ -101,12 +105,15 @@ class PathPlanner:
                 )
 
             if self.skidpad_relocalizer.is_relocalized:
+                vehicle_yaw = angle_from_2d_vector(vehicle_direction)
                 (
                     vehicle_position,
-                    vehicle_direction,
+                    vehicle_yaw,
                 ) = self.skidpad_relocalizer.transform_to_skidpad_frame(
-                    vehicle_position, vehicle_direction
+                    vehicle_position, vehicle_yaw
                 )
+                vehicle_direction = unit_2d_vector_from_angle(vehicle_yaw)
+                self.global_path = BASE_SKIDPAD_PATH[::2]
 
             sorted_left, sorted_right = np.zeros((2, 0, 2))
             left_cones_with_virtual, right_cones_with_virtual = np.zeros((2, 0, 2))

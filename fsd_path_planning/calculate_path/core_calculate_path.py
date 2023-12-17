@@ -127,7 +127,7 @@ class CalculatePath:
 
     def calculate_trivial_path(self) -> FloatArray:
         "Calculate a path that points straight from the car position and direction"
-        origin_path = self.path_calculator_helpers.calculate_almost_straight_path()
+        origin_path = self.path_calculator_helpers.calculate_almost_straight_path()[1:]
         yaw = angle_from_2d_vector(self.input.direction_global)
         path_rotated: FloatArray = rotate(origin_path, yaw)  # type: ignore
         final_trivial_path: FloatArray = path_rotated + self.input.position_global

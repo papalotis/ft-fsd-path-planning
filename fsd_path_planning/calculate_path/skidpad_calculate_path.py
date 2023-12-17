@@ -49,8 +49,6 @@ class SkidpadCalculatePath(CalculatePath):
     def set_new_input(self, new_input: PathCalculationInput) -> None:
         super().set_new_input(new_input)
 
-        self.input.global_path = BASE_SKIDPAD_PATH
-
     def fit_matches_as_spline(
         self,
         center_along_match_connection: FloatArray,  # pylint: disable=unused-argument
@@ -71,6 +69,6 @@ class SkidpadCalculatePath(CalculatePath):
         index_to_use = int(np.argmin(costs)) + min_index
         self.index_along_path = index_to_use
 
-        final_index = index_to_use + int(40 / mean_distance)
+        final_index = index_to_use + int(25 / mean_distance)
 
         return global_path[index_to_use:final_index]
