@@ -6,12 +6,17 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 | With color information | Without color information |
 | ---------------------- | ------------------------- |
-|  ![An animation demoing the path planning algorithm](fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](fsg_no_color.gif)                   |
+| Autocross FSG 2019
+|  ![An animation demoing the path planning algorithm](media/fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](media/fsg_no_color.gif)                   |
+| Skidpad |
+| ![An animation demoing the path planning algorithm](media/skidpad_color.gif) | ![An animation demoing the path planning algorithm without color](media/skidpad_no_color.gif) |
 
 This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season. In March 2023, a further development of this algorithm was published. The new version has two main improvements:
 
 - The algorithm can now work without color. It can use cones for which the color is known and cones for which the color is unknown at the same time.
 - Performance improvements. The algorithm is faster, with the main focus of improvement being the cone sorting step.
+
+Further improvements were added in December 2023. The main focus was to make the Skidpad mission more robust. The algorithm now uses a different approach for the Skidpad mission, which is much simpler and does not rely on the color of the cones at all.
 
 You can find an **interactive demo** of the algorithm <a href="https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/" target="_blank">here.</a>
 
