@@ -1,6 +1,6 @@
 [project]
 name = "fsd_path_planning"
-version = "0.3.2"
+version = "0.4.0"
 readme = "README.md"
 dependencies = [
     "icecream",
