@@ -17,6 +17,8 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 Further improvements were added in December 2023. The main focus was to make the Skidpad mission more robust. The algorithm now uses a different approach for the Skidpad mission, which is much simpler and does not rely on the color of the cones at all.
 
+The logic that runs during the Skidpad mission is stateful, so if you want to use it, you will have to review the usage of the relevant classes including `PathPlanner`. More specifically, while in the past one could create a new instance of the `PathPlanner` class, for each computation, with minimal performance penalties, now this will cause the Skidpad path calculation to fail. It is recommended to create a new instance of the `PathPlanner` class when the vehicle enters `AS-READY` state and after the SLAM pose has stabilized.
+
 ### March 2023
 
  In March 2023, a further development of this algorithm was published. The new version has two main improvements:
