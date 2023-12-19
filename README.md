@@ -6,19 +6,33 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 | With color information | Without color information |
 | ---------------------- | ------------------------- |
-|  ![An animation demoing the path planning algorithm](fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](fsg_no_color.gif)                   |
+| Autocross FSG 2019
+|  ![An animation demoing the path planning algorithm](media/fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](media/fsg_no_color.gif)                   |
+| Skidpad |
+| ![An animation demoing the path planning algorithm](media/skidpad_color.gif) | ![An animation demoing the path planning algorithm without color](media/skidpad_no_color.gif) |
 
-This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 Formula Student season. In March 2023, a further development of this algorithm was published. The new version has two main improvements:
+## Updates 
+
+### December 2023 (v0.4)
+
+Further improvements were added in December 2023. The main focus was to make the Skidpad mission more robust. The algorithm now uses a different approach for the Skidpad mission, which is much simpler and does not rely on the color of the cones at all.
+
+The logic that runs during the Skidpad mission is stateful, so if you want to use it, you will have to review the usage of the relevant classes including `PathPlanner`. More specifically, while in the past one could create a new instance of the `PathPlanner` class, for each computation, with minimal performance penalties, now this will cause the Skidpad path calculation to fail. It is recommended to create a new instance of the `PathPlanner` class when the vehicle enters `AS-READY` state and the SLAM pose has stabilized.
+
+This version also adds `scikit-learn` as a dependency, which is used for the Skidpad mission. You may use the `summer-23` tag if you want to use the version of the algorithm that does not require `scikit-learn` and does not have the Skidpad improvements.
+
+### March 2023 (v0.3)
+
+ In March 2023, a further development of this algorithm was published. The new version has two main improvements:
 
 - The algorithm can now work without color. It can use cones for which the color is known and cones for which the color is unknown at the same time.
 - Performance improvements. The algorithm is faster, with the main focus of improvement being the cone sorting step.
 
+## Introduction
+
+This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 and 2022/23 Formula Student seasons.
+
 You can find an **interactive demo** of the algorithm <a href="https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/" target="_blank">here.</a>
-
-List of contributors:
-
-- Panagiotis Karagiannis
-- Albert Thelemann
 
 The intention of this repository is to provide teams entering the driverless category with a path planning algorithm, so that they can get up and running as fast as possible. Teams are encouraged to use this repository as a basis and adapt it to their own pipeline, as well as make changes that will improve the algorithm's performance. If your team decides to use this repository, feel free to inform us. We would be happy to hear about your experience.
 
@@ -43,6 +57,8 @@ The parts of the pipeline are also available as individual classes, so if you on
 want to use parts of it you can do so.
 
 The codebase is written entirely in Python and makes heavy use of NumPy, SciPy, and Numba.
+
+The algorithm has demonstrated its success as part of the FaSTTUBe pipeline, contributing to a 2nd place finish in Trackdrive at FS Czech 2023.
 
 ## Installation
 
@@ -70,7 +86,7 @@ You can again skip the `[demo]` extra if you don't want to install the demo depe
 
 ## Performance
 
-The algorithm is fast enough to run in real-time on a Jetson Xavier AGX 16GB on MAXN power mode. On that platform, the algorithm takes on average around 10ms for the entire algorithm to run from start to finish. You can run the demo to get an idea of the performance on your hardware.
+The algorithm (with default parameters) is fast enough to run in real-time on a Jetson Xavier AGX 16GB on MAXN power mode. On that platform, the algorithm takes on average around 10ms from start to finish. You can run the demo to get an idea of the performance on your hardware.
 
 *Note that the first time that you run the algorithm, it will take around 30-60 seconds to compile all the Numba functions. Run the demo a second time to get a real indicator on performance.*
 
@@ -109,7 +125,14 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 
 ```
 
-Take a look at this notebook for a more detailed example: [simple_application.ipynb](https://github.com/papalotis/ft-fsd-path-planning/blob/main/fsd_path_planning/demo/simple_application.ipynb)
+Take a look at this notebook for a more detailed example: [simple_application.ipynb](fsd_path_planning/demo/simple_application.ipynb)
 
 There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
 It is recommended to create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
+
+## Previous versions of the algorithm
+
+Alternate versions of the algorithm are available as git tags:
+
+- `color-dependent` - The algorithm needs color information to work. This version was used in the 2021/22 season.
+- `summer-23` - The algorithm can work without color information. This version was used in the 2022/23 season.

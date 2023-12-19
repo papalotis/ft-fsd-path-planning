@@ -28,19 +28,21 @@ from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
 def naive_search_directions(
     left_cones: FloatArray, right_cones: FloatArray
 ) -> tuple[FloatArray, FloatArray]:
-    
     if len(left_cones) > 0:
-        left_rotated = rotate(normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2)
+        left_rotated = rotate(
+            normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2
+        )
         left_rotated = np.row_stack((left_rotated, left_rotated[-1]))
     else:
         left_rotated = np.zeros((0, 2))
 
     if len(right_cones) > 0:
-        right_rotated = rotate(normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2)
+        right_rotated = rotate(
+            normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2
+        )
         right_rotated = np.row_stack((right_rotated, right_rotated[-1]))
     else:
         right_rotated = np.zeros((0, 2))
-
 
     return left_rotated, right_rotated
 

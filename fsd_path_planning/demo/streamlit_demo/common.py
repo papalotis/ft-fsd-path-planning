@@ -41,7 +41,7 @@ def visualize_configuration(
     with_cone_index: bool,
     with_lines: bool,
     do_show: bool,
-) -> tuple[Figure, Axes]:
+) -> Axes:
     position_triangle = calculate_pose_triangle_position(position, direction, 1)
     ax = plt.gca()
     ax.fill(*position_triangle.T, color="red", label="Vehicle Pose")
@@ -208,9 +208,75 @@ def get_cones_for_configuration(
             ]
         )
         cones_right = np.zeros((0, 2))
+
+    elif configuration == "Skidpad":
+        cones_right = [
+            [-142.9375, -686.1875],
+            [-141.3125, -687.0625],
+            [-147.125, -685.375],
+            [-131.75, -688.9375],
+            [-134.25, -690.5625],
+            [-128.8125, -688.375],
+            [-151.0625, -686.125],
+            [-135.875, -693.0],
+            [-125.9375, -688.9375],
+            [-136.5, -696.0625],
+            [-154.625, -688.4375],
+            [-123.4375, -690.5625],
+            [-135.875, -698.875],
+            [-121.8125, -693.0625],
+            [-156.9375, -692.0],
+            [-134.25, -701.375],
+            [-121.25, -696.0],
+            [-157.75, -696.0],
+            [-131.75, -703.0],
+            [-121.8125, -698.875],
+            [-141.3125, -704.875],
+            [-128.875, -703.5625],
+            [-123.4375, -701.375],
+            [-125.9375, -703.0],
+            [-142.9375, -705.75],
+            [-156.9375, -699.9375],
+            [-147.125, -706.625],
+            [-154.625, -703.5],
+            [-151.0625, -705.8125],
+        ]
+        cones_left = [
+            [-133.0, -686.1875],
+            [-134.625, -687.0625],
+            [-128.875, -685.375],
+            [-144.1875, -688.9375],
+            [-141.6875, -690.5625],
+            [-147.0625, -688.375],
+            [-124.875, -686.125],
+            [-140.0625, -693.0625],
+            [-150.0, -688.9375],
+            [-139.5, -696.0625],
+            [-152.5, -690.5625],
+            [-121.3125, -688.4375],
+            [-140.0625, -698.9375],
+            [-154.125, -693.0625],
+            [-119.0, -692.0],
+            [-141.6875, -701.375],
+            [-154.6875, -695.9375],
+            [-144.1875, -703.0],
+            [-154.125, -698.875],
+            [-118.25, -696.0],
+            [-147.125, -703.5625],
+            [-152.5, -701.375],
+            [-134.625, -704.875],
+            [-150.0, -703.0],
+            [-133.0, -705.75],
+            [-119.0, -699.9375],
+            [-128.875, -706.625],
+            [-121.3125, -703.5],
+            [-124.875, -705.8125],
+        ]
+
+        vehicle_position = [-137.625, -712.6875]
+        vehicle_direction = [-0.023271469463161, 0.9997291826835031]
     elif configuration == "Custom":
         json_text = str(st.session_state["json_text"])
-            
 
         with st.sidebar:
             if len(json_text) == 0:
@@ -277,6 +343,10 @@ def get_cones_for_configuration(
     else:
         raise ValueError("Unknown configuration")
 
+    vehicle_position = np.array(vehicle_position)
+    vehicle_direction = np.array(vehicle_direction)
+    cones_left = np.array(cones_left).reshape(-1, 2)
+    cones_right = np.array(cones_right).reshape(-1, 2)
     # shuffle
     if do_shuffle:
         cones_left = cones_left[rng.random(len(cones_left)).argsort()]
@@ -286,6 +356,7 @@ def get_cones_for_configuration(
     # cones = [np.zeros((0, 2)), cones_left, cones_right]
     cones[ConeTypes.LEFT] = cones_left
     cones[ConeTypes.RIGHT] = cones_right
+
     return vehicle_position, vehicle_direction, cones
 
 

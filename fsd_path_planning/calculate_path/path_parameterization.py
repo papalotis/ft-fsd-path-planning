@@ -184,8 +184,11 @@ class PathParameterizer:
             path_is_closed=path_is_closed,
         )
         mode = "wrap" if path_is_closed else "nearest"
+
+        filter_size = max(2, window_size // 2)
+
         filtered_curvature: FloatArray = uniform_filter1d(
-            path_curvature, size=window_size // 2, mode=mode
+            path_curvature, size=filter_size, mode=mode
         )
 
         return filtered_curvature

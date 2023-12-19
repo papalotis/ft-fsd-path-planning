@@ -6,3 +6,4 @@ icecream
 streamlit
 plotly
 matplotlib
+scikit-learn
