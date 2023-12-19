@@ -132,7 +132,7 @@ It is recommended to create a new instance of the relevant classes when the vehi
 
 ## Previous versions of the algorithm
 
-The algorithm is tagged with the following tags:
+Alternate versions of the algorithm are available as git tags:
 
 - `color-dependent` - The algorithm needs color information to work. This version was used in the 2021/22 season.
 - `summer-23` - The algorithm can work without color information. This version was used in the 2022/23 season.
