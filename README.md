@@ -130,7 +130,7 @@ Take a look at this notebook for a more detailed example: [simple_application.ip
 There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
 It is recommended to create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
 
-## Previous versions of the algorithm
+## Previous versions
 
 Alternate versions of the algorithm are available as git tags:
 
