@@ -33,6 +33,9 @@ from fsd_path_planning.utils.math_utils import (
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
+from fsd_path_planning.relocalization.relocalization_information import (
+    RelocalizationInformation,
+)
 
 
 class PathPlanner:
@@ -185,3 +188,12 @@ class PathPlanner:
             )
 
         return final_path
+
+    @property
+    def relocalization_info(self) -> RelocalizationInformation | None:
+        if not self.skidpad_relocalizer.is_relocalized:
+            return None
+
+        return RelocalizationInformation.from_transform_function(
+            self.skidpad_relocalizer.transform_to_skidpad_frame
+        )
