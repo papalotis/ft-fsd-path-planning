@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from typing import Callable
-from fsd_path_planning.types import FloatArray
-import numpy as np
 
+import numpy as np
 from typing_extensions import (
     Self,
 )
+
+from fsd_path_planning.types import FloatArray
 
 
 @dataclass
