@@ -22,6 +22,9 @@ from fsd_path_planning.config import (
     create_default_pathing,
     create_default_sorting,
 )
+from fsd_path_planning.relocalization.relocalization_information import (
+    RelocalizationInformation,
+)
 from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.skidpad.skidpad_relocalizer import SkidpadRelocalizer
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
@@ -33,9 +36,6 @@ from fsd_path_planning.utils.math_utils import (
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
-from fsd_path_planning.relocalization.relocalization_information import (
-    RelocalizationInformation,
-)
 
 
 class PathPlanner:
