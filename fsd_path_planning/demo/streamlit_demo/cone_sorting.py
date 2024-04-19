@@ -159,9 +159,12 @@ def show_graph_search(
         first_k = start_indices[cone_type]
         with Timer():
             try:
-                end_configurations, (
-                    all_configurations,
-                    configuration_is_end,
+                (
+                    end_configurations,
+                    (
+                        all_configurations,
+                        configuration_is_end,
+                    ),
                 ) = find_all_end_configurations(
                     cones_flat,
                     cone_type,

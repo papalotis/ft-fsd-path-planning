@@ -2,6 +2,7 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
+import plotly.graph_objects as go
 import streamlit as st
 
 from fsd_path_planning.demo.streamlit_demo.common import (
@@ -15,8 +16,6 @@ from fsd_path_planning.skidpad.skidpad_relocalizer import (
 )
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-
-import plotly.graph_objects as go
 
 
 def show_powerset(
@@ -46,16 +45,15 @@ def show_path() -> None:
     idxs = np.arange(len(path))
 
     # 3d plot using plotly
-    fig = go.Figure(data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")])
+    fig = go.Figure(
+        data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")]
+    )
 
     # make sure that the axis are equal
     # orthographic projection
-    fig.update_layout(
-        scene=dict(aspectmode="data")
-    )
+    fig.update_layout(scene=dict(aspectmode="data"))
 
     st.plotly_chart(fig)
-    
 
 
 def run() -> None:
@@ -95,7 +93,7 @@ The Skidpad track looks like this:
         max_value=20,
         value=n_cones_to_keep_default,
         step=1,
-        help="In order to simulate different detection ranges, only the n closest cones are kept for any given cone type."
+        help="In order to simulate different detection ranges, only the n closest cones are kept for any given cone type.",
     )
 
     copy_cones_by_type = deepcopy(cones_by_type)
@@ -132,6 +130,5 @@ The first step is to fit circles to the cones. The algorithm uses the powerset o
 Below you can see the circles that were kept after the powerset circle fitting:
 """
     )
-
 
     show_powerset(copy_cones_by_type, position, direction)
