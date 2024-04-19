@@ -92,6 +92,15 @@ class ConeSorting:
             use_unknown_cones=use_unknown_cones,
         )
 
+        self.trace_sorter = TraceSorter(
+            self.state.max_n_neighbors,
+            self.state.max_dist,
+            self.state.max_dist_to_first,
+            self.state.max_length,
+            self.state.threshold_directional_angle,
+            self.state.threshold_absolute_angle,
+        )
+
     def set_new_input(self, slam_input: ConeSortingInput) -> None:
         """Save inputs from other software nodes in variable."""
         self.input = slam_input
@@ -120,16 +129,7 @@ class ConeSorting:
         # make transition from set inputs to usable state variables
         self.transition_input_to_state()
 
-        ts = TraceSorter(
-            self.state.max_n_neighbors,
-            self.state.max_dist,
-            self.state.max_dist_to_first,
-            self.state.max_length,
-            self.state.threshold_directional_angle,
-            self.state.threshold_absolute_angle,
-        )
-
-        left_cones, right_cones = ts.sort_left_right(
+        left_cones, right_cones = self.trace_sorter.sort_left_right(
             self.state.cones_by_type_array,
             self.state.position_global,
             self.state.direction_global,

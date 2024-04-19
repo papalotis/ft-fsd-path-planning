@@ -7,7 +7,8 @@ Project: fsd_path_planning
 """
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Optional, Tuple
 
 import numpy as np
 
@@ -56,6 +57,62 @@ def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
     return out
 
 
+def cone_arrays_are_similar(
+    cones: FloatArray | None,
+    other_cones: FloatArray | None,
+    threshold: float,
+) -> bool:
+    if cones is None or other_cones is None:
+        return False
+
+    assert cones.shape[1] == other_cones.shape[1], (cones.shape, other_cones.shape)
+    if cones.shape != other_cones.shape:
+        return False
+
+    distances = my_cdist_sq_euclidean(cones[:, :2], other_cones[:, :2])
+
+    closest_for_each = distances.min(axis=1)
+    distances_all_close = np.all(closest_for_each < (threshold * threshold))
+
+    if cones.shape[1] == 2:
+        # in this case we have no color information, we only use distance as indicator
+        return distances_all_close
+
+    if not distances_all_close:
+        # distances not close no need to check color
+        return False
+
+    # last dimension is color
+    idx_closest = distances.argmin(axis=1)
+
+    color_match = cones[:, 2] == other_cones[idx_closest, 2]
+    return distances_all_close and color_match.all()
+
+
+# def cones_by_type_are_similar(
+#     cones_by_type: list[FloatArray],
+#     other_cones_by_type: list[FloatArray],
+#     threshold: float,
+# ) -> bool:
+#     return all(
+#         cone_arrays_are_similar(cones, other_cones, threshold)
+#         for cones, other_cones in zip(cones_by_type, other_cones_by_type)
+#     )
+
+
+@dataclass
+class ConeSortingCacheEntry:
+    """
+    Dataclass for the cache entry
+    """
+
+    input_cones: FloatArray  # x, y, color
+    left_starting_cones: FloatArray
+    right_starting_cones: FloatArray
+    left_result: tuple[Any, ...]
+    right_result: tuple[Any, ...]
+
+
 class TraceSorter:
     """
     Wraps the trace sorting functionality into a class
@@ -87,20 +144,7 @@ class TraceSorter:
         self.threshold_directional_angle = threshold_directional_angle
         self.threshold_absolute_angle = threshold_absolute_angle
 
-    def remove_last_cone_in_config_if_not_of_type(
-        self, config: IntArray, cones: FloatArray, cone_type: ConeTypes
-    ) -> IntArray:
-        """Remove the last cone in the config if it is not of the specified type"""
-        if len(config) > 0:
-            last = config[-1]
-            type_last = cones[last, 2]
-
-            if type_last != cone_type:
-                min_length = 3
-                new_length = max(len(config) - 1, min_length)
-                config = config[:new_length]
-
-        return config
+        self.cached_results: ConeSortingCacheEntry | None = None
 
     def sort_left_right(
         self,
@@ -123,7 +167,8 @@ class TraceSorter:
             (
                 left_scores,
                 left_configs,
-            ) = self.calc_configurations_with_score_for_one_side(
+                left_first_cones,
+            ) = left_result = self.calc_configurations_with_score_for_one_side(
                 cones_flat,
                 ConeTypes.LEFT,
                 car_pos,
@@ -134,12 +179,21 @@ class TraceSorter:
             (
                 right_scores,
                 right_configs,
-            ) = self.calc_configurations_with_score_for_one_side(
+                right_first_cones,
+            ) = right_result = self.calc_configurations_with_score_for_one_side(
                 cones_flat,
                 ConeTypes.RIGHT,
                 car_pos,
                 car_dir,
             )
+
+        self.cached_results = ConeSortingCacheEntry(
+            input_cones=cones_flat,
+            left_starting_cones=left_first_cones,
+            right_starting_cones=right_first_cones,
+            left_result=left_result,
+            right_result=right_result,
+        )
 
         (left_config, right_config) = calc_final_configs_for_left_and_right(
             left_scores,
@@ -162,13 +216,47 @@ class TraceSorter:
 
         return left_sorted[:, :2], right_sorted[:, :2]
 
+    def input_is_very_similar_to_previous_input(
+        self,
+        cones_by_type: FloatArray,
+        starting_cones: FloatArray,
+        threshold: float,
+        cone_type: ConeTypes,
+    ) -> bool:
+        assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
+
+        if self.cached_results is None:
+            return False
+
+        previous_starting_cones = (
+            self.cached_results.left_starting_cones
+            if cone_type == ConeTypes.LEFT
+            else self.cached_results.right_starting_cones
+        )
+
+        # first we check if small array is similar
+        previous_cones_similar = cone_arrays_are_similar(
+            starting_cones, previous_starting_cones, threshold
+        )
+
+        # if it not then we need to redo the sorting
+        if not previous_cones_similar:
+            return False
+
+        # if the small array is similar, we check if the large array is similar
+        all_cones_are_similar = cone_arrays_are_similar(
+            cones_by_type, self.cached_results.input_cones, threshold
+        )
+        # if the large array is not similar, we need to redo the sorting
+        return all_cones_are_similar
+
     def calc_configurations_with_score_for_one_side(
         self,
         cones: FloatArray,
         cone_type: ConeTypes,
         car_pos: FloatArray,
         car_dir: FloatArray,
-    ) -> Tuple[Optional[FloatArray], Optional[IntArray]]:
+    ) -> Tuple[Optional[FloatArray], Optional[IntArray], Optional[FloatArray]]:
         """
         Args:
             cones: The trace to be sorted.
@@ -180,7 +268,7 @@ class TraceSorter:
         """
         assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
 
-        no_result = None, None
+        no_result = None, None, None
 
         if len(cones) < 3:
             return no_result
@@ -204,9 +292,22 @@ class TraceSorter:
         if start_idx is None and first_k_indices_must_be is None:
             return no_result
 
+        assert first_k is not None
+
+        starting_cones = cones[first_k]
+
+        if self.input_is_very_similar_to_previous_input(
+            cones, starting_cones, threshold=0.1, cone_type=cone_type
+        ):
+            # print("Using cached results")
+            cr = self.cached_results
+            return cr.left_result if cone_type == ConeTypes.LEFT else cr.right_result
+
+        # print("Calculating new configuration")
+
         n_neighbors = min(self.max_n_neighbors, len(cones) - 1)
         try:
-            return_value = calc_scores_and_end_configurations(
+            result = calc_scores_and_end_configurations(
                 cones,
                 cone_type,
                 n_neighbors,
@@ -224,7 +325,9 @@ class TraceSorter:
         except NoPathError:
             return no_result
 
-        return return_value[:2]
+        return_value = (*result[:2], starting_cones)
+
+        return return_value
 
     def invert_cone_type(self, cone_type: ConeTypes) -> ConeTypes:
         """
