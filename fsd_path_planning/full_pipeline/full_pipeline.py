@@ -22,6 +22,9 @@ from fsd_path_planning.config import (
     create_default_pathing,
     create_default_sorting,
 )
+from fsd_path_planning.relocalization.relocalization_information import (
+    RelocalizationInformation,
+)
 from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.skidpad.skidpad_relocalizer import SkidpadRelocalizer
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
@@ -185,3 +188,12 @@ class PathPlanner:
             )
 
         return final_path
+
+    @property
+    def relocalization_info(self) -> RelocalizationInformation | None:
+        if not self.skidpad_relocalizer.is_relocalized:
+            return None
+
+        return RelocalizationInformation.from_transform_function(
+            self.skidpad_relocalizer.transform_to_skidpad_frame
+        )

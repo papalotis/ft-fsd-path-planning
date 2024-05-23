@@ -91,11 +91,20 @@ planner, you should run the demo one more time after it is finished.
     results = []
     timer = Timer(noprint=True)
 
+    relocalization_info = None
+
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations)),
         total=len(positions),
         desc="Calculating paths",
     ):
+        prev_relocalization_info = relocalization_info
+        relocalization_info = planner.relocalization_info
+        if relocalization_info is not None and prev_relocalization_info is None:
+            print("Relocalized at frame", i)
+            print(f"Translation: {relocalization_info.translation.round(1)}")
+            print(f"Rotation: {np.rad2deg(relocalization_info.rotation):.1f}")
+
         try:
             with timer:
                 out = planner.calculate_path_in_global_frame(

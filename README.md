@@ -15,6 +15,19 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ### December 2023 (v0.4)
 
+#### (v0.4.1)
+
+Added a property to the PathPlanner class that gives information about the relocalization process. The property is called `relocalization_info` and is a dataclass called `RelocalizationInformation`. It contains the following fields:
+
+- `translation` - A 2d array with the translation of the relocalization
+- `rotation` - A float with the rotation of the relocalization
+
+If the relocalization process has not been run, or is not relevant (currently only Skidpad has relocalization), the property will return `None`.
+
+The internal Skidpad frame has its origin at the center of the Skidpad, with the x-axis pointing towards the exit of the Skidpad and the y-axis pointing to the left-hand loop.
+
+#### (v0.4.0)
+
 Further improvements were added in December 2023. The main focus was to make the Skidpad mission more robust. The algorithm now uses a different approach for the Skidpad mission, which is much simpler and does not rely on the color of the cones at all.
 
 The logic that runs during the Skidpad mission is stateful, so if you want to use it, you will have to review the usage of the relevant classes including `PathPlanner`. More specifically, while in the past one could create a new instance of the `PathPlanner` class, for each computation, with minimal performance penalties, now this will cause the Skidpad path calculation to fail. It is recommended to create a new instance of the `PathPlanner` class when the vehicle enters `AS-READY` state and the SLAM pose has stabilized.
