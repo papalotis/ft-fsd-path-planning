@@ -11,7 +11,11 @@ import numpy as np
 from icecream import ic  # pylint: disable=unused-import
 from sklearn.cluster import DBSCAN
 
-from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
+from fsd_path_planning.relocalization.relocalization_base_class import (
+    RelocalizationCallable,
+    Relocalizer,
+)
+from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
@@ -111,7 +115,7 @@ def calculate_transformation(
     cluster_centers: FloatArray,
     original_vehicle_position: FloatArray,
     original_vehicle_direction: FloatArray,
-) -> tuple[callable, callable]:
+) -> tuple[RelocalizationCallable, RelocalizationCallable]:
     # Your code here
     """
     Given two reference points and two new points calculate
@@ -197,7 +201,7 @@ def calculate_reference_centers_for_skidpad_path(
     return np.array([center_neg_y, center_pos_y])
 
 
-class SkidpadRelocalizer:
+class SkidpadRelocalizer(Relocalizer):
     # this class attempts to relocalize the car in the skidpad map
     # since we will not detect all cones at once and we can sit in
     # the start line for a bit, this class will attempt to relocalize
@@ -205,35 +209,18 @@ class SkidpadRelocalizer:
     # transformation is found
 
     def __init__(self):
+        super().__init__()
+
         self.reference_centers = calculate_reference_centers_for_skidpad_path(
             BASE_SKIDPAD_PATH
         )
 
-        self._transform_to_skidpad_frame: callable[
-            [FloatArray, float], tuple[FloatArray, float]
-        ] | None = None
-        self._transform_to_original_frame: callable[
-            [FloatArray, float], tuple[FloatArray, float]
-        ] | None = None
-
-        self._original_vehicle_position: FloatArray | None = None
-        self._original_vehicle_direction: FloatArray | None = None
-
-    def attempt_relocalization_calculation(
+    def do_relocalization_once(
         self,
         cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> bool:
-        if self.is_relocalized:
-            return True
-
-        if self._original_vehicle_position is None:
-            self._original_vehicle_position = vehicle_position
-
-        if self._original_vehicle_direction is None:
-            self._original_vehicle_direction = vehicle_direction
-
+    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
         cones_array = np.row_stack(cones)
         cones_array_xy = cones_array[:, :2]
 
@@ -249,12 +236,12 @@ class SkidpadRelocalizer:
         potential_circles = circle_fit_powerset(cones_array_xy)
 
         if len(potential_circles) < 3:
-            return False
+            return
 
         try:
             circle_centers = calculate_circle_centers(potential_circles)
         except (ValueError, AssertionError):
-            return False
+            return
 
         # calculate the transformation
         try:
@@ -268,30 +255,9 @@ class SkidpadRelocalizer:
                 self._original_vehicle_direction,
             )
         except IndexError:
-            return False
+            return
 
-        # save the transformation
-        self._transform_to_skidpad_frame = transform_to_skidpad_frame
-        self._transform_to_original_frame = transform_to_original_frame
+        return transform_to_skidpad_frame, transform_to_original_frame
 
-        return True
-
-    def transform_to_skidpad_frame(
-        self, position_2d: FloatArray, yaw: float
-    ) -> tuple[FloatArray, float]:
-        if self._transform_to_skidpad_frame is None:
-            raise ValueError("No transformation calculated yet")
-
-        return self._transform_to_skidpad_frame(position_2d, yaw)
-
-    def transform_to_original_frame(
-        self, position_2d: FloatArray, yaw: float
-    ) -> tuple[FloatArray, float]:
-        if self._transform_to_original_frame is None:
-            raise ValueError("No transformation calculated yet")
-
-        return self._transform_to_original_frame(position_2d, yaw)
-
-    @property
-    def is_relocalized(self):
-        return self._transform_to_skidpad_frame is not None
+    def get_known_global_path(self) -> FloatArray:
+        return BASE_SKIDPAD_PATH[::2]
