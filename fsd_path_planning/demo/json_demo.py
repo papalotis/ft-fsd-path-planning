@@ -35,12 +35,20 @@ except TypeError:
 
 def select_mission_by_filename(filename: str) -> MissionTypes:
     is_skidpad = "skidpad" in filename
+    is_accel = "accel" in filename
 
     if is_skidpad:
         print(
             'The filename contains "skidpad", so we assume that the mission is skidpad.'
         )
         return MissionTypes.skidpad
+
+    if is_accel:
+        print(
+            'The filename contains "accel", so we assume that the mission is acceleration.'
+        )
+
+        return MissionTypes.acceleration
 
     return MissionTypes.trackdrive
 
@@ -82,7 +90,8 @@ planner, you should run the demo one more time after it is finished.
 
     # run planner once to "warm up" the JIT compiler / load all cached jit functions
     try:
-        planner.calculate_path_in_global_frame(
+        extra_planner = PathPlanner(mission)
+        extra_planner.calculate_path_in_global_frame(
             cone_observations[0], positions[0], directions[0]
         )
     except Exception:
@@ -92,11 +101,22 @@ planner, you should run the demo one more time after it is finished.
     results = []
     timer = Timer(noprint=True)
 
+    relocalization_info = None
+
+    # tqdm = lambda x, desc=None, total=None: x
+
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations)),
         total=len(positions),
         desc="Calculating paths",
     ):
+        prev_relocalization_info = relocalization_info
+        relocalization_info = planner.relocalization_info
+        if relocalization_info is not None and prev_relocalization_info is None:
+            print("Relocalized at frame", i)
+            print(f"Translation: {relocalization_info.translation.round(1)}")
+            print(f"Rotation: {np.rad2deg(relocalization_info.rotation):.1f}")
+
         try:
             with timer:
                 out = planner.calculate_path_in_global_frame(
@@ -109,7 +129,6 @@ planner, you should run the demo one more time after it is finished.
             print(f"Interrupted by user on frame {i}")
             break
         except Exception:
-            print(f"Error at frame {i}")
             raise
         results.append(out)
 
@@ -125,6 +144,7 @@ planner, you should run the demo one more time after it is finished.
     ax.set_aspect("equal")
     # plot animation
     frames = []
+
     for i in tqdm(range(len(results)), desc="Generating animation"):
         co = cone_observations[i]
         (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, "yo")
@@ -137,7 +157,7 @@ planner, you should run the demo one more time after it is finished.
         (yellow_cones_sorted,) = plt.plot(*results[i][2].T, "y-")
         (blue_cones_sorted,) = plt.plot(*results[i][1].T, "b-")
         (path,) = plt.plot(*results[i][0][:, 1:3].T, "r-")
-        (position,) = plt.plot(*positions[i], "go")
+        (position,) = plt.plot([positions[i][0]], [positions[i][1]], "go")
         (direction,) = plt.plot(
             *np.array([positions[i], positions[i] + directions[i]]).T, "g-"
         )
