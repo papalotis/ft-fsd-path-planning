@@ -16,7 +16,6 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,
     PathCalculationInput,
 )
-from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 

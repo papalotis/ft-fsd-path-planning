@@ -130,6 +130,7 @@ class CalculatePath:
         origin_path = self.path_calculator_helpers.calculate_almost_straight_path()[1:]
         yaw = angle_from_2d_vector(self.input.direction_global)
         path_rotated: FloatArray = rotate(origin_path, yaw)  # type: ignore
+
         final_trivial_path: FloatArray = path_rotated + self.input.position_global
         return final_trivial_path
 
@@ -513,7 +514,22 @@ class CalculatePath:
 
     def run_path_calculation(self) -> Tuple[FloatArray, FloatArray]:
         """Calculate path."""
-        if len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
+        if self.input.global_path is not None:
+            distance = np.linalg.norm(
+                self.input.position_global - self.input.global_path, axis=1
+            )
+
+            idx_closest_point_to_path = distance.argmin()
+
+            roll_value = -idx_closest_point_to_path + len(self.input.global_path) // 3
+
+            path_rolled = np.roll(self.input.global_path, roll_value, axis=0)
+            distance_rolled = np.roll(distance, roll_value)
+            mask_distance = distance_rolled < 30
+            path_rolled = path_rolled[mask_distance]
+            center_along_match_connection = path_rolled
+
+        elif len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
             if len(self.previous_paths) > 0:
                 # extract x, y from previously calculated path
                 center_along_match_connection = self.previous_paths[-1][:, 1:3]
@@ -531,20 +547,7 @@ class CalculatePath:
             center_along_match_connection = self.calculate_centerline_points_of_matches(
                 side_to_use, matches_to_other_side, match_on_other_side
             )
-        else:
-            distance = np.linalg.norm(
-                self.input.position_global - self.input.global_path, axis=1
-            )
-
-            idx_closest_point_to_path = distance.argmin()
-
-            roll_value = -idx_closest_point_to_path + len(self.input.global_path) // 3
-
-            path_rolled = np.roll(self.input.global_path, roll_value, axis=0)
-            distance_rolled = np.roll(distance, roll_value)
-            mask_distance = distance_rolled < 30
-            path_rolled = path_rolled[mask_distance]
-            center_along_match_connection = path_rolled
+        # else:
 
         path_update_too_far_away = self.fit_matches_as_spline(
             center_along_match_connection
@@ -554,9 +557,13 @@ class CalculatePath:
             path_update_too_far_away
         )
 
+        # print("path update", path_update.shape)
+
         try:
+            # print("in param")
             path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
         except ValueError:
+            # print("in erorr")
             # there is a bug with the path extrapolation which leads to the spline
             # fit failing, in this case we just use the previous path
             path_parameterization = self.do_all_mpc_parameter_calculations(

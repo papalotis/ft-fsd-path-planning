@@ -15,6 +15,10 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ### December 2023 (v0.4)
 
+#### (v0.4.2)
+
+Added `Acceleartion` relocalization and stable acceleration path calculation.
+
 #### (v0.4.1)
 
 Added a property to the PathPlanner class that gives information about the relocalization process. The property is called `relocalization_info` and is a dataclass called `RelocalizationInformation`. It contains the following fields:
