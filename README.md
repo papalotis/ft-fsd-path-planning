@@ -13,11 +13,12 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ## Updates 
 
-### December 2023 (v0.4)
+### December 2023, July 2024 (v0.4)
 
-#### (v0.4.2)
+#### (v0.4.3)
 
-Added `Acceleartion` relocalization and stable acceleration path calculation.
+- Added `Acceleartion` relocalization and stable acceleration path calculation.
+- Added caching mechanism for the sorrting step (about 20% performance improvement). The caching step slightly changes the logic of the algorithm and has not been thoroughly tested. By default, the caching is disabled. To enable it, set the `experimental_performance_improvements` parameter of the `PathPlanner` class to `True`.
 
 #### (v0.4.1)
 
