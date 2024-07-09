@@ -134,21 +134,6 @@ planner, you should run the demo one more time after it is finished.
         if timer.intervals[-1] > 0.1:
             print(f"Frame {i} took {timer.intervals[-1]:.4f} seconds")
 
-    # all_p_x = []
-    # for r in results:
-    #     p = r[0][:, 1:3]
-
-    #     all_p_x.extend(p[:, 0])
-
-    #     plt.plot(*p.T)
-
-    # # plt.xlim(min(all_p_x) - 3, max(all_p_x) + 3)
-    # plt.axis("equal")
-
-    # plt.show()
-
-    # return
-
     if show_runtime_histogram:
         # skip the first few frames, because they include "warmup time"
         plt.hist(timer.intervals[10:])
@@ -199,8 +184,6 @@ planner, you should run the demo one more time after it is finished.
                 title,
             ]
         )
-
-    print(len(frames))
 
     anim = matplotlib.animation.ArtistAnimation(
         fig, frames, interval=1 / data_rate * 1000, blit=True, repeat_delay=1000
