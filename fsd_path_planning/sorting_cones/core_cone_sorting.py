@@ -59,6 +59,7 @@ class ConeSorting:
         threshold_directional_angle: float,
         threshold_absolute_angle: float,
         use_unknown_cones: bool,
+        experimental_performance_improvements: bool = False,
     ):
         """
         Init method.
@@ -99,6 +100,7 @@ class ConeSorting:
             self.state.max_length,
             self.state.threshold_directional_angle,
             self.state.threshold_absolute_angle,
+            experimental_performance_improvements,
         )
 
     def set_new_input(self, slam_input: ConeSortingInput) -> None:

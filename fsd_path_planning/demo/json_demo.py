@@ -59,12 +59,13 @@ def main(
     remove_color_info: bool = False,
     show_runtime_histogram: bool = False,
     output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
+    experimental_performance_improvements: bool = False,
 ) -> None:
     data_path = get_filename(data_path)
 
     mission = select_mission_by_filename(data_path.name)
 
-    planner = PathPlanner(mission)
+    planner = PathPlanner(mission, experimental_performance_improvements)
 
     positions, directions, cone_observations = load_data_json(
         data_path, remove_color_info=remove_color_info

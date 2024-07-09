@@ -90,7 +90,9 @@ def create_default_pathing(mission: MissionTypes) -> CalculatePath:
     return path_calculation
 
 
-def create_default_sorting(mission: MissionTypes) -> ConeSorting:
+def create_default_sorting(
+    mission: MissionTypes, experiment_performance_improvements: bool = False
+) -> ConeSorting:
     """
     Create a cone sorting instance with default values.
 
@@ -101,6 +103,10 @@ def create_default_sorting(mission: MissionTypes) -> ConeSorting:
         cone_sorting: The created ConeSorting instance
     """
     cone_sorting_kwargs = get_cone_sorting_config(mission)
+
+    cone_sorting_kwargs[
+        "experimental_performance_improvements"
+    ] = experiment_performance_improvements
 
     cone_sorting = ConeSorting(**cone_sorting_kwargs)
     return cone_sorting

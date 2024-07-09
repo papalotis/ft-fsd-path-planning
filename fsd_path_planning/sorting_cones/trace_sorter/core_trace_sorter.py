@@ -126,6 +126,7 @@ class TraceSorter:
         max_length: int,
         threshold_directional_angle: float,
         threshold_absolute_angle: float,
+        experimental_caching: bool = False,
     ):
         """
         Constructor for TraceSorter class
@@ -145,6 +146,7 @@ class TraceSorter:
         self.threshold_absolute_angle = threshold_absolute_angle
 
         self.cached_results: ConeSortingCacheEntry | None = None
+        self.experimental_caching = experimental_caching
 
     def sort_left_right(
         self,
@@ -224,6 +226,10 @@ class TraceSorter:
         cone_type: ConeTypes,
     ) -> bool:
         assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
+
+        # automatically fail if caching is not enabled
+        if not self.experimental_caching:
+            return False
 
         if self.cached_results is None:
             return False
