@@ -16,7 +16,8 @@ if not TYPE_CHECKING:
 
     @my_njit
     def cast(  # pylint: disable=function-redefined
-        type_: Any, value_: Any  # pylint: disable=unused-argument
+        type_: Any,
+        value_: Any,  # pylint: disable=unused-argument
     ) -> Any:
         "Dummy numba jit function"
         return value_
