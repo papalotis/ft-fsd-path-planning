@@ -12,12 +12,12 @@ from dataclasses import dataclass, field
 from typing import Tuple
 
 import numpy as np
+from common_types import FloatArray, IntArray
 from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.cone_matching.functional_cone_matching import (
     calculate_virtual_cones_for_both_sides,
 )
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 MatchedCones = Tuple[FloatArray, FloatArray, IntArray, IntArray]

@@ -5,9 +5,8 @@ Description: Place the car in the known map and relocalize it.
 """
 from abc import ABC, abstractmethod
 
+from common_types import FloatArray
 from typing_extensions import Protocol
-
-from fsd_path_planning.types import FloatArray
 
 
 class RelocalizationCallable(Protocol):

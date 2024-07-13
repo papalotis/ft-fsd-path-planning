@@ -8,8 +8,8 @@ Project: fsd_path_planning
 from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from common_types import FloatArray, IntArray
 
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import my_njit
 
 if not TYPE_CHECKING:

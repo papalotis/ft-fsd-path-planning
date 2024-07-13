@@ -12,13 +12,13 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, cast
 
 import numpy as np
+from common_types import BoolArray, FloatArray, IntArray
 from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.path_calculator_helpers import (
     PathCalculatorHelpers,
 )
 from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,

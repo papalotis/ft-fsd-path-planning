@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
+from common_types import FloatArray
 
 from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
@@ -14,7 +15,6 @@ from fsd_path_planning.skidpad.skidpad_relocalizer import (
     PowersetCirceFitResult,
     circle_fit_powerset,
 )
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 

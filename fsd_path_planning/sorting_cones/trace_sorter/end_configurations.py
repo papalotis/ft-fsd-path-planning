@@ -9,13 +9,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
+from common_types import BoolArray, FloatArray, GenericArray, IntArray
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
     cast,
     lines_segments_intersect_indicator,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     my_in1d,

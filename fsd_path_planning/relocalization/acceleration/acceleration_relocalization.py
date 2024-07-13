@@ -6,12 +6,12 @@ Description: Place the car in the known accelearation map and relocalize it.
 
 
 import numpy as np
+from common_types import FloatArray
 
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
 )
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import rotate
 
 

@@ -9,10 +9,10 @@ the existing path
 Project: fsd_path_planning
 """
 import numpy as np
+from common_types import FloatArray
 from icecream import ic  # pylint: disable=unused-import
 from typing_extensions import Literal
 
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 

@@ -6,6 +6,7 @@ Project: fsd_path_planning
 """
 
 import numpy as np
+from common_types import BoolArray, FloatArray, IntArray, SortableConeTypes
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
 from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
@@ -14,7 +15,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     number_cones_on_each_side_for_each_config,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import angle_difference, vec_angle_between
 from fsd_path_planning.utils.utils import Timer

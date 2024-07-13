@@ -6,8 +6,8 @@ between cones
 Project: fsd_path_planning
 """
 import numpy as np
+from common_types import FloatArray, IntArray
 
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
 

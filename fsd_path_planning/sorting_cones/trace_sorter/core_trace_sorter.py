@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
 import numpy as np
+from common_types import FloatArray, IntArray
 
 # from fsd_path_planning.cone_matching.functional_cone_matching import \
 #     combine_and_sort_virtual_with_real
@@ -21,7 +22,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
     calc_scores_and_end_configurations,
 )
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,

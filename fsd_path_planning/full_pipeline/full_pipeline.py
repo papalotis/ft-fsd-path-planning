@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import Any, List, Optional, Union
 
 import numpy as np
+from common_types import FloatArray, IntArray
 
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
 from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
@@ -34,7 +35,6 @@ from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
     SkidpadRelocalizer,
 )
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSortingInput
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,

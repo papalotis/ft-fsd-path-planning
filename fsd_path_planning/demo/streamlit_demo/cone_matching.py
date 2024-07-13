@@ -5,6 +5,7 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
+from common_types import BoolArray, FloatArray, IntArray
 
 from fsd_path_planning.cone_matching.functional_cone_matching import (
     calculate_match_search_direction,
@@ -20,7 +21,6 @@ from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
 
