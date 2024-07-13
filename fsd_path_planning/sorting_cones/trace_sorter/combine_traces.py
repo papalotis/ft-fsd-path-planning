@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import Optional
 
 import numpy as np
-from common_types import FloatArray, IntArray
 
+from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
     lines_segments_intersect_indicator,
 )

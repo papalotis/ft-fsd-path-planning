@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from common_types import BoolArray, FloatArray, IntArray
 from matplotlib.axes import Axes
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.demo.streamlit_demo.common import (
     CONE_TYPE_TO_COLOR,
     create_animation,

@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
-from common_types import BoolArray, FloatArray, GenericArray, IntArray
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
     cast,

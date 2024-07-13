@@ -14,9 +14,9 @@ from __future__ import annotations
 from typing import Any, List, Optional, Union
 
 import numpy as np
-from common_types import FloatArray, IntArray
 
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
+from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
 from fsd_path_planning.config import (
     create_default_cone_matching_with_non_monotonic_matches,

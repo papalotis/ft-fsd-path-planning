@@ -10,13 +10,13 @@ Project: fsd_path_planning
 from typing import Tuple
 
 import numpy as np
-from common_types import FloatArray
 from icecream import ic
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,
     PathCalculationInput,
 )
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
 

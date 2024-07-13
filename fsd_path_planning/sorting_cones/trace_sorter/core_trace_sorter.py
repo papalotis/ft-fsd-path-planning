@@ -11,7 +11,8 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
 import numpy as np
-from common_types import FloatArray, IntArray
+
+from fsd_path_planning.common_types import FloatArray, IntArray
 
 # from fsd_path_planning.cone_matching.functional_cone_matching import \
 #     combine_and_sort_virtual_with_real

@@ -6,8 +6,13 @@ Project: fsd_path_planning
 """
 
 import numpy as np
-from common_types import BoolArray, FloatArray, IntArray, SortableConeTypes
 
+from fsd_path_planning.common_types import (
+    BoolArray,
+    FloatArray,
+    IntArray,
+    SortableConeTypes,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
 from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
     calc_distance_cost,

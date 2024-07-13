@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from common_types import FloatArray
 from matplotlib.axes._axes import Axes
 from matplotlib.figure import Figure
 
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 

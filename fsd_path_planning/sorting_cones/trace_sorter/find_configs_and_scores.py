@@ -11,8 +11,13 @@ import sys
 from typing import Optional, cast
 
 import numpy as np
-from common_types import BoolArray, FloatArray, IntArray, SortableConeTypes
 
+from fsd_path_planning.common_types import (
+    BoolArray,
+    FloatArray,
+    IntArray,
+    SortableConeTypes,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     create_adjacency_matrix,
 )

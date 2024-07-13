@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from common_types import FloatArray
 
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,

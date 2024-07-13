@@ -8,10 +8,10 @@ Description: Place the car in the known skidpad map and relocalize it.
 from itertools import combinations
 
 import numpy as np
-from common_types import FloatArray, IntArray
 from icecream import ic  # pylint: disable=unused-import
 from sklearn.cluster import DBSCAN
 
+from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,

@@ -5,8 +5,8 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
-from common_types import BoolArray, FloatArray, IntArray
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.cone_matching.functional_cone_matching import (
     calculate_match_search_direction,
     calculate_matches_for_side,
