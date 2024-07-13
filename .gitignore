@@ -145,3 +145,5 @@ media/
 *.ipynb
 
 .venv*/
+
+parameter_notes.md
