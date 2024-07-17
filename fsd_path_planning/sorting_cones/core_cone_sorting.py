@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Tuple
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
+from icecream import ic  # noqa: F401
 
 from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter

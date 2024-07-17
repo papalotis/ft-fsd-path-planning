@@ -11,14 +11,9 @@ from typing import Optional
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray, IntArray
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    lines_segments_intersect_indicator,
-)
-from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_difference,
     angle_from_2d_vector,
-    my_njit,
 )
 
 
@@ -218,9 +213,6 @@ def calc_new_length_for_configs_for_same_cone_intersection(
         sign_angle_right = np.sign(angle_right)
 
         absolute_angle_diff = abs(abs(angle_left) - abs(angle_right))
-
-        left_has_three = len(left_config) == 3
-        right_has_three = len(right_config) == 3
 
         n_cones_diff = abs(len(left_config) - len(right_config))
 

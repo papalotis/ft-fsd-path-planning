@@ -12,10 +12,7 @@ import numpy as np
 
 from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast,
-    lines_segments_intersect_indicator,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import cast
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     my_in1d,
@@ -146,7 +143,20 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             cone_type, car_position, car_direction_normalized, neighbors_points
         )
 
-        can_be_added = can_be_added & mask_second_cone_right_side
+        # the direction of the first two cones should be within some angle of the car direction
+        first_cone_to_neighbors = neighbors_points - trace[current_attempt[0]]
+        angle_between_car_and_first_cone = vec_angle_between(
+            car_direction_normalized, first_cone_to_neighbors
+        )
+        mask_direction_too_different = angle_between_car_and_first_cone < np.deg2rad(90)
+        # print(angle_between_car_and_first_cone)
+        # print(cone_type)
+        # print(mask_direction_too_different)
+
+        can_be_added = (
+            can_be_added & mask_second_cone_right_side & mask_direction_too_different
+        )
+        # print(can_be_added)
 
     for i in range(len(can_be_added)):
         if not can_be_added[i]:
@@ -182,12 +192,10 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             last_in_attempt = trace[current_attempt[position_in_stack]]
             second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
             last_to_candidate = candidate_neighbor_pos - last_in_attempt
-            angle_1 = cast(
-                FLOAT,
+            angle_1 = FLOAT(
                 np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0]),
             )
-            angle_2 = cast(
-                FLOAT,
+            angle_2 = FLOAT(
                 np.arctan2(last_to_candidate[1], last_to_candidate[0]),
             )
             # order is important here
@@ -196,18 +204,18 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
             if np.abs(difference) > threshold_absolute_angle:
                 can_be_added[i] = False
-            elif cone_type == ConeTypes.LEFT:
-                can_be_added[i] = (
-                    difference < threshold_directional_angle
-                    or len_last_to_candidate < 4.0
-                )
-            elif cone_type == ConeTypes.RIGHT:
-                can_be_added[i] = (
-                    difference > -threshold_directional_angle
-                    or len_last_to_candidate < 4.0
-                )
-            else:
-                raise AssertionError("Unreachable code")
+            # elif cone_type == ConeTypes.LEFT:
+            #     can_be_added[i] = (
+            #         difference < threshold_directional_angle
+            #         or len_last_to_candidate < 4.0
+            #     )
+            # elif cone_type == ConeTypes.RIGHT:
+            #     can_be_added[i] = (
+            #         difference > -threshold_directional_angle
+            #         or len_last_to_candidate < 4.0
+            #     )
+            # else:
+            #     raise AssertionError("Unreachable code")
 
             # check if candidate causes change in direction in attempt
             if position_in_stack >= 2:
@@ -215,12 +223,11 @@ def neighbor_bool_mask_can_be_added_to_attempt(
                 third_to_last_to_second_to_last = (
                     second_to_last_in_attempt - third_to_last
                 )
-                angle_3 = cast(
-                    FLOAT,
+                angle_3 = FLOAT(
                     np.arctan2(
                         third_to_last_to_second_to_last[1],
                         third_to_last_to_second_to_last[0],
-                    ),
+                    )
                 )
                 difference_2 = angle_difference(angle_1, angle_3)
 
@@ -236,15 +243,15 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             direction_offset = vec_angle_between(car_direction, diff)
             can_be_added[i] &= direction_offset < np.pi / 2
 
-        if can_be_added[i] and position_in_stack >= 0:
-            # make sure that no intersection with car occurs
-            last_in_attempt = trace[current_attempt[position_in_stack]]
-            car_start = car_position - car_direction_normalized * car_size / 2
-            car_end = car_position + car_direction_normalized * car_size
+        # if can_be_added[i] and position_in_stack >= 0:
+        #     # make sure that no intersection with car occurs
+        #     last_in_attempt = trace[current_attempt[position_in_stack]]
+        #     car_start = car_position - car_direction_normalized * car_size / 2
+        #     car_end = car_position + car_direction_normalized * car_size
 
-            can_be_added[i] &= not lines_segments_intersect_indicator(
-                last_in_attempt, candidate_neighbor_pos, car_start, car_end
-            )
+        #     can_be_added[i] &= not lines_segments_intersect_indicator(
+        #         last_in_attempt, candidate_neighbor_pos, car_start, car_end
+        #     )
 
     return can_be_added
 
@@ -525,17 +532,39 @@ def find_all_end_configurations(
         store_all_end_configurations,
     )
 
+    end_configurations = end_configurations_post_processing(
+        points, cone_type, first_k_indices_must_be, end_configurations
+    )
+
+    if len(end_configurations) == 0:
+        raise NoPathError("Could not create a valid trace using the provided points")
+
+    return end_configurations, all_configurations_and_is_end_configuration_indicator
+
+
+def end_configurations_post_processing(
+    points: FloatArray,
+    cone_type: ConeTypes,
+    first_k_indices_must_be: IntArray,
+    end_configurations: IntArray,
+) -> IntArray:
+    end_configurations = end_configurations.copy()
+
     if len(first_k_indices_must_be) > 0 and len(end_configurations) > 0:
+        # remove configs that do not start with the first k indices
+        # this should never happen, but just in case
         mask_keep = (
             end_configurations[:, : len(first_k_indices_must_be)]
             == first_k_indices_must_be
         ).all(axis=1)
         end_configurations = end_configurations[mask_keep]
 
+    # keep only configs with at least 3 cones
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
     end_configurations = end_configurations[mask_length_is_atleast_3]
 
-    # remove last cone from config if it is of unknown or orange type
+    ## remove last cone from config if it is not the type of cone we are sorting
+    # find the last cone in each config
     last_cone_in_each_config_idx = (
         np.argmax(end_configurations == -1, axis=1) - 1
     ) % end_configurations.shape[1]
@@ -554,13 +583,17 @@ def find_all_end_configurations(
         mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked
     ] = -1
 
-    # keep only configs with at least 3 cones
+    # keep only configs with at least 3 cones (do it again because we might have removed cones)
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
     end_configurations = end_configurations[mask_length_is_atleast_3]
 
-    # remove identical configs
+    ## remove identical configs and configs that are subsets of other configs
+    # this can happen at this step because we removed the last cone of some configurations
+    # so configs that only differ in the last cone are now identical
     end_configurations = np.unique(end_configurations, axis=0)
-    # remove subsets
+    # remove subsets (configs that contain the same order as another config, but stops earlier)
+    # again this is only possible because of the post processing step
+    # after the normal search each config is unique
     are_equal_mask = end_configurations[:, None] == end_configurations
     are_minus_1_mask = end_configurations == -1
     are_equal_mask = are_equal_mask | are_minus_1_mask
@@ -568,8 +601,4 @@ def find_all_end_configurations(
     is_duplicate = are_equal_mask.all(axis=-1).sum(axis=0) > 1
 
     end_configurations = end_configurations[~is_duplicate]
-
-    if len(end_configurations) == 0:
-        raise NoPathError("Could not create a valid trace using the provided points")
-
-    return end_configurations, all_configurations_and_is_end_configuration_indicator
+    return end_configurations

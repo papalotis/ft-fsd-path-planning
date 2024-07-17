@@ -4,6 +4,7 @@
 Description: This File calculates the costs for the different path versions
 Project: fsd_path_planning
 """
+from __future__ import annotations
 
 import numpy as np
 
@@ -220,7 +221,8 @@ def cost_configurations(
     configurations: IntArray,
     cone_type: SortableConeTypes,
     vehicle_position: FloatArray,  # pylint: disable=unused-argument (future proofing, incase we want to use it)
-    vehicle_direction: FloatArray,  # pylint: disable=unused-argument (future proofing)
+    vehicle_direction: FloatArray,
+    cost_weights: FloatArray | None = None,
     *,
     return_individual_costs: bool,
 ) -> FloatArray:
@@ -285,7 +287,34 @@ def cost_configurations(
 
     not timer_no_print and print()
 
-    factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
+    # factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
+    if cost_weights is None:
+        # print("Using default cost weights")
+        cost_weights = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
+        # cost_weights = np.array(
+        #     [
+        #         0.08320487986734468,
+        #         0.00016153963229155973,
+        #         0.11213234774688687,
+        #         0.19052761622060305,
+        #         0.001048961553032002,
+        #         0.09995840339425473,
+        #         0.5129662515855872,
+        #     ]
+        # )
+
+        cost_weights = np.array(
+            [
+                0.26044187663726104,
+                0.014157469252750543,
+                0.251599058517774,
+                0.13514519281264042,
+                0.028667789660811762,
+                0.20917671487400918,
+                0.10081189824475298,
+            ]
+        )
+    factors = cost_weights.copy()
     factors = factors / factors.sum()
     # print(configurations)
     final_costs = (
@@ -306,5 +335,4 @@ def cost_configurations(
     if return_individual_costs:
         return final_costs
 
-    return final_costs.sum(axis=-1)
     return final_costs.sum(axis=-1)
