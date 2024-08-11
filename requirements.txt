@@ -1,6 +1,6 @@
 # This is only used for streamlit
 numpy
-numba
+numba<0.60
 scipy
 icecream
 streamlit
