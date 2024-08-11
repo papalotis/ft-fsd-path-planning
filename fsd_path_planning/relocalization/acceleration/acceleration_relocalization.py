@@ -3,7 +3,7 @@
 """
 Description: Place the car in the known accelearation map and relocalize it.
 """
-
+from __future__ import annotations
 
 import numpy as np
 
