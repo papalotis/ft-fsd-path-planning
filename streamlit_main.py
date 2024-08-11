@@ -7,9 +7,9 @@ from fsd_path_planning.demo.streamlit_demo.cone_sorting import run as run_sortin
 from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
-from fsd_path_planning.demo.streamlit_demo.skidpad_relocalization import (
-    run as run_skidpad,
-)
+# from fsd_path_planning.demo.streamlit_demo.skidpad_relocalization import (
+#     run as run_skidpad,
+# )
 
 st.set_page_config(page_title="FT Path Planning", page_icon="🏎️")
 
@@ -65,7 +65,7 @@ with st.sidebar:
             "Corner Missing Blue Alt",
             "Hairpin",
             "Hairpin Extreme",
-            "Skidpad",
+            # "Skidpad",
             # "FS Spain 19 Full",
             # "Wrong sort",
             "Custom",
