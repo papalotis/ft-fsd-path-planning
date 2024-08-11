@@ -3,6 +3,7 @@
 """
 Description: Place the car in the known map and relocalize it.
 """
+from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from typing_extensions import Protocol
