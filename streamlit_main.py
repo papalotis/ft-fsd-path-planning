@@ -50,7 +50,7 @@ STRING_TO_FUNCTION = {
 
 STRING_TO_FUNCTION_SKIDPAD = {
     "Welcome": run_welcome,
-    "Relocalization": run_skidpad,
+    # "Relocalization": run_skidpad,
     "Path calculation": run_path_calculation,
 }
 
