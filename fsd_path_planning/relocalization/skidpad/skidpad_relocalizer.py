@@ -3,7 +3,7 @@
 """
 Description: Place the car in the known skidpad map and relocalize it.
 """
-
+from __future__ import annotations
 
 from itertools import combinations
 
