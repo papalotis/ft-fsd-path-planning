@@ -50,7 +50,7 @@ This version also adds `scikit-learn` as a dependency, which is used for the Ski
 
 This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 and 2022/23 Formula Student seasons.
 
-You can find an **interactive demo** of the algorithm <a href="https://papalotis-ft-fsd-path-planning-streamlit-main-63xmrt.streamlitapp.com/" target="_blank">here.</a>
+You can find an **interactive demo** of the algorithm <a href="https://ft-fsd-path-planning.streamlit.app//" target="_blank">here.</a>
 
 The intention of this repository is to provide teams entering the driverless category with a path planning algorithm, so that they can get up and running as fast as possible. Teams are encouraged to use this repository as a basis and adapt it to their own pipeline, as well as make changes that will improve the algorithm's performance. If your team decides to use this repository, feel free to inform us. We would be happy to hear about your experience.
 
