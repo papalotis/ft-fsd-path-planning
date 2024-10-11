@@ -18,7 +18,10 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 #### (v0.4.3)
 
 - Added `Acceleartion` relocalization and stable acceleration path calculation.
-- Added caching mechanism for the sorrting step (about 20% performance improvement). The caching step slightly changes the logic of the algorithm and has not been thoroughly tested. By default, the caching is disabled. To enable it, set the `experimental_performance_improvements` parameter of the `PathPlanner` class to `True`.
+- Added caching mechanism for the sorrting step (about 20% performance improvement). 
+
+> [!IMPORTANT]
+> The caching step slightly changes the logic of the algorithm and has not been thoroughly tested. By default, the caching is disabled. To enable it, set the `experimental_performance_improvements` parameter of the `PathPlanner` class to `True`.
 
 #### (v0.4.1)
 
@@ -50,7 +53,8 @@ This version also adds `scikit-learn` as a dependency, which is used for the Ski
 
 This repository contains the path planning algorithm developed by FaSTTUBe for the 2021/22 and 2022/23 Formula Student seasons.
 
-You can find an **interactive demo** of the algorithm <a href="https://ft-fsd-path-planning.streamlit.app//" target="_blank">here.</a>
+> [!NOTE]
+> You can find an interactive demo of the algorithm <a href="https://ft-fsd-path-planning.streamlit.app//" target="_blank">here.</a>
 
 The intention of this repository is to provide teams entering the driverless category with a path planning algorithm, so that they can get up and running as fast as possible. Teams are encouraged to use this repository as a basis and adapt it to their own pipeline, as well as make changes that will improve the algorithm's performance. If your team decides to use this repository, feel free to inform us. We would be happy to hear about your experience.
 
@@ -145,7 +149,8 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 
 Take a look at this notebook for a more detailed example: [simple_application.ipynb](fsd_path_planning/demo/simple_application.ipynb)
 
-There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
+> [!TIP]
+> There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
 It is recommended to create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
 
 ## Previous versions
