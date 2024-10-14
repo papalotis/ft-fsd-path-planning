@@ -20,7 +20,7 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 #### (v0.4.3)
 
-- Added `Acceleartion` relocalization and stable acceleration path calculation.
+- Added `Acceleration` relocalization and stable acceleration path calculation.
 - Added caching mechanism for the sorrting step (about 20% performance improvement). 
 
 > [!IMPORTANT]
