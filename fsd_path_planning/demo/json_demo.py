@@ -68,6 +68,7 @@ def main(
     show_runtime_histogram: bool = False,
     output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
     experimental_performance_improvements: bool = False,
+    dark_mode: bool = False,
 ) -> None:
     data_path = get_filename(data_path)
 
@@ -140,27 +141,70 @@ planner, you should run the demo one more time after it is finished.
         plt.hist(timer.intervals[10:])
         plt.show()
 
+    
+
+    # Conditionally apply dark mode settings
+    if dark_mode:
+        plt.style.use("dark_background")
+        cone_colors = {
+            'yellow': 'yo',
+            "yellow_sorted": "yo-",
+            'blue': 'bo',
+            "blue_sorted": "bo-",
+            'unknown': 'wo',  # White for unknown cones in dark mode
+            'orange_small': 'orange',
+            'orange_big': 'darkorange',
+            'path': 'r-',
+            'position': 'go',
+            'direction': 'g-',
+            'title_color': 'white'
+        }
+    else:
+        plt.style.use('default')
+        cone_colors = {
+            'yellow': 'yo',
+            "yellow_sorted": "yo-",
+            'blue': 'bo',
+            "blue_sorted": "bo-",
+            'unknown': 'ko',  # Black for unknown cones in light mode
+            'orange_small': 'orange',
+            'orange_big': 'darkorange',
+            'path': 'r-',
+            'position': 'go',
+            'direction': 'g-',
+            'title_color': 'black'
+        }
+
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.set_aspect("equal")
     # plot animation
     frames = []
 
+    
     for i in tqdm(range(len(results)), desc="Generating animation"):
         co = cone_observations[i]
-        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, "yo")
-        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, "bo")
-        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, "ko")
-        (orange_small_cones,) = plt.plot(*co[ConeTypes.ORANGE_SMALL].T, "o", c="orange")
+
+        # Use cone colors based on the mode
+        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, cone_colors['yellow'])  # Yellow cones
+        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, cone_colors['blue'])  # Blue cones
+        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, cone_colors['unknown'])  # Unknown cones
+        (orange_small_cones,) = plt.plot(*co[ConeTypes.ORANGE_SMALL].T, "o", c=cone_colors['orange_small'])  # Small orange cones
         (orange_big_cones,) = plt.plot(
-            *co[ConeTypes.ORANGE_BIG].T, "o", c="darkorange", markersize=10
+            *co[ConeTypes.ORANGE_BIG].T, "o", c=cone_colors['orange_big'], markersize=10  # Big orange cones
         )
-        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, "y-")
-        (blue_cones_sorted,) = plt.plot(*results[i][1].T, "b-")
-        (path,) = plt.plot(*results[i][0][:, 1:3].T, "r-")
-        (position,) = plt.plot([positions[i][0]], [positions[i][1]], "go")
+
+        # Sorted cones and path
+        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, cone_colors['yellow_sorted'])
+        (blue_cones_sorted,) = plt.plot(*results[i][1].T, cone_colors['blue_sorted'])
+        (path,) = plt.plot(*results[i][0][:, 1:3].T, cone_colors['path'])  # Path color
+
+        # Position and direction
+        (position,) = plt.plot([positions[i][0]], [positions[i][1]], cone_colors['position'])  # Position marker
         (direction,) = plt.plot(
-            *np.array([positions[i], positions[i] + directions[i]]).T, "g-"
+            *np.array([positions[i], positions[i] + directions[i]]).T, cone_colors['direction']  # Direction line
         )
+
+        # Title with conditional color
         title = plt.text(
             0.5,
             1.01,
@@ -169,7 +213,10 @@ planner, you should run the demo one more time after it is finished.
             va="bottom",
             transform=ax.transAxes,
             fontsize="large",
+            color=cone_colors['title_color']  # Title color based on mode
         )
+
+        # Collect the frame elements for animation
         frames.append(
             [
                 yellow_cones,
@@ -186,9 +233,9 @@ planner, you should run the demo one more time after it is finished.
             ]
         )
 
-    anim = matplotlib.animation.ArtistAnimation(
-        fig, frames, interval=1 / data_rate * 1000, blit=True, repeat_delay=1000
-    )
+        anim = matplotlib.animation.ArtistAnimation(
+            fig, frames, interval=1 / data_rate * 1000, blit=True, repeat_delay=1000
+        )
 
     if output_path is not None:
         absolute_path_str = str(output_path.absolute())

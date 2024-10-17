@@ -7,9 +7,9 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 | With color information | Without color information |
 | ---------------------- | ------------------------- |
 | Autocross FSG 2019
-|  ![An animation demoing the path planning algorithm](media/fsg_color.gif)                      |        ![An animation demoing the path planning algorithm without color](media/fsg_no_color.gif)                   |
+|  ![An animation demoing the path planning algorithm](media/fsg_color.gif#gh-light-mode-only)   ![An animation demoing the path planning algorithm](media/fsg_color_dark_mode.gif#gh-dark-mode-only) | ![An animation demoing the path planning algorithm without color](media/fsg_no_color.gif#gh-light-mode-only) ![An animation demoing the path planning algorithm without color](media/fsg_no_color_dark_mode.gif#gh-dark-mode-only)                   |
 | Skidpad |
-| ![An animation demoing the path planning algorithm](media/skidpad_color.gif) | ![An animation demoing the path planning algorithm without color](media/skidpad_no_color.gif) |
+| ![An animation demoing the path planning algorithm](media/skidpad_color.gif#gh-light-mode-only) ![An animation demoing the path planning algorithm](media/skidpad_color_dark_mode.gif#gh-dark-mode-only) | ![An animation demoing the path planning algorithm without color](media/skidpad_no_color.gif#gh-light-mode-only) ![An animation demoing the path planning algorithm without color](media/skidpad_no_color_dark_mode.gif#gh-dark-mode-only) |
 
 > [!NOTE]
 > You can find an interactive demo of the algorithm <a href="https://ft-fsd-path-planning.streamlit.app//" target="_blank">here.</a>
