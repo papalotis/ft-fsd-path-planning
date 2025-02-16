@@ -29,10 +29,6 @@ from fsd_path_planning.utils.math_utils import (
 )
 
 
-def ic(x):
-    return x  # pylint: disable=invalid-name
-
-
 @my_njit
 def cones_in_range_and_pov_mask(
     cones: FloatArray,
@@ -508,7 +504,7 @@ def calculate_virtual_cones_for_both_sides(
 
     dummy_result = empty_cone_array, empty_bool_array, empty_int_array
 
-    ic("calculate_virtual_cones_for_both_sides: start")
+    # ic("calculate_virtual_cones_for_both_sides: start")
     if len(left_cones) < 2 and len(right_cones) < 2:
         left_result = dummy_result
         right_result = dummy_result
@@ -523,7 +519,7 @@ def calculate_virtual_cones_for_both_sides(
         else:
             right_cones = empty_cone_array
 
-    ic("calculate_virtual_cones_for_both_sides: left match right")
+    # ic("calculate_virtual_cones_for_both_sides: left match right")
     right_mask_is_virtual: BoolArray
     right_cones_with_virtual, right_mask_is_virtual = (
         calculate_cones_for_other_side(
@@ -545,7 +541,7 @@ def calculate_virtual_cones_for_both_sides(
         )
     )
 
-    ic("calculate_virtual_cones_for_both_sides: right match left")
+    # ic("calculate_virtual_cones_for_both_sides: right match left")
     left_mask_is_virtual: BoolArray
     left_cones_with_virtual, left_mask_is_virtual = (
         calculate_cones_for_other_side(
@@ -567,7 +563,7 @@ def calculate_virtual_cones_for_both_sides(
         )
     )
 
-    ic("calculate_virtual_cones_for_both_sides: match left and right w/ virtual")
+    # ic("calculate_virtual_cones_for_both_sides: match left and right w/ virtual")
     left_to_right_matches, right_to_left_matches = match_both_sides_with_virtual_cones(
         left_cones_with_virtual,
         right_cones_with_virtual,
@@ -582,19 +578,11 @@ def calculate_virtual_cones_for_both_sides(
         left_mask_is_virtual,
         left_to_right_matches,
     )
-    ic("match left and right w/ virtual")
+    # ic("match left and right w/ virtual")
     right_result = (
         right_cones_with_virtual,
         right_mask_is_virtual,
         right_to_left_matches,
     )
 
-    return left_result, right_result
-    return left_result, right_result
-
-    return left_result, right_result
-    return left_result, right_result
-    return left_result, right_result
-
-    return left_result, right_result
     return left_result, right_result
