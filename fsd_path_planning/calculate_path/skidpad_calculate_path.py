@@ -7,10 +7,8 @@ Description: Skidpad requires a special case for path calculation. This file pro
 a class that overwrites the path calculation for the skidpad track.
 Project: fsd_path_planning
 """
-from typing import Tuple
 
 import numpy as np
-from icecream import ic
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,

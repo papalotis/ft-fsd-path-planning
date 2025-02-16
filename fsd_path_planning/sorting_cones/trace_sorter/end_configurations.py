@@ -4,6 +4,7 @@
 Description: This File calculates all the possible paths
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Tuple
@@ -133,9 +134,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
     neighbors_points = trace[neighbors]
     if position_in_stack >= 1:
-        mask_in_ellipse = calculate_mask_within_ellipse(
-            trace, current_attempt, position_in_stack, neighbors_points
-        )
+        mask_in_ellipse = calculate_mask_within_ellipse(trace, current_attempt, position_in_stack, neighbors_points)
 
         can_be_added = can_be_added & mask_in_ellipse
 
@@ -197,24 +196,16 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             if np.abs(difference) > threshold_absolute_angle:
                 can_be_added[i] = False
             elif cone_type == ConeTypes.LEFT:
-                can_be_added[i] = (
-                    difference < threshold_directional_angle
-                    or len_last_to_candidate < 4.0
-                )
+                can_be_added[i] = difference < threshold_directional_angle or len_last_to_candidate < 4.0
             elif cone_type == ConeTypes.RIGHT:
-                can_be_added[i] = (
-                    difference > -threshold_directional_angle
-                    or len_last_to_candidate < 4.0
-                )
+                can_be_added[i] = difference > -threshold_directional_angle or len_last_to_candidate < 4.0
             else:
                 raise AssertionError("Unreachable code")
 
             # check if candidate causes change in direction in attempt
             if position_in_stack >= 2:
                 third_to_last = trace[current_attempt[position_in_stack - 2]]
-                third_to_last_to_second_to_last = (
-                    second_to_last_in_attempt - third_to_last
-                )
+                third_to_last_to_second_to_last = second_to_last_in_attempt - third_to_last
                 angle_3 = cast(
                     FLOAT,
                     np.arctan2(
@@ -224,10 +215,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
                 )
                 difference_2 = angle_difference(angle_1, angle_3)
 
-                if (
-                    np.sign(difference) != np.sign(difference_2)
-                    and np.abs(difference - difference_2) > 1.3
-                ):
+                if np.sign(difference) != np.sign(difference_2) and np.abs(difference - difference_2) > 1.3:
                     can_be_added[i] = False
 
         if can_be_added[i] and position_in_stack == 1:
@@ -263,9 +251,7 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
         if neighbor == neighbors[i]:
             continue
 
-        neighbor_to_last_in_attempt = (
-            trace[current_attempt[position_in_stack]] - trace[neighbor]
-        )
+        neighbor_to_last_in_attempt = trace[current_attempt[position_in_stack]] - trace[neighbor]
 
         neighbor_to_candidate = trace[candidate_neighbor] - trace[neighbor]
 
@@ -279,8 +265,7 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
         if (
             dist_to_candidate < 6.0
             and dist_to_last_in_attempt < 6.0
-            and vec_angle_between(neighbor_to_last_in_attempt, neighbor_to_candidate)
-            > np.deg2rad(150)
+            and vec_angle_between(neighbor_to_last_in_attempt, neighbor_to_candidate) > np.deg2rad(150)
         ):
             can_be_added[i] = False
             break
@@ -360,7 +345,7 @@ def _impl_find_all_end_configurations(
     car_direction: FloatArray,
     car_size: float,
     store_all_end_configurations: bool,
-) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
+) -> Tuple[IntArray, Optional[Tuple[IntArray, BoolArray]]]:
     """
     Finds all the possible paths up to length target length. If a path
     Args:
@@ -398,9 +383,7 @@ def _impl_find_all_end_configurations(
         current_attempt[position_in_stack + 1 :] = -1
 
         # get the neighbors of the last node in the attempt
-        neighbors = adjacency_neighbors[
-            adjacency_borders[next_idx] : adjacency_borders[next_idx + 1]
-        ]
+        neighbors = adjacency_neighbors[adjacency_borders[next_idx] : adjacency_borders[next_idx + 1]]
 
         can_be_added = neighbor_bool_mask_can_be_added_to_attempt(
             trace,
@@ -415,9 +398,7 @@ def _impl_find_all_end_configurations(
             car_size,
         )
 
-        has_valid_neighbors = position_in_stack < target_length - 1 and np.any(
-            can_be_added
-        )
+        has_valid_neighbors = position_in_stack < target_length - 1 and np.any(can_be_added)
         # check that we haven't hit target length and that we have neighbors to add
         if has_valid_neighbors:
             for i in range(len(can_be_added)):
@@ -434,35 +415,23 @@ def _impl_find_all_end_configurations(
 
         # leaf
         else:
-            end_configurations = resize_stack_if_needed(
-                end_configurations, end_configurations_pointer
-            )
+            end_configurations = resize_stack_if_needed(end_configurations, end_configurations_pointer)
 
             end_configurations[end_configurations_pointer:] = current_attempt.copy()
 
             end_configurations_pointer += 1
 
         if store_all_end_configurations:
-            all_configurations = resize_stack_if_needed(
-                all_configurations, all_configurations_counter
-            )
-            configuration_is_end = resize_stack_if_needed(
-                configuration_is_end, all_configurations_counter
-            )
+            all_configurations = resize_stack_if_needed(all_configurations, all_configurations_counter)
+            configuration_is_end = resize_stack_if_needed(configuration_is_end, all_configurations_counter)
             all_configurations[all_configurations_counter] = current_attempt
             configuration_is_end[all_configurations_counter] = not has_valid_neighbors
             all_configurations_counter += 1
 
-    return_value_end_configurations: IntArray = end_configurations[
-        :end_configurations_pointer
-    ]
+    return_value_end_configurations: IntArray = end_configurations[:end_configurations_pointer]
 
-    mask_end_configurations_with_more_that_two_nodes = (
-        return_value_end_configurations != -1
-    ).sum(axis=1) > 2
-    return_value_end_configurations = return_value_end_configurations[
-        mask_end_configurations_with_more_that_two_nodes
-    ]
+    mask_end_configurations_with_more_that_two_nodes = (return_value_end_configurations != -1).sum(axis=1) > 2
+    return_value_end_configurations = return_value_end_configurations[mask_end_configurations_with_more_that_two_nodes]
 
     if store_all_end_configurations:
         all_configurations = all_configurations[:all_configurations_counter]
@@ -488,7 +457,7 @@ def find_all_end_configurations(
     car_direction: FloatArray,
     car_size: float,
     store_all_end_configurations: bool,
-) -> tuple[IntArray, Optional[tuple[IntArray, BoolArray]]]:
+) -> Tuple[IntArray, Optional[Tuple[IntArray, BoolArray]]]:
     """
     Finds all the possible paths that include all the reachable nodes from the starting
     Args:
@@ -526,33 +495,22 @@ def find_all_end_configurations(
     )
 
     if len(first_k_indices_must_be) > 0 and len(end_configurations) > 0:
-        mask_keep = (
-            end_configurations[:, : len(first_k_indices_must_be)]
-            == first_k_indices_must_be
-        ).all(axis=1)
+        mask_keep = (end_configurations[:, : len(first_k_indices_must_be)] == first_k_indices_must_be).all(axis=1)
         end_configurations = end_configurations[mask_keep]
 
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
     end_configurations = end_configurations[mask_length_is_atleast_3]
 
     # remove last cone from config if it is of unknown or orange type
-    last_cone_in_each_config_idx = (
-        np.argmax(end_configurations == -1, axis=1) - 1
-    ) % end_configurations.shape[1]
+    last_cone_in_each_config_idx = (np.argmax(end_configurations == -1, axis=1) - 1) % end_configurations.shape[1]
 
-    last_cone_in_each_config = end_configurations[
-        np.arange(end_configurations.shape[0]), last_cone_in_each_config_idx
-    ]
+    last_cone_in_each_config = end_configurations[np.arange(end_configurations.shape[0]), last_cone_in_each_config_idx]
 
     mask_last_cone_is_not_of_type = points[last_cone_in_each_config, 2] != cone_type
 
-    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[
-        mask_last_cone_is_not_of_type
-    ]
+    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_last_cone_is_not_of_type]
 
-    end_configurations[
-        mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked
-    ] = -1
+    end_configurations[mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked] = -1
 
     # keep only configs with at least 3 cones
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3

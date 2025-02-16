@@ -1,4 +1,5 @@
 from copy import deepcopy
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +20,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 
 
 def show_powerset(
-    cones_by_type: list[FloatArray], position: FloatArray, direction: FloatArray
+    cones_by_type: List[FloatArray], position: FloatArray, direction: FloatArray
 ) -> PowersetCirceFitResult:
     all_cones = np.row_stack(cones_by_type)
     r = circle_fit_powerset(all_cones)
@@ -45,9 +46,7 @@ def show_path() -> None:
     idxs = np.arange(len(path))
 
     # 3d plot using plotly
-    fig = go.Figure(
-        data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")]
-    )
+    fig = go.Figure(data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")])
 
     # make sure that the axis are equal
     # orthographic projection
@@ -100,15 +99,11 @@ The Skidpad track looks like this:
 
     left_keep_idxs = np.linalg.norm(cones_by_type[ConeTypes.LEFT] - position, axis=1)
     left_keep_idxs = left_keep_idxs.argsort()[:n_cones_to_keep]
-    copy_cones_by_type[ConeTypes.LEFT] = copy_cones_by_type[ConeTypes.LEFT][
-        left_keep_idxs
-    ]
+    copy_cones_by_type[ConeTypes.LEFT] = copy_cones_by_type[ConeTypes.LEFT][left_keep_idxs]
 
     right_keep_idxs = np.linalg.norm(cones_by_type[ConeTypes.RIGHT] - position, axis=1)
     right_keep_idxs = right_keep_idxs.argsort()[:n_cones_to_keep]
-    copy_cones_by_type[ConeTypes.RIGHT] = copy_cones_by_type[ConeTypes.RIGHT][
-        right_keep_idxs
-    ]
+    copy_cones_by_type[ConeTypes.RIGHT] = copy_cones_by_type[ConeTypes.RIGHT][right_keep_idxs]
 
     visualize_configuration(
         position,

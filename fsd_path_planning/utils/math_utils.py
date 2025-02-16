@@ -7,7 +7,7 @@ Taken from ft-as-utils
 
 Project: fsd_path_planning
 """
-from typing import Tuple, TypeVar, cast
+from typing import TypeVar, cast
 
 import numpy as np
 from numba import jit

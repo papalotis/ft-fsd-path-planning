@@ -5,13 +5,13 @@ Cone sorting class.
 Description: Entry point for Pathing/ConeSorting
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
 from fsd_path_planning.types import FloatArray
@@ -22,9 +22,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 class ConeSortingInput:
     """Dataclass holding inputs."""
 
-    slam_cones: list[FloatArray] = field(
-        default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
-    )
+    slam_cones: List[FloatArray] = field(default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes])
     slam_position: FloatArray = field(default_factory=lambda: np.zeros((2)))
     slam_direction: FloatArray = field(default_factory=lambda: np.zeros((2)))
 
@@ -42,9 +40,7 @@ class ConeSortingState:
     use_unknown_cones: bool
     position_global: FloatArray = field(default_factory=lambda: np.zeros(2))
     direction_global: FloatArray = field(default_factory=lambda: np.array([0, 1.0]))
-    cones_by_type_array: list[FloatArray] = field(
-        default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
-    )
+    cones_by_type_array: List[FloatArray] = field(default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes])
 
 
 class ConeSorting:

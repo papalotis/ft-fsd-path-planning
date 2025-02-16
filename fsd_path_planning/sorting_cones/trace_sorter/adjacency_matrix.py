@@ -5,7 +5,7 @@ Description: This File calculates the Adjacency Matrix
 Project: fsd_path_planning
 """
 
-from typing import Tuple, cast
+from typing import Tuple
 
 import numpy as np
 
