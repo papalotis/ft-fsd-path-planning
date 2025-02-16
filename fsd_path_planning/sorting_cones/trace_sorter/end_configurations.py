@@ -12,10 +12,7 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    cast,
-    lines_segments_intersect_indicator,
-)
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import lines_segments_intersect_indicator
 from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
@@ -108,10 +105,6 @@ def resize_stack_if_needed(stack: GenericArray, stack_pointer: int) -> GenericAr
     return stack
 
 
-# for numba
-FLOAT = float if TYPE_CHECKING else np.float32
-
-
 @my_njit
 def neighbor_bool_mask_can_be_added_to_attempt(
     trace: FloatArray,
@@ -181,14 +174,9 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             last_in_attempt = trace[current_attempt[position_in_stack]]
             second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
             last_to_candidate = candidate_neighbor_pos - last_in_attempt
-            angle_1 = cast(
-                FLOAT,
-                np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0]),
-            )
-            angle_2 = cast(
-                FLOAT,
-                np.arctan2(last_to_candidate[1], last_to_candidate[0]),
-            )
+            angle_1: float = np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0])
+            angle_2: float = np.arctan2(last_to_candidate[1], last_to_candidate[0])
+
             # order is important here
             difference = angle_difference(angle_2, angle_1)
             len_last_to_candidate = np.linalg.norm(last_to_candidate)
@@ -206,13 +194,11 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             if position_in_stack >= 2:
                 third_to_last = trace[current_attempt[position_in_stack - 2]]
                 third_to_last_to_second_to_last = second_to_last_in_attempt - third_to_last
-                angle_3 = cast(
-                    FLOAT,
-                    np.arctan2(
-                        third_to_last_to_second_to_last[1],
-                        third_to_last_to_second_to_last[0],
-                    ),
+                angle_3: float = np.arctan2(
+                    third_to_last_to_second_to_last[1],
+                    third_to_last_to_second_to_last[0],
                 )
+
                 difference_2 = angle_difference(angle_1, angle_3)
 
                 if np.sign(difference) != np.sign(difference_2) and np.abs(difference - difference_2) > 1.3:
@@ -327,7 +313,8 @@ def angle_difference(angle1: FloatArray, angle2: FloatArray) -> FloatArray:
     Returns:
         The difference between the two angles.
     """
-    return cast(FloatArray, (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi)  # type: ignore
+    return_value: FloatArray = (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi
+    return return_value
 
 
 @my_njit

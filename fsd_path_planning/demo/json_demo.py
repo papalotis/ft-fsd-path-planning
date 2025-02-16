@@ -24,6 +24,7 @@ try:
     from tqdm import tqdm
 except ImportError:
     print("You can get a progress bar by installing tqdm: pip install tqdm")
+
     def tqdm(x, total=None):
         return x
 

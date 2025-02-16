@@ -6,22 +6,13 @@ of the cost function of the sorting algorithm.
 
 Project: fsd_path_planning
 """
-from typing import TYPE_CHECKING, Any, cast
+
+from typing import Tuple
 
 import numpy as np
 
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import my_njit
-
-if not TYPE_CHECKING:
-
-    @my_njit
-    def cast(  # pylint: disable=function-redefined
-        type_: Any,
-        value_: Any,  # pylint: disable=unused-argument
-    ) -> Any:
-        "Dummy numba jit function"
-        return value_
 
 
 @my_njit
@@ -72,23 +63,74 @@ def _handle_line_segment_intersection_parallel_case(
 
     if segment_a_start[axis_to_use] < segment_b_start[axis_to_use]:
         left_segment_end_scalar = segment_a_end[axis_to_use]
-        right_segment_start_scalar = min(
-            segment_b_start[axis_to_use], segment_b_end[axis_to_use]
-        )
+        right_segment_start_scalar = min(segment_b_start[axis_to_use], segment_b_end[axis_to_use])
     else:
         left_segment_end_scalar = segment_b_end[axis_to_use]
-        right_segment_start_scalar = min(
-            segment_a_start[axis_to_use], segment_a_end[axis_to_use]
-        )
+        right_segment_start_scalar = min(segment_a_start[axis_to_use], segment_a_end[axis_to_use])
 
-    return_value = cast(
-        bool,
-        left_segment_end_scalar >= right_segment_start_scalar,
-    )
+    return_value: bool = left_segment_end_scalar >= right_segment_start_scalar
     return return_value
 
 
 _DEFAULT_EPSILON = 1e-6
+
+
+@my_njit
+def calc_intersections(homogeneous: FloatArray) -> Tuple[float, float, float]:
+    line_a = np.cross(homogeneous[0], homogeneous[1])  # get first line
+    line_b = np.cross(homogeneous[2], homogeneous[3])  # get second line
+    inter_x, inter_y, inter_z = np.cross(line_a, line_b)  # point of intersection
+
+    return inter_x, inter_y, inter_z
+
+
+@my_njit
+def intersection_in_bounding_box(
+    inter_x: float, inter_y: float, inter_z: float, homogeneous: FloatArray
+) -> Tuple[float, float, float, float, float, float, float, float, float, float]:
+    # find intersection point
+    intersection_x, intersection_y = np.array([inter_x / inter_z, inter_y / inter_z])
+
+    # bounding boxes
+    segment_a_left, segment_a_right = np.sort(homogeneous[:2, 0])
+    segment_b_left, segment_b_right = np.sort(homogeneous[2:, 0])
+    segment_a_bottom, segment_a_top = np.sort(homogeneous[:2, 1])
+    segment_b_bottom, segment_b_top = np.sort(homogeneous[2:, 1])
+
+    return (
+        intersection_x,
+        intersection_y,
+        segment_a_left,
+        segment_a_right,
+        segment_b_left,
+        segment_b_right,
+        segment_a_bottom,
+        segment_a_top,
+        segment_b_bottom,
+        segment_b_top,
+    )
+
+
+@my_njit
+def check_intersection_within_bounding_boxes(
+    epsilon: float,
+    intersection_x: float,
+    intersection_y: float,
+    segment_a_left: float,
+    segment_a_right: float,
+    segment_b_left: float,
+    segment_b_right: float,
+    segment_a_bottom: float,
+    segment_a_top: float,
+    segment_b_bottom: float,
+    segment_b_top: float,
+) -> bool:
+    return (
+        (segment_a_left - epsilon <= intersection_x <= segment_a_right + epsilon)
+        and (segment_b_left - epsilon <= intersection_x <= segment_b_right + epsilon)
+        and (segment_a_bottom - epsilon <= intersection_y <= segment_a_top + epsilon)
+        and (segment_b_bottom - epsilon <= intersection_y <= segment_b_top + epsilon)
+    )
 
 
 @my_njit
@@ -114,13 +156,9 @@ def lines_segments_intersect_indicator(
         A boolean indicating if the two line segments intersect.
     """
     # Adapted from https://stackoverflow.com/a/42727584
-    homogeneous = _make_segments_homogeneous(
-        segment_a_start, segment_a_end, segment_b_start, segment_b_end
-    )
+    homogeneous = _make_segments_homogeneous(segment_a_start, segment_a_end, segment_b_start, segment_b_end)
 
-    line_a = np.cross(homogeneous[0], homogeneous[1])  # get first line
-    line_b = np.cross(homogeneous[2], homogeneous[3])  # get second line
-    inter_x, inter_y, inter_z = np.cross(line_a, line_b)  # point of intersection
+    inter_x, inter_y, inter_z = calc_intersections(homogeneous)
 
     # lines are parallel <=> z is zero
     # np.allclose not allowed in nopython mode
@@ -129,26 +167,37 @@ def lines_segments_intersect_indicator(
             segment_a_start, segment_a_end, segment_b_start, segment_b_end, epsilon
         )
 
-    # find intersection point
-    intersection_x, intersection_y = np.array([inter_x / inter_z, inter_y / inter_z])
-
-    # bounding boxes
-    segment_a_left, segment_a_right = np.sort(homogeneous[:2, 0])
-    segment_b_left, segment_b_right = np.sort(homogeneous[2:, 0])
-    segment_a_bottom, segment_a_top = np.sort(homogeneous[:2, 1])
-    segment_b_bottom, segment_b_top = np.sort(homogeneous[2:, 1])
-
     # check that intersection point is in both bounding boxes
     # check with a bit of epsilon for numerical stability
 
-    return_value = (
-        (segment_a_left - epsilon <= intersection_x <= segment_a_right + epsilon)
-        and (segment_b_left - epsilon <= intersection_x <= segment_b_right + epsilon)
-        and (segment_a_bottom - epsilon <= intersection_y <= segment_a_top + epsilon)
-        and (segment_b_bottom - epsilon <= intersection_y <= segment_b_top + epsilon)
+    (
+        intersection_x,
+        intersection_y,
+        segment_a_left,
+        segment_a_right,
+        segment_b_left,
+        segment_b_right,
+        segment_a_bottom,
+        segment_a_top,
+        segment_b_bottom,
+        segment_b_top,
+    ) = intersection_in_bounding_box(inter_x, inter_y, inter_z, homogeneous)
+
+    return_value = check_intersection_within_bounding_boxes(
+        epsilon,
+        intersection_x,
+        intersection_y,
+        segment_a_left,
+        segment_a_right,
+        segment_b_left,
+        segment_b_right,
+        segment_a_bottom,
+        segment_a_top,
+        segment_b_bottom,
+        segment_b_top,
     )
 
-    return bool(return_value)
+    return return_value
 
 
 @my_njit
@@ -233,9 +282,7 @@ def pairwise_segment_intersection(
     # [0,0,0,1,1,1,2,2,2]
     indices_first = np.repeat(indices, number_of_segments)
     # [0,1,2,0,1,2,0,1,2] (tile is not allowed in njit)
-    indices_second: IntArray = (
-        indices_first.reshape(number_of_segments, -1).T.copy().reshape(-1)
-    )
+    indices_second: IntArray = indices_first.reshape(number_of_segments, -1).T.copy().reshape(-1)
 
     # keep lower triangle
     # intersect_with_self just turns the main diagonal on (done later)
@@ -252,28 +299,20 @@ def pairwise_segment_intersection(
     second_starts = segment_starts[indices_second_keep]
     second_ends = segment_ends[indices_second_keep]
 
-    indicator_overlap = batch_lines_segments_intersect_indicator(
-        first_starts, first_ends, second_starts, second_ends
-    )
+    indicator_overlap = batch_lines_segments_intersect_indicator(first_starts, first_ends, second_starts, second_ends)
 
     if intersect_with_self:
         indicator_matrix = np.eye(number_of_segments, dtype=np.bool_)
     else:
-        indicator_matrix = np.zeros(
-            (number_of_segments, number_of_segments), dtype=np.bool_
-        )
+        indicator_matrix = np.zeros((number_of_segments, number_of_segments), dtype=np.bool_)
 
     # cannot used advanced indexing twice with nopython
     # so we have to do it manually
     for index_first_single, index_second_single, indicator_overlap_single in zip(
         indices_first_keep, indices_second_keep, indicator_overlap
     ):
-        indicator_matrix[
-            index_first_single, index_second_single
-        ] = indicator_overlap_single
-        indicator_matrix[
-            index_second_single, index_first_single
-        ] = indicator_overlap_single
+        indicator_matrix[index_first_single, index_second_single] = indicator_overlap_single
+        indicator_matrix[index_second_single, index_first_single] = indicator_overlap_single
 
     return indicator_matrix
 
@@ -374,9 +413,7 @@ def number_of_intersections_in_trace(
 
 
 @my_njit
-def number_of_intersections_in_configurations(
-    points: FloatArray, configurations: IntArray
-) -> IntArray:
+def number_of_intersections_in_configurations(points: FloatArray, configurations: IntArray) -> IntArray:
     """
     Calculate the number of intersections for a given set of configurations of 2d
     points.
@@ -398,9 +435,7 @@ def number_of_intersections_in_configurations(
         configuration = configurations[i]
         configuration_filtered = configuration[configuration != -1]
         points_configuration = points[configuration_filtered]
-        number_of_intersections_for_configuration = number_of_intersections_in_trace(
-            points_configuration
-        )
+        number_of_intersections_for_configuration = number_of_intersections_in_trace(points_configuration)
         result_array[i] = number_of_intersections_for_configuration
 
     return result_array

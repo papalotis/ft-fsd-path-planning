@@ -28,6 +28,7 @@ from fsd_path_planning.utils.math_utils import (
     vec_angle_between,
 )
 
+
 def ic(x):
     return x  # pylint: disable=invalid-name
 
@@ -503,7 +504,7 @@ def calculate_virtual_cones_for_both_sides(
     #     print(locals())
     empty_bool_array: BoolArray = np.zeros(0, dtype=np.bool_)
     empty_int_array: IntArray = np.zeros(0, dtype=np.int_)
-    empty_cone_array: FloatArray = np.zeros((0, 2), dtype=np.float_)
+    empty_cone_array: FloatArray = np.zeros((0, 2), dtype=np.float64)
 
     dummy_result = empty_cone_array, empty_bool_array, empty_int_array
 
