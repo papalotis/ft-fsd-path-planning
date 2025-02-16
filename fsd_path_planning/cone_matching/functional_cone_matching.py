@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import List, Literal, Tuple, cast
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
+from icecream import ic  # pylint: disable=unused-import  # noqa: F401
 
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_match_search_direction,

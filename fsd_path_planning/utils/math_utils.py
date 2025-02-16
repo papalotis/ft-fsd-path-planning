@@ -1,4 +1,4 @@
-#!/usin_roll/bin/env python3
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 """
 Description: A module with common mathematical functions
