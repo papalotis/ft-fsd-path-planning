@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import Tuple, cast
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 from scipy.ndimage import uniform_filter1d
 
 from fsd_path_planning.types import FloatArray, IntArray
@@ -99,7 +98,7 @@ def create_cyclic_sliding_window_indices(
     window_size: int, step_size: int, signal_length: int
 ) -> IntArray:
     if window_size % 2 == 0:
-        raise ValueError(f"Window size must be odd.")
+        raise ValueError("Window size must be odd.")
     half_window_size = window_size // 2
 
     indexer = (

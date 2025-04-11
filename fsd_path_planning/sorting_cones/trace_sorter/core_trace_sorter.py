@@ -5,10 +5,11 @@ Description: This module provides functionality for sorting a trace of cones int
 plausible track
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -33,14 +34,10 @@ from fsd_path_planning.utils.math_utils import (
 from fsd_path_planning.utils.utils import Timer
 
 
-def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
+def flatten_cones_by_type_array(cones_by_type: List[FloatArray]) -> FloatArray:
     """Ravel the cones_by_type_array"""
 
-    if (
-        isinstance(cones_by_type, np.ndarray)
-        and cones_by_type.ndim == 2
-        and cones_by_type.shape[1] == 3
-    ):
+    if isinstance(cones_by_type, np.ndarray) and cones_by_type.ndim == 2 and cones_by_type.shape[1] == 3:
         return cones_by_type
 
     n_all_cones = sum(map(len, cones_by_type))
@@ -90,8 +87,8 @@ def cone_arrays_are_similar(
 
 
 # def cones_by_type_are_similar(
-#     cones_by_type: list[FloatArray],
-#     other_cones_by_type: list[FloatArray],
+#     cones_by_type: List[FloatArray],
+#     other_cones_by_type: List[FloatArray],
 #     threshold: float,
 # ) -> bool:
 #     return all(
@@ -109,8 +106,8 @@ class ConeSortingCacheEntry:
     input_cones: FloatArray  # x, y, color
     left_starting_cones: FloatArray
     right_starting_cones: FloatArray
-    left_result: tuple[Any, ...]
-    right_result: tuple[Any, ...]
+    left_result: Tuple[Any, ...]
+    right_result: Tuple[Any, ...]
 
 
 class TraceSorter:
@@ -150,10 +147,10 @@ class TraceSorter:
 
     def sort_left_right(
         self,
-        cones_by_type: list[FloatArray],
+        cones_by_type: List[FloatArray],
         car_pos: FloatArray,
         car_dir: FloatArray,
-    ) -> tuple[FloatArray, FloatArray]:
+    ) -> Tuple[FloatArray, FloatArray]:
         timer_no_print = True
         cones_flat = flatten_cones_by_type_array(cones_by_type)
 
@@ -241,18 +238,14 @@ class TraceSorter:
         )
 
         # first we check if small array is similar
-        previous_cones_similar = cone_arrays_are_similar(
-            starting_cones, previous_starting_cones, threshold
-        )
+        previous_cones_similar = cone_arrays_are_similar(starting_cones, previous_starting_cones, threshold)
 
         # if it not then we need to redo the sorting
         if not previous_cones_similar:
             return False
 
         # if the small array is similar, we check if the large array is similar
-        all_cones_are_similar = cone_arrays_are_similar(
-            cones_by_type, self.cached_results.input_cones, threshold
-        )
+        all_cones_are_similar = cone_arrays_are_similar(cones_by_type, self.cached_results.input_cones, threshold)
         # if the large array is not similar, we need to redo the sorting
         return all_cones_are_similar
 
@@ -302,9 +295,7 @@ class TraceSorter:
 
         starting_cones = cones[first_k]
 
-        if self.input_is_very_similar_to_previous_input(
-            cones, starting_cones, threshold=0.1, cone_type=cone_type
-        ):
+        if self.input_is_very_similar_to_previous_input(cones, starting_cones, threshold=0.1, cone_type=cone_type):
             # print("Using cached results")
             cr = self.cached_results
             return cr.left_result if cone_type == ConeTypes.LEFT else cr.right_result
@@ -385,14 +376,10 @@ class TraceSorter:
 
         return start_idx
 
-    def mask_cone_can_be_first_in_config(
-        self, car_position, car_direction, cones, cone_type
-    ):
+    def mask_cone_can_be_first_in_config(self, car_position, car_direction, cones, cone_type):
         cones_xy = cones[:, :2]  # remove cone type
 
-        cones_relative = rotate(
-            cones_xy - car_position, -angle_from_2d_vector(car_direction)
-        )
+        cones_relative = rotate(cones_xy - car_position, -angle_from_2d_vector(car_direction))
 
         cone_relative_angles = angle_from_2d_vector(cones_relative)
 
@@ -412,9 +399,7 @@ class TraceSorter:
         mask_is_valid_angle_min = np.abs(cone_relative_angles) > np.pi / 10
         mask_is_right_color = cones[:, 2] == cone_type
 
-        mask_side = (
-            mask_valid_side * mask_is_valid_angle * mask_is_valid_angle_min
-        ) + mask_is_right_color
+        mask_side = (mask_valid_side * mask_is_valid_angle * mask_is_valid_angle_min) + mask_is_right_color
 
         mask_is_not_opposite_cone_type = cones[:, 2] != invert_cone_type(cone_type)
         mask_is_valid = mask_is_in_ellipse * mask_side * mask_is_not_opposite_cone_type

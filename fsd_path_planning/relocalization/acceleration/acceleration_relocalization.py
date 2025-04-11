@@ -3,7 +3,10 @@
 """
 Description: Place the car in the known accelearation map and relocalize it.
 """
+
 from __future__ import annotations
+
+from typing import List, Tuple
 
 import numpy as np
 
@@ -117,10 +120,10 @@ def best_fit(points, subset_size, iterations):
 class AccelerationRelocalizer(Relocalizer):
     def do_relocalization_once(
         self,
-        cones: list[FloatArray],
+        cones: List[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
+    ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
         if self._original_vehicle_position is None:
             return
 
@@ -159,9 +162,7 @@ class AccelerationRelocalizer(Relocalizer):
             )
 
         def transform_to_base_frame(position_2d, yaw):
-            base_position = (
-                rotate(position_2d, angle_to_fix) + self._original_vehicle_position
-            )
+            base_position = rotate(position_2d, angle_to_fix) + self._original_vehicle_position
             base_yaw = yaw + angle_to_fix
             return base_position, base_yaw
 
@@ -211,9 +212,7 @@ BASE_ACCELERATION_PATH = create_acceleartion_path()
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    plt.scatter(
-        *create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path()))
-    )
+    plt.scatter(*create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path())))
 
     plt.axis("equal")
     plt.show()

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Tuple
 
 import numpy as np
 from typing_extensions import (
@@ -16,7 +16,7 @@ class RelocalizationInformation:
 
     @classmethod
     def from_transform_function(
-        cls, transform_function: Callable[[FloatArray, float], tuple[FloatArray, float]]
+        cls, transform_function: Callable[[FloatArray, float], Tuple[FloatArray, float]]
     ) -> Self:
         origin_xy = np.array([0.0, 0.0])
         one_zero = np.array([1.0, 0.0])

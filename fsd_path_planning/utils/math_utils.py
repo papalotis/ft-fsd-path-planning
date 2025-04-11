@@ -1,4 +1,4 @@
-#!/usin_roll/bin/env python3
+#!/usr/bin/env python3
 # -*- coding:utf-8 -*-
 """
 Description: A module with common mathematical functions
@@ -7,7 +7,8 @@ Taken from ft-as-utils
 
 Project: fsd_path_planning
 """
-from typing import Tuple, TypeVar, cast
+
+from typing import TypeVar, cast
 
 import numpy as np
 from numba import jit
@@ -27,7 +28,12 @@ def my_njit(func: T) -> T:
     Returns:
         T: The jitted function
     """
-    jit_func: T = jit(nopython=True, cache=True, nogil=True, fastmath=True)(func)
+    jit_func: T = jit(
+        nopython=True,
+        cache=True,
+        nogil=True,
+        fastmath=True,
+    )(func)
 
     return jit_func
 
@@ -62,9 +68,7 @@ def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def vec_angle_between(
-    vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True
-) -> np.ndarray:
+def vec_angle_between(vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True) -> np.ndarray:
     """
     Calculates the angle between the vectors of the last dimension
 
@@ -147,9 +151,7 @@ def my_cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def calc_pairwise_distances(
-    points: np.ndarray, dist_to_self: float = 0.0
-) -> np.ndarray:
+def calc_pairwise_distances(points: np.ndarray, dist_to_self: float = 0.0) -> np.ndarray:
     """
     Given a set of points, creates a distance matrix from each point to every point
 
@@ -385,9 +387,7 @@ def calculate_radius_from_points(points: np.ndarray) -> np.ndarray:
     perimeter = np.sum(len_sides, axis=-1, keepdims=True)
     half_perimeter = perimeter / 2
     half_perimeter_minus_sides = half_perimeter - len_sides
-    area_sqr = (
-        np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
-    )
+    area_sqr = np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
     area = np.sqrt(area_sqr)
 
     radius = prod_of_sides / (area * 4)
@@ -451,9 +451,7 @@ def euler_angles_to_quaternion(euler_angles: np.ndarray) -> np.ndarray:
     quaternion_z = cos_roll * cos_pitch * sin_yaw - sin_roll * sin_pitch * cos_yaw
     quaternion_w = cos_roll * cos_pitch * cos_yaw + sin_roll * sin_pitch * sin_yaw
 
-    return_value = np.stack(
-        [quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1
-    )
+    return_value = np.stack([quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1)
     return return_value
 
 
@@ -572,10 +570,7 @@ def center_of_circle_from_3_points(
         - slope_1 * (point_2[0] + point_3[0])
     ) / (2 * (slope_2 - slope_1))
 
-    center_y = (
-        -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1
-        + (point_1[1] + point_2[1]) / 2
-    )
+    center_y = -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1 + (point_1[1] + point_2[1]) / 2
 
     center = np.array([center_x, center_y])
     return center
@@ -665,7 +660,7 @@ if __name__ == "__main__":
     print(center_of_circle_from_3_points(p1, p2, p3))
 
 
-# @my_njit
+@my_njit
 def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """
     Calculate the difference between two angles. The range of the difference is [-pi, pi].

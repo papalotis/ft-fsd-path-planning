@@ -5,22 +5,11 @@ Description: This File provides several functions used in several other files in
 sorting algorithm
 Project: fsd_path_planning
 """
-from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import my_njit
-
-if not TYPE_CHECKING:
-
-    @my_njit
-    def cast(  # pylint: disable=function-redefined
-        type_: Any,
-        value_: Any,  # pylint: disable=unused-argument
-    ) -> Any:
-        "Dummy numba jit function"
-        return value_
 
 
 class NoPathError(RuntimeError):
@@ -73,4 +62,6 @@ def breadth_first_order(adjacency_matrix: IntArray, start_idx: int) -> IntArray:
                 queue[queue_end_pointer] = i
                 visited[i] = 1
         queue_pointer += 1
-    return cast(IntArray, queue[:queue_pointer])
+
+    return_value: IntArray = queue[:queue_pointer]
+    return return_value

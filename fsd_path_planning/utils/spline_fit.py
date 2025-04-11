@@ -5,6 +5,7 @@ Description:
 
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -126,9 +127,7 @@ class SplineFitterFactory:
 
         return SplineEvaluator(max_u, tck, self.predict_every)
 
-    def fit_then_evaluate_trace_and_derivative(
-        self, trace: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def fit_then_evaluate_trace_and_derivative(self, trace: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Fit a provided trace, then evaluates it, and its derivative in `n_predict`
         evenly spaced positions

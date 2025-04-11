@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, cast
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.path_calculator_helpers import (
     PathCalculatorHelpers,

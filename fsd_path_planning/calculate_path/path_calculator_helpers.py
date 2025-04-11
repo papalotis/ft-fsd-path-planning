@@ -9,7 +9,6 @@ the existing path
 Project: fsd_path_planning
 """
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 from typing_extensions import Literal
 
 from fsd_path_planning.types import FloatArray

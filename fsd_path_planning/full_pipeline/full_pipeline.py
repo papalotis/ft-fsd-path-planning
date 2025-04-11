@@ -9,9 +9,10 @@ Description: A class that runs the whole path planning pipeline.
 
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -29,7 +30,6 @@ from fsd_path_planning.relocalization.relocalization_base_class import Relocaliz
 from fsd_path_planning.relocalization.relocalization_information import (
     RelocalizationInformation,
 )
-from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
     SkidpadRelocalizer,
 )
@@ -51,9 +51,7 @@ MissionToRelocalizer: dict[MissionTypes, Relocalizer] = {
 
 
 class PathPlanner:
-    def __init__(
-        self, mission: MissionTypes, experimental_performance_improvements: bool = False
-    ) -> None:
+    def __init__(self, mission: MissionTypes, experimental_performance_improvements: bool = False) -> None:
         self.mission = mission
 
         self.relocalizer: Relocalizer | None = None
@@ -62,19 +60,13 @@ class PathPlanner:
         if relocalizer_class is not None:
             self.relocalizer = relocalizer_class()
 
-        self.cone_sorting = create_default_sorting(
-            mission, experimental_performance_improvements
-        )
+        self.cone_sorting = create_default_sorting(mission, experimental_performance_improvements)
 
-        self.cone_matching = create_default_cone_matching_with_non_monotonic_matches(
-            mission
-        )
+        self.cone_matching = create_default_cone_matching_with_non_monotonic_matches(mission)
         self.pathing = create_default_pathing(mission)
         self.global_path: Optional[FloatArray] = None
 
-        self.experimental_performance_improvements = (
-            experimental_performance_improvements
-        )
+        self.experimental_performance_improvements = experimental_performance_improvements
 
     def _convert_direction_to_array(self, direction: Any) -> FloatArray:
         direction = np.squeeze(np.array(direction))
@@ -97,7 +89,7 @@ class PathPlanner:
         return_intermediate_results: bool = False,
     ) -> Union[
         FloatArray,
-        tuple[
+        Tuple[
             FloatArray,
             FloatArray,
             FloatArray,
@@ -130,18 +122,14 @@ class PathPlanner:
         if self.relocalizer is not None:
             # attempt to relocalize
             with Timer("Relocalization", noprint=noprint):
-                self.relocalizer.attempt_relocalization_calculation(
-                    cones, vehicle_position, vehicle_direction
-                )
+                self.relocalizer.attempt_relocalization_calculation(cones, vehicle_position, vehicle_direction)
 
             if self.relocalizer.is_relocalized:
                 vehicle_yaw = angle_from_2d_vector(vehicle_direction)
                 (
                     vehicle_position,
                     vehicle_yaw,
-                ) = self.relocalizer.transform_to_known_map_frame(
-                    vehicle_position, vehicle_yaw
-                )
+                ) = self.relocalizer.transform_to_known_map_frame(vehicle_position, vehicle_yaw)
                 vehicle_direction = unit_2d_vector_from_angle(vehicle_yaw)
                 self.global_path = self.relocalizer.get_known_global_path()
 
@@ -154,9 +142,7 @@ class PathPlanner:
         else:
             # run cone sorting
             with Timer("Cone sorting", noprint=noprint):
-                cone_sorting_input = ConeSortingInput(
-                    cones, vehicle_position, vehicle_direction
-                )
+                cone_sorting_input = ConeSortingInput(cones, vehicle_position, vehicle_direction)
                 self.cone_sorting.set_new_input(cone_sorting_input)
                 sorted_left, sorted_right = self.cone_sorting.run_cone_sorting()
 
@@ -166,9 +152,7 @@ class PathPlanner:
                 matched_cones_input[ConeTypes.LEFT] = sorted_left
                 matched_cones_input[ConeTypes.RIGHT] = sorted_right
 
-                cone_matching_input = ConeMatchingInput(
-                    matched_cones_input, vehicle_position, vehicle_direction
-                )
+                cone_matching_input = ConeMatchingInput(matched_cones_input, vehicle_position, vehicle_direction)
                 self.cone_matching.set_new_input(cone_matching_input)
                 (
                     left_cones_with_virtual,
@@ -230,6 +214,4 @@ class PathPlanner:
         if not self.relocalizer.is_relocalized:
             return None
 
-        return RelocalizationInformation.from_transform_function(
-            self.relocalizer.transform_to_known_map_frame
-        )
+        return RelocalizationInformation.from_transform_function(self.relocalizer.transform_to_known_map_frame)

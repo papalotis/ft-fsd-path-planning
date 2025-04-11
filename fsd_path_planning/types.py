@@ -14,7 +14,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 
 if TYPE_CHECKING:
     GenericArray = NDArray[Any]
-    FloatArray = NDArray[np.float_]
+    FloatArray = NDArray[np.float64]
     IntArray = NDArray[np.int_]
     BoolArray = NDArray[np.bool_]
     SortableConeTypes = Literal[

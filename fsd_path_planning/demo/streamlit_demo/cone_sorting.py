@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 from itertools import zip_longest
-from typing import Optional
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from matplotlib.axes import Axes
 
 from fsd_path_planning.demo.streamlit_demo.common import (
     CONE_TYPE_TO_COLOR,
@@ -31,7 +30,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
 )
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import angle_from_2d_vector, rotate
 from fsd_path_planning.utils.utils import Timer
 
 
@@ -47,7 +45,7 @@ def show_starting_cone(
     direction: FloatArray,
     cones_by_type: FloatArray,
     max_distance: float,
-) -> list[Optional[IntArray]]:
+) -> List[Optional[IntArray]]:
     plt.subplots()
     ax = visualize_configuration(
         position,
@@ -66,12 +64,10 @@ def show_starting_cone(
         threshold_absolute_angle=0,
         threshold_directional_angle=0.5,
     )
-    out: list[Optional[int]] = [None for _ in ConeTypes]
+    out: List[Optional[int]] = [None for _ in ConeTypes]
     cones_flat = flatten_cones_by_type_array(cones_by_type)
     for cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT):
-        idx = sorter.select_first_k_starting_cones(
-            position, direction, cones_flat, cone_type
-        )
+        idx = sorter.select_first_k_starting_cones(position, direction, cones_flat, cone_type)
         if idx is None:
             st.warning(f"No starting cone found for {cone_type}")
         else:
@@ -81,10 +77,8 @@ def show_starting_cone(
                     cones_flat[i, 1],
                     "x",
                     ms=10.0,
-                    c="black"
-                    if cones_flat[i, 2] != ConeTypes.UNKNOWN
-                    else CONE_TYPE_TO_COLOR[cone_type],
-                    label=f'Starting cone for {cone_type.name.replace("_", " ")} side',
+                    c="black" if cones_flat[i, 2] != ConeTypes.UNKNOWN else CONE_TYPE_TO_COLOR[cone_type],
+                    label=f"Starting cone for {cone_type.name.replace('_', ' ')} side",
                 )
 
         out[cone_type] = idx
@@ -110,14 +104,14 @@ def plot_adjacency_matrix(adjacency_matrix: BoolArray, cones: FloatArray) -> Non
 
 # @st.cache_data
 def show_adjacency_matrix(
-    cones_by_type: list[FloatArray],
-    start_indices: list[Optional[int]],
+    cones_by_type: List[FloatArray],
+    start_indices: List[Optional[int]],
     n_neighbors: int,
     max_distance: float,
-) -> list[Optional[BoolArray]]:
+) -> List[Optional[BoolArray]]:
     show_two_plots = st.checkbox("Show each side in a separate plot")
 
-    adjacency_matrices: list[Optional[BoolArray]] = [None for _ in ConeTypes]
+    adjacency_matrices: List[Optional[BoolArray]] = [None for _ in ConeTypes]
 
     fig, ax = plt.subplots(1, 2 if show_two_plots else 1)
 
@@ -141,19 +135,19 @@ def show_adjacency_matrix(
 
 # @st.cache_data
 def show_graph_search(
-    cones_by_type: list[FloatArray],
-    adjacency_matrices: list[Optional[BoolArray]],
-    start_indices: list[Optional[IntArray]],
+    cones_by_type: List[FloatArray],
+    adjacency_matrices: List[Optional[BoolArray]],
+    start_indices: List[Optional[IntArray]],
     target_length: int,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> list[Optional[IntArray]]:
+) -> List[Optional[IntArray]]:
     cols = st.columns(2)
     cones_flat = flatten_cones_by_type_array(cones_by_type)
 
-    all_end_configs: list[Optional[IntArray]] = [None for _ in ConeTypes]
+    all_end_configs: List[Optional[IntArray]] = [None for _ in ConeTypes]
     for cone_type, col in zip((ConeTypes.LEFT, ConeTypes.RIGHT), cols):
         adjacency_matrix = adjacency_matrices[cone_type]
         first_k = start_indices[cone_type]
@@ -183,16 +177,12 @@ def show_graph_search(
                 end_configurations = np.zeros((0, target_length), dtype=int)
                 all_configurations = np.zeros((0, target_length), dtype=int)
                 configuration_is_end = np.zeros((0,), dtype=bool)
-                st.warning(
-                    f"No path found for {cone_type.name.replace('_', ' ').title()}"
-                )
+                st.warning(f"No path found for {cone_type.name.replace('_', ' ').title()}")
 
         all_end_configs[cone_type] = end_configurations
 
         frames = []
-        for config, is_end_configuration in zip(
-            all_configurations, configuration_is_end
-        ):
+        for config, is_end_configuration in zip(all_configurations, configuration_is_end):
             config = config[config != -1]
             points = cones_flat[config][:, :2]
             scatter_lines = go.Scatter(
@@ -250,11 +240,11 @@ def show_graph_search(
 
 # @st.cache_data
 def show_costs(
-    cones_by_type: list[Optional[FloatArray]],
-    end_configurations_by_type: list[Optional[IntArray]],
+    cones_by_type: List[Optional[FloatArray]],
+    end_configurations_by_type: List[Optional[IntArray]],
     position: FloatArray,
     direction: FloatArray,
-) -> list[FloatArray]:
+) -> List[FloatArray]:
     final_out = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_flat = flatten_cones_by_type_array(cones_by_type)
     for cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT):
@@ -324,12 +314,7 @@ def show_costs(
                 ax.plot(*cones_flat[mask_not_in_config, :2].T, "o", color="gray")
 
                 all_costs_config = [*config_costs, config_costs.sum()]
-                ax.set_title(
-                    "\n".join(
-                        f"{name}: {value:.3f}"
-                        for name, value in zip(names, all_costs_config)
-                    )
-                )
+                ax.set_title("\n".join(f"{name}: {value:.3f}" for name, value in zip(names, all_costs_config)))
                 text_offset = 0.5
                 for i, (x, y, cone_t) in enumerate(cones_flat[configuration], start=1):
                     ax.text(x - text_offset, y - text_offset, str(i))
@@ -405,9 +390,7 @@ demo you can choose whether to use the color information or not.
 """
     )
 
-    use_color_info = st.checkbox(
-        "Use color information", help="Use color information for sorting", value=True
-    )
+    use_color_info = st.checkbox("Use color information", help="Use color information for sorting", value=True)
     if not use_color_info:
         new_cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
         new_cones_by_type[ConeTypes.UNKNOWN] = np.row_stack(cones_by_type)
@@ -449,9 +432,7 @@ demo you can choose whether to use the color information or not.
         help="Maximum distance for a cone to be considered a starting cone",
     )
 
-    start_indices = show_starting_cone(
-        position, direction, cones_by_type, maximum_distance
-    )
+    start_indices = show_starting_cone(position, direction, cones_by_type, maximum_distance)
 
     st.markdown(
         """
@@ -469,9 +450,7 @@ then the likelihood of them being connected is very low.
     )
     col_neighbors, col_distance = st.columns(2)
     with col_neighbors:
-        n_neighbors = st.slider(
-            "Max number of neighbors", 2, 10, 5, step=1, help="Max number of neighbors"
-        )
+        n_neighbors = st.slider("Max number of neighbors", 2, 10, 5, step=1, help="Max number of neighbors")
 
     with col_distance:
         maximum_distance = st.slider(
@@ -528,12 +507,8 @@ is not important.
         help="Maximum depth of the graph search",
     )
 
-    threshold_directional_angle = np.deg2rad(
-        st.slider("Threshold directional angle", 20, 90, 40, step=1)
-    )
-    threshold_absolute_angle = np.deg2rad(
-        st.slider("Threshold absolute angle", 20, 90, 70, step=1)
-    )
+    threshold_directional_angle = np.deg2rad(st.slider("Threshold directional angle", 20, 90, 40, step=1))
+    threshold_absolute_angle = np.deg2rad(st.slider("Threshold absolute angle", 20, 90, 70, step=1))
 
     end_configurations_by_type = show_graph_search(
         cones_by_type,
@@ -559,9 +534,7 @@ The cost configuration is consists of the following:
 The final cost function is a weighted sum of the above cost functions.
 """
     )
-    sorted_cones_by_type = show_costs(
-        cones_by_type, end_configurations_by_type, position, direction
-    )
+    sorted_cones_by_type = show_costs(cones_by_type, end_configurations_by_type, position, direction)
 
     st.markdown(
         """

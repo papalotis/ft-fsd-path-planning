@@ -1,35 +1,29 @@
 from __future__ import annotations
 
+from typing import List
+
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
 from fsd_path_planning import MissionTypes
 from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
-from fsd_path_planning.cone_matching.core_cone_matching import ConeMatchingInput
 from fsd_path_planning.config import (
-    create_default_cone_matching,
     create_default_pathing,
 )
 from fsd_path_planning.demo.streamlit_demo.common import (
-    CONE_TYPE_TO_COLOR,
-    create_animation,
     get_cones_for_configuration,
     visualize_configuration,
 )
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    euler_angles_to_quaternion,
-)
 
 
 def show_base_points(
     left_to_right_matches: IntArray,
     position: FloatArray,
     direction: FloatArray,
-    cones_by_type: list[FloatArray],
+    cones_by_type: List[FloatArray],
 ) -> None:
     middle = []
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -24,7 +24,9 @@ try:
     from tqdm import tqdm
 except ImportError:
     print("You can get a progress bar by installing tqdm: pip install tqdm")
-    tqdm = lambda x, total=None: x
+
+    def tqdm(x, total=None):
+        return x
 
 
 try:
@@ -38,15 +40,11 @@ def select_mission_by_filename(filename: str) -> MissionTypes:
     is_accel = "accel" in filename
 
     if is_skidpad:
-        print(
-            'The filename contains "skidpad", so we assume that the mission is skidpad.'
-        )
+        print('The filename contains "skidpad", so we assume that the mission is skidpad.')
         return MissionTypes.skidpad
 
     if is_accel:
-        print(
-            'The filename contains "accel", so we assume that the mission is acceleration.'
-        )
+        print('The filename contains "accel", so we assume that the mission is acceleration.')
 
         return MissionTypes.acceleration
 
@@ -76,9 +74,7 @@ def main(
 
     planner = PathPlanner(mission, experimental_performance_improvements)
 
-    positions, directions, cone_observations = load_data_json(
-        data_path, remove_color_info=remove_color_info
-    )
+    positions, directions, cone_observations = load_data_json(data_path, remove_color_info=remove_color_info)
 
     if not numba_cache_files_exist():
         print(
@@ -92,9 +88,7 @@ planner, you should run the demo one more time after it is finished.
     # run planner once to "warm up" the JIT compiler / load all cached jit functions
     try:
         extra_planner = PathPlanner(mission)
-        extra_planner.calculate_path_in_global_frame(
-            cone_observations[0], positions[0], directions[0]
-        )
+        extra_planner.calculate_path_in_global_frame(cone_observations[0], positions[0], directions[0])
     except Exception:
         print("Error during warmup")
         raise
@@ -141,38 +135,36 @@ planner, you should run the demo one more time after it is finished.
         plt.hist(timer.intervals[10:])
         plt.show()
 
-    
-
     # Conditionally apply dark mode settings
     if dark_mode:
         plt.style.use("dark_background")
         cone_colors = {
-            'yellow': 'yo',
+            "yellow": "yo",
             "yellow_sorted": "yo-",
-            'blue': 'bo',
+            "blue": "bo",
             "blue_sorted": "bo-",
-            'unknown': 'wo',  # White for unknown cones in dark mode
-            'orange_small': 'orange',
-            'orange_big': 'darkorange',
-            'path': 'r-',
-            'position': 'go',
-            'direction': 'g-',
-            'title_color': 'white'
+            "unknown": "wo",  # White for unknown cones in dark mode
+            "orange_small": "orange",
+            "orange_big": "darkorange",
+            "path": "r-",
+            "position": "go",
+            "direction": "g-",
+            "title_color": "white",
         }
     else:
-        plt.style.use('default')
+        plt.style.use("default")
         cone_colors = {
-            'yellow': 'yo',
+            "yellow": "yo",
             "yellow_sorted": "yo-",
-            'blue': 'bo',
+            "blue": "bo",
             "blue_sorted": "bo-",
-            'unknown': 'ko',  # Black for unknown cones in light mode
-            'orange_small': 'orange',
-            'orange_big': 'darkorange',
-            'path': 'r-',
-            'position': 'go',
-            'direction': 'g-',
-            'title_color': 'black'
+            "unknown": "ko",  # Black for unknown cones in light mode
+            "orange_small": "orange",
+            "orange_big": "darkorange",
+            "path": "r-",
+            "position": "go",
+            "direction": "g-",
+            "title_color": "black",
         }
 
     fig, ax = plt.subplots(figsize=(10, 10))
@@ -180,28 +172,33 @@ planner, you should run the demo one more time after it is finished.
     # plot animation
     frames = []
 
-    
     for i in tqdm(range(len(results)), desc="Generating animation"):
         co = cone_observations[i]
 
         # Use cone colors based on the mode
-        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, cone_colors['yellow'])  # Yellow cones
-        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, cone_colors['blue'])  # Blue cones
-        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, cone_colors['unknown'])  # Unknown cones
-        (orange_small_cones,) = plt.plot(*co[ConeTypes.ORANGE_SMALL].T, "o", c=cone_colors['orange_small'])  # Small orange cones
+        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, cone_colors["yellow"])  # Yellow cones
+        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, cone_colors["blue"])  # Blue cones
+        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, cone_colors["unknown"])  # Unknown cones
+        (orange_small_cones,) = plt.plot(
+            *co[ConeTypes.ORANGE_SMALL].T, "o", c=cone_colors["orange_small"]
+        )  # Small orange cones
         (orange_big_cones,) = plt.plot(
-            *co[ConeTypes.ORANGE_BIG].T, "o", c=cone_colors['orange_big'], markersize=10  # Big orange cones
+            *co[ConeTypes.ORANGE_BIG].T,
+            "o",
+            c=cone_colors["orange_big"],
+            markersize=10,  # Big orange cones
         )
 
         # Sorted cones and path
-        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, cone_colors['yellow_sorted'])
-        (blue_cones_sorted,) = plt.plot(*results[i][1].T, cone_colors['blue_sorted'])
-        (path,) = plt.plot(*results[i][0][:, 1:3].T, cone_colors['path'])  # Path color
+        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, cone_colors["yellow_sorted"])
+        (blue_cones_sorted,) = plt.plot(*results[i][1].T, cone_colors["blue_sorted"])
+        (path,) = plt.plot(*results[i][0][:, 1:3].T, cone_colors["path"])  # Path color
 
         # Position and direction
-        (position,) = plt.plot([positions[i][0]], [positions[i][1]], cone_colors['position'])  # Position marker
+        (position,) = plt.plot([positions[i][0]], [positions[i][1]], cone_colors["position"])  # Position marker
         (direction,) = plt.plot(
-            *np.array([positions[i], positions[i] + directions[i]]).T, cone_colors['direction']  # Direction line
+            *np.array([positions[i], positions[i] + directions[i]]).T,
+            cone_colors["direction"],  # Direction line
         )
 
         # Title with conditional color
@@ -213,7 +210,7 @@ planner, you should run the demo one more time after it is finished.
             va="bottom",
             transform=ax.transAxes,
             fontsize="large",
-            color=cone_colors['title_color']  # Title color based on mode
+            color=cone_colors["title_color"],  # Title color based on mode
         )
 
         # Collect the frame elements for animation
@@ -258,23 +255,19 @@ def numba_cache_files_exist() -> bool:
 def load_data_json(
     data_path: Path,
     remove_color_info: bool = False,
-) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
+) -> Tuple[np.ndarray, np.ndarray, List[List[np.ndarray]]]:
     # extract data
     data = json.loads(data_path.read_text())[:]
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
-    cone_observations = [
-        [np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data
-    ]
+    cone_observations = [[np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data]
 
     if remove_color_info:
         cones_observations_all_unknown = []
         for cones in cone_observations:
             new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
-            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
-                [c.reshape(-1, 2) for c in cones]
-            )
+            new_observation[ConeTypes.UNKNOWN] = np.row_stack([c.reshape(-1, 2) for c in cones])
             cones_observations_all_unknown.append(new_observation)
 
         cone_observations = cones_observations_all_unknown.copy()

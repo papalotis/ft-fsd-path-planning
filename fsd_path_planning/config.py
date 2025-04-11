@@ -9,7 +9,6 @@ Project: fsd_path_planning
 from typing import Any, Dict, Type
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath as CalculatePath,

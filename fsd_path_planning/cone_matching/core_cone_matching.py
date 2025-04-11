@@ -6,13 +6,13 @@ Cone matching class.
 Description: Provides class interface to functional cone matching.
 Project: fsd_path_planning
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import
 
 from fsd_path_planning.cone_matching.functional_cone_matching import (
     calculate_virtual_cones_for_both_sides,
@@ -27,9 +27,7 @@ MatchedCones = Tuple[FloatArray, FloatArray, IntArray, IntArray]
 class ConeMatchingInput:
     """Dataclass holding inputs."""
 
-    sorted_cones: list[FloatArray] = field(
-        default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
-    )
+    sorted_cones: List[FloatArray] = field(default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes])
     slam_position: FloatArray = field(default_factory=lambda: np.zeros((2)))
     slam_direction: FloatArray = field(default_factory=lambda: np.zeros((2)))
 
