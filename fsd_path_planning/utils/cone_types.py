@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Enum for cone types (yellow, blue, etc...)
 Project: fsd_path_planning
 """
+
 from enum import IntEnum
 
 

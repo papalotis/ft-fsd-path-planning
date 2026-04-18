@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Combines the results of the search along the left and right traces
 Project: fsd_path_planning
@@ -107,7 +106,9 @@ def calc_final_configs_when_both_available(
     right_config = right_configs[0]
     right_config = right_config[right_config != -1]
 
-    left_config, right_config = handle_same_cone_in_both_configs(cones, left_config, right_config)
+    left_config, right_config = handle_same_cone_in_both_configs(
+        cones, left_config, right_config
+    )
 
     return (left_config, right_config)
 
@@ -125,8 +126,12 @@ def handle_same_cone_in_both_configs(
     if len(same_cone_intersection) == 0:
         return left_config, right_config
 
-    left_intersection_index = min(left_intersection_idxs)  # first index of common cone in left config
-    right_intersection_index = min(right_intersection_idxs)  # first index of common cone in right config
+    left_intersection_index = min(
+        left_intersection_idxs
+    )  # first index of common cone in left config
+    right_intersection_index = min(
+        right_intersection_idxs
+    )  # first index of common cone in right config
 
     # if both sides have the same FIRST common cone, then we try to find the
     # side to which the cone probably belongs
@@ -160,8 +165,12 @@ def calc_new_length_for_configs_for_same_cone_intersection(
         prev_right = right_config[right_intersection_index - 1]
         intersection_cone = left_config[left_intersection_index]
 
-        dist_intersection_to_prev_left = np.linalg.norm(cones_xy[intersection_cone] - cones_xy[prev_left])
-        dist_intersection_to_prev_right = np.linalg.norm(cones_xy[intersection_cone] - cones_xy[prev_right])
+        dist_intersection_to_prev_left = np.linalg.norm(
+            cones_xy[intersection_cone] - cones_xy[prev_left]
+        )
+        dist_intersection_to_prev_right = np.linalg.norm(
+            cones_xy[intersection_cone] - cones_xy[prev_right]
+        )
 
         low_distance = 3.0
         left_dist_is_very_low = dist_intersection_to_prev_left < low_distance
@@ -186,13 +195,19 @@ def calc_new_length_for_configs_for_same_cone_intersection(
     if (
         left_stop_idx is None
         and right_stop_idx is None
-        and left_config[left_intersection_index] == right_config[right_intersection_index]
-        and left_intersection_index in range(1, len(left_config) - 1)  # not first or last
+        and left_config[left_intersection_index]
+        == right_config[right_intersection_index]
+        and left_intersection_index
+        in range(1, len(left_config) - 1)  # not first or last
         and right_intersection_index in range(1, len(right_config) - 1)
     ):
         # intersection happens in the middle of the config
-        angle_left = calc_angle_change_at_position(cones[:, :2], left_config, left_intersection_index)
-        angle_right = calc_angle_change_at_position(cones[:, :2], right_config, right_intersection_index)
+        angle_left = calc_angle_change_at_position(
+            cones[:, :2], left_config, left_intersection_index
+        )
+        angle_right = calc_angle_change_at_position(
+            cones[:, :2], right_config, right_intersection_index
+        )
 
         sign_angle_left = np.sign(angle_left)
         sign_angle_right = np.sign(angle_right)
@@ -262,7 +277,9 @@ def calc_angle_change_at_position(
     config: IntArray,
     position_in_config: int,
 ) -> float:
-    previous_cone, intersection_cone, next_cone = cones[config[position_in_config - 1 : position_in_config + 2], :2]
+    previous_cone, intersection_cone, next_cone = cones[
+        config[position_in_config - 1 : position_in_config + 2], :2
+    ]
 
     intersection_to_next = next_cone - intersection_cone
     intersection_to_prev = previous_cone - intersection_cone

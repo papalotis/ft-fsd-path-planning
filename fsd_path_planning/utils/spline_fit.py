@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description:
 
@@ -12,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
 import numpy as np
+from loguru import logger
 from scipy.interpolate import splev, splprep
 
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
@@ -118,16 +118,21 @@ class SplineFitterFactory:
                 trace.T, s=self.smoothing, k=k, u=u_fit, per=periodic
             )
         except ValueError:
-            with np.printoptions(threshold=100000):
-                print(self.smoothing, self.predict_every, self.max_deg, repr(trace))
-
+            logger.debug(
+                "Spline fitting failed: smoothing={}, max_deg={}, trace shape={}",
+                self.smoothing,
+                self.max_deg,
+                trace.shape,
+            )
             raise
 
         max_u = float(u_fit[-1])
 
         return SplineEvaluator(max_u, tck, self.predict_every)
 
-    def fit_then_evaluate_trace_and_derivative(self, trace: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def fit_then_evaluate_trace_and_derivative(
+        self, trace: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Fit a provided trace, then evaluates it, and its derivative in `n_predict`
         evenly spaced positions

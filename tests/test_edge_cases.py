@@ -1,4 +1,5 @@
 """Edge case and smoke tests for the full pipeline."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,7 +12,7 @@ def _make_curved_cones(n, y_offset=2.0, spacing=3.0):
     """Create nearly-straight cone positions with slight curvature to avoid
     degenerate circle_fit (collinear points cause division by zero)."""
     t = np.arange(n, dtype=float) * spacing
-    curve = t ** 2 / (2 * 500.0)
+    curve = t**2 / (2 * 500.0)
     left = np.column_stack([t, curve + y_offset])
     right = np.column_stack([t, curve - y_offset])
     return left, right

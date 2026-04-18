@@ -1,7 +1,6 @@
 """Unit tests for cone types and mission types enums."""
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.mission_types import MissionTypes

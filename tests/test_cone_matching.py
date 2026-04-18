@@ -1,4 +1,5 @@
 """Unit tests for cone matching logic."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,10 +12,11 @@ from fsd_path_planning.cone_matching.core_cone_matching import (
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_match_search_direction,
 )
+from fsd_path_planning.config_dataclasses import MatchingConfig
 from fsd_path_planning.utils.cone_types import ConeTypes
 
-
 # ── Search direction ─────────────────────────────────────────────────────────
+
 
 class TestCalculateMatchSearchDirection:
     def test_left_cones_direction_is_perpendicular(self):
@@ -43,15 +45,17 @@ class TestCalculateMatchSearchDirection:
 
 # ── ConeMatching class ──────────────────────────────────────────────────────
 
+
 class TestConeMatching:
     @pytest.fixture()
     def matcher(self):
-        return ConeMatching(
+        config = MatchingConfig(
             min_track_width=3.0,
             max_search_range=5.0,
             max_search_angle=np.deg2rad(50),
             matches_should_be_monotonic=True,
         )
+        return ConeMatching(config=config)
 
     def test_parallel_straight_track(self, matcher):
         """Left and right cones on a straight track should match 1:1."""
@@ -65,8 +69,8 @@ class TestConeMatching:
 
         inp = ConeMatchingInput(
             sorted_cones=cones_list,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         matcher.set_new_input(inp)
         left_out, right_out, l2r, r2l = matcher.run_cone_matching()
@@ -84,8 +88,8 @@ class TestConeMatching:
         cones_list = [np.zeros((0, 2)) for _ in ConeTypes]
         inp = ConeMatchingInput(
             sorted_cones=cones_list,
-            slam_position=np.array([0.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            vehicle_position=np.array([0.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         matcher.set_new_input(inp)
         left_out, right_out, l2r, r2l = matcher.run_cone_matching()
@@ -103,8 +107,8 @@ class TestConeMatching:
 
         inp = ConeMatchingInput(
             sorted_cones=cones_list,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         matcher.set_new_input(inp)
         left_out, right_out, l2r, r2l = matcher.run_cone_matching()
@@ -124,8 +128,8 @@ class TestConeMatching:
 
         inp = ConeMatchingInput(
             sorted_cones=cones_list,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         matcher.set_new_input(inp)
         left_out, right_out, l2r, r2l = matcher.run_cone_matching()
@@ -143,8 +147,8 @@ class TestConeMatching:
 
         inp = ConeMatchingInput(
             sorted_cones=cones_list,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         matcher.set_new_input(inp)
         left_out, right_out, l2r, r2l = matcher.run_cone_matching()
@@ -155,4 +159,4 @@ class TestConeMatching:
                 if match_idx >= 0:
                     dist = np.linalg.norm(left_out[i] - right_out[match_idx])
                     # Should be approximately min_track_width
-                    assert dist >= matcher.state.min_track_width * 0.5
+                    assert dist >= matcher.config.min_track_width * 0.5

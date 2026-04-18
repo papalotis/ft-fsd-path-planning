@@ -1,15 +1,19 @@
 """Unit tests for cone sorting."""
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting, ConeSortingInput
+from fsd_path_planning.sorting_cones.core_cone_sorting import (
+    ConeSorting,
+    ConeSortingInput,
+)
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.utils.cone_types import ConeTypes
 
-
 # ── breadth_first_order ──────────────────────────────────────────────────────
+
 
 class TestBreadthFirstOrder:
     def test_linear_chain(self):
@@ -38,6 +42,7 @@ class TestBreadthFirstOrder:
 
 # ── ConeSorting class ────────────────────────────────────────────────────────
 
+
 class TestConeSorting:
     @pytest.fixture()
     def sorter(self):
@@ -62,9 +67,9 @@ class TestConeSorting:
         cones_by_type[ConeTypes.RIGHT] = right_cones
 
         inp = ConeSortingInput(
-            slam_cones=cones_by_type,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            cones_by_type=cones_by_type,
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         sorter.set_new_input(inp)
         sorted_left, sorted_right = sorter.run_cone_sorting()
@@ -86,9 +91,9 @@ class TestConeSorting:
         cones_by_type[ConeTypes.UNKNOWN] = unknown
 
         inp = ConeSortingInput(
-            slam_cones=cones_by_type,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            cones_by_type=cones_by_type,
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         sorter.set_new_input(inp)
         sorted_left, sorted_right = sorter.run_cone_sorting()
@@ -102,9 +107,9 @@ class TestConeSorting:
         cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
 
         inp = ConeSortingInput(
-            slam_cones=cones_by_type,
-            slam_position=np.array([0.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            cones_by_type=cones_by_type,
+            vehicle_position=np.array([0.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         sorter.set_new_input(inp)
         sorted_left, sorted_right = sorter.run_cone_sorting()
@@ -123,9 +128,9 @@ class TestConeSorting:
         cones_by_type[ConeTypes.RIGHT] = right_cones
 
         inp = ConeSortingInput(
-            slam_cones=cones_by_type,
-            slam_position=np.array([-1.0, 0.0]),
-            slam_direction=np.array([1.0, 0.0]),
+            cones_by_type=cones_by_type,
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         sorter.set_new_input(inp)
         sorted_left, sorted_right = sorter.run_cone_sorting()

@@ -8,6 +8,7 @@ Usage:
     python tests/generate_golden_data.py
     python tests/generate_golden_data.py --regenerate   # overwrite existing
 """
+
 from __future__ import annotations
 
 import argparse

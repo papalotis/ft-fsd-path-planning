@@ -7,6 +7,7 @@ from fsd_path_planning.demo.streamlit_demo.cone_sorting import run as run_sortin
 from fsd_path_planning.demo.streamlit_demo.path_calculation import (
     run as run_path_calculation,
 )
+
 # from fsd_path_planning.demo.streamlit_demo.skidpad_relocalization import (
 #     run as run_skidpad,
 # )
@@ -14,7 +15,7 @@ from fsd_path_planning.demo.streamlit_demo.path_calculation import (
 st.set_page_config(page_title="FT Path Planning", page_icon="🏎️")
 
 
-@st.cache  # type: ignore
+@st.cache_data  # type: ignore
 def load_ed_slides_as_bytes() -> bytes:
     return Path("test.pdf").read_bytes()
 
