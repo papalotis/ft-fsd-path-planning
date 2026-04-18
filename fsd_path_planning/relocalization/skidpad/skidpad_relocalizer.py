@@ -6,7 +6,6 @@ Description: Place the car in the known skidpad map and relocalize it.
 from __future__ import annotations
 
 from itertools import combinations
-from typing import List, Tuple
 
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -24,7 +23,7 @@ from fsd_path_planning.utils.math_utils import (
     rotate,
 )
 
-PowersetCirceFitResult = List[Tuple[FloatArray, IntArray]]
+PowersetCirceFitResult = list[tuple[FloatArray, IntArray]]
 
 
 def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
@@ -115,7 +114,7 @@ def calculate_transformation(
     cluster_centers: FloatArray,
     original_vehicle_position: FloatArray,
     original_vehicle_direction: FloatArray,
-) -> Tuple[RelocalizationCallable, RelocalizationCallable]:
+) -> tuple[RelocalizationCallable, RelocalizationCallable]:
     # Your code here
     """
     Given two reference points and two new points calculate
@@ -217,10 +216,10 @@ class SkidpadRelocalizer(Relocalizer):
 
     def do_relocalization_once(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
+    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
         cones_array = np.row_stack(cones)
         cones_array_xy = cones_array[:, :2]
 

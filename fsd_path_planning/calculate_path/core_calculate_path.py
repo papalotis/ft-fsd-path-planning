@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 import numpy as np
 from loguru import logger
@@ -49,7 +48,7 @@ from fsd_path_planning.utils.math_utils import (
 )
 from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 
-SplineEvalByType = List[SplineEvaluator]
+SplineEvalByType = list[SplineEvaluator]
 
 
 @dataclass
@@ -67,7 +66,7 @@ class PathCalculationInput:
     )
     vehicle_position: FloatArray = field(default_factory=lambda: np.zeros((0, 2)))
     vehicle_direction: FloatArray = field(default_factory=lambda: np.array([1, 0]))
-    global_path: Optional[FloatArray] = field(default=None)
+    global_path: FloatArray | None = field(default=None)
 
 
 @dataclass
@@ -188,7 +187,7 @@ class CalculatePath:
         )
         return _side_score(matches_of_side)
 
-    def select_side_to_use(self) -> Tuple[FloatArray, IntArray, FloatArray]:
+    def select_side_to_use(self) -> tuple[FloatArray, IntArray, FloatArray]:
         "Select the main side to use for path calculation"
         return _select_side(
             self.input.left_cones,
@@ -402,7 +401,7 @@ class CalculatePath:
         self.path_is_trivial_list = self.path_is_trivial_list[-10:] + [path_is_trivial]
 
     def run_path_calculation(
-        self, input: Optional[PathCalculationInput] = None
+        self, input: PathCalculationInput | None = None
     ) -> PathResult:
         """Calculate path.
 

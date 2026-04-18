@@ -6,8 +6,6 @@ of the cost function of the sorting algorithm.
 Project: fsd_path_planning
 """
 
-from typing import Tuple
-
 import numpy as np
 
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray
@@ -79,7 +77,7 @@ _DEFAULT_EPSILON = 1e-6
 
 
 @my_njit
-def calc_intersections(homogeneous: FloatArray) -> Tuple[float, float, float]:
+def calc_intersections(homogeneous: FloatArray) -> tuple[float, float, float]:
     line_a = np.cross(homogeneous[0], homogeneous[1])  # get first line
     line_b = np.cross(homogeneous[2], homogeneous[3])  # get second line
     inter_x, inter_y, inter_z = np.cross(line_a, line_b)  # point of intersection
@@ -90,7 +88,7 @@ def calc_intersections(homogeneous: FloatArray) -> Tuple[float, float, float]:
 @my_njit
 def intersection_in_bounding_box(
     inter_x: float, inter_y: float, inter_z: float, homogeneous: FloatArray
-) -> Tuple[float, float, float, float, float, float, float, float, float, float]:
+) -> tuple[float, float, float, float, float, float, float, float, float, float]:
     # find intersection point
     intersection_x, intersection_y = np.array([inter_x / inter_z, inter_y / inter_z])
 
@@ -320,14 +318,14 @@ def pairwise_segment_intersection(
     # cannot used advanced indexing twice with nopython
     # so we have to do it manually
     for index_first_single, index_second_single, indicator_overlap_single in zip(
-        indices_first_keep, indices_second_keep, indicator_overlap
+        indices_first_keep, indices_second_keep, indicator_overlap, strict=False
     ):
-        indicator_matrix[
-            index_first_single, index_second_single
-        ] = indicator_overlap_single
-        indicator_matrix[
-            index_second_single, index_first_single
-        ] = indicator_overlap_single
+        indicator_matrix[index_first_single, index_second_single] = (
+            indicator_overlap_single
+        )
+        indicator_matrix[index_second_single, index_first_single] = (
+            indicator_overlap_single
+        )
 
     return indicator_matrix
 

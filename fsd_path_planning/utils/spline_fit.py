@@ -8,7 +8,7 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from loguru import logger
@@ -24,10 +24,10 @@ class SplineEvaluator:
     """
 
     max_u: float
-    tck: Tuple[Any, Any, int]
+    tck: tuple[Any, Any, int]
     predict_every: float
 
-    def calculate_u_eval(self, max_u: Optional[float] = None) -> np.ndarray:
+    def calculate_u_eval(self, max_u: float | None = None) -> np.ndarray:
         """
         Calculate the u_eval values for the spline.
 
@@ -43,7 +43,7 @@ class SplineEvaluator:
             max_u = self.max_u
         return np.arange(0, max_u, self.predict_every)
 
-    def predict(self, der: int, max_u: Optional[float] = None) -> np.ndarray:
+    def predict(self, der: int, max_u: float | None = None) -> np.ndarray:
         """
         Predict the spline. If der is 0, the function returns the spline. If der is 1,
         the function returns the first derivative of the spline and so on.
@@ -68,7 +68,7 @@ class NullSplineEvaluator(SplineEvaluator):
     A dummy spline evaluator used for when an empty list is attempted to be fitted
     """
 
-    def predict(self, der: int, max_u: Optional[float] = None) -> np.ndarray:
+    def predict(self, der: int, max_u: float | None = None) -> np.ndarray:
         points = np.zeros((0, 2))
         return points
 
@@ -132,7 +132,7 @@ class SplineFitterFactory:
 
     def fit_then_evaluate_trace_and_derivative(
         self, trace: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Fit a provided trace, then evaluates it, and its derivative in `n_predict`
         evenly spaced positions

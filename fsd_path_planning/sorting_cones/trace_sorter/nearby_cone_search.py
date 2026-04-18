@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from collections import deque
 from sys import maxsize
-from typing import Dict, Optional, Tuple
 
 import numpy as np
 
@@ -26,8 +25,8 @@ from fsd_path_planning.utils.math_utils import (
     vec_angle_between,
 )
 
-SEARCH_DIRECTIONS_CACHE_KEY_TYPE = Tuple[int, int, int]
-SEARCH_DIRECTIONS_CACHE_TYPE = Dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
+SEARCH_DIRECTIONS_CACHE_KEY_TYPE = tuple[int, int, int]
+SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
 
 
 # my_njit = lambda x: x  # for debugging only
@@ -61,7 +60,7 @@ def pre_caluclate_search_directions(
     cones: FloatArray,
     configs: IntArray,
     cone_type: int,
-    existing_cache: Optional[SEARCH_DIRECTIONS_CACHE_TYPE] = None,
+    existing_cache: SEARCH_DIRECTIONS_CACHE_TYPE | None = None,
 ) -> SEARCH_DIRECTIONS_CACHE_TYPE:
     cones_xy = cones[:, :2]
     if existing_cache is not None:
@@ -112,8 +111,8 @@ def find_nearby_cones_for_idxs(
     return sorted_set_diff(all_idxs, idxs)
 
 
-ANGLE_MASK_CACHE_KEY_TYPE = Tuple[Tuple[int, int, int], int, int]
-ANGLE_MASK_CACHE_TYPE = Dict[ANGLE_MASK_CACHE_KEY_TYPE, Tuple[bool, bool]]
+ANGLE_MASK_CACHE_KEY_TYPE = tuple[tuple[int, int, int], int, int]
+ANGLE_MASK_CACHE_TYPE = dict[ANGLE_MASK_CACHE_KEY_TYPE, tuple[bool, bool]]
 
 
 @my_njit
@@ -141,7 +140,7 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large(
     other_cone_idx: int,
     search_directions_cache: SEARCH_DIRECTIONS_CACHE_TYPE,
     search_angle: float,
-) -> Tuple[bool, bool]:
+) -> tuple[bool, bool]:
     from_cone_to_other_cone = all_cone_directions[cone_idx, other_cone_idx]
 
     search_direction = search_directions_cache[directions_key]
@@ -168,15 +167,15 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in
 ) -> bool:
     key = (directions_key, cone_idx, other_cone_idx)
     if key not in angle_cache:
-        angle_cache[
-            key
-        ] = angle_between_search_direction_of_cone_and_other_cone_is_too_large(
-            all_cone_directions,
-            directions_key,
-            cone_idx,
-            other_cone_idx,
-            search_directions_cache,
-            search_angle,
+        angle_cache[key] = (
+            angle_between_search_direction_of_cone_and_other_cone_is_too_large(
+                all_cone_directions,
+                directions_key,
+                cone_idx,
+                other_cone_idx,
+                search_directions_cache,
+                search_angle,
+            )
         )
 
     return angle_cache[key]
@@ -192,7 +191,7 @@ def calculate_visible_cones_for_one_cone(
     search_direction_cache: SEARCH_DIRECTIONS_CACHE_TYPE,
     angles_between_search_direction_and_other_cone_cache: ANGLE_MASK_CACHE_TYPE,
     idxs_to_check,
-) -> Tuple[BoolArray, BoolArray]:
+) -> tuple[BoolArray, BoolArray]:
     angle_good_mask = np.zeros(len(idxs_to_check), dtype=np.bool_)
     angle_bad_mask = np.zeros(len(idxs_to_check), dtype=np.bool_)
     for i in range(len(idxs_to_check)):
@@ -231,11 +230,11 @@ def _impl_number_cones_on_each_side_for_each_config(
     cone_type: int,
     search_distance: float,
     search_angle: float,
-    existing_search_directions_cache: Optional[SEARCH_DIRECTIONS_CACHE_TYPE] = None,
-    existing_angles_mask_cache: Optional[ANGLE_MASK_CACHE_TYPE] = None,
-    distance_matrix_square: Optional[FloatArray] = None,
-    cones_to_cones_vecs: Optional[FloatArray] = None,
-) -> Tuple[IntArray, IntArray]:
+    existing_search_directions_cache: SEARCH_DIRECTIONS_CACHE_TYPE | None = None,
+    existing_angles_mask_cache: ANGLE_MASK_CACHE_TYPE | None = None,
+    distance_matrix_square: FloatArray | None = None,
+    cones_to_cones_vecs: FloatArray | None = None,
+) -> tuple[IntArray, IntArray]:
     """
     For each configuration, find the number of cones that are on the expected side of
     the track, and the number of cones that are on the wrong side of the track.
@@ -319,12 +318,12 @@ def _impl_number_cones_on_each_side_for_each_config(
 class NearbyConeSearcher:
     def __init__(self) -> None:
         self.caches_cache: deque[
-            Tuple[Tuple[int, ConeTypes], Tuple[dict, dict, FloatArray, FloatArray]]
+            tuple[tuple[int, ConeTypes], tuple[dict, dict, FloatArray, FloatArray]]
         ] = deque(maxlen=20)
 
     def get_caches(
         self, cones: np.ndarray, cone_type: ConeTypes
-    ) -> Tuple[dict, dict, FloatArray, FloatArray]:
+    ) -> tuple[dict, dict, FloatArray, FloatArray]:
         array_buffer = cones.tobytes()
         array_hash = hash(array_buffer)
         cache_key = (array_hash, cone_type)
@@ -363,7 +362,7 @@ class NearbyConeSearcher:
         cone_type: ConeTypes,
         max_distance: float,
         max_angle: float,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         cached_values = self.get_caches(cones, cone_type)
         return _impl_number_cones_on_each_side_for_each_config(
             cones, configs, cone_type, max_distance, max_angle, *cached_values[:]
@@ -384,7 +383,7 @@ def number_cones_on_each_side_for_each_config(
     cone_type: ConeTypes,
     max_distance: float,
     max_angle: float,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     return NEARBY_CONE_SEARCH_CACHE.number_of_cones_on_each_side_for_each_config(
         cones, configs, cone_type, max_distance, max_angle
     )

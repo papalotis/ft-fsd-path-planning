@@ -96,6 +96,6 @@ string_to_function_to_use = (
 )
 
 tabs = st.tabs(list(string_to_function_to_use.keys()))
-for tab, page_function in zip(tabs, string_to_function_to_use.values()):
+for tab, page_function in zip(tabs, string_to_function_to_use.values(), strict=False):
     with tab:
         page_function()

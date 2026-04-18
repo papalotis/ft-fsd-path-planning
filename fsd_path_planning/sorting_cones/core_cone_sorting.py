@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional
 
 import numpy as np
 
@@ -23,7 +22,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 class ConeSortingInput:
     """Dataclass holding inputs."""
 
-    cones_by_type: List[FloatArray] = field(
+    cones_by_type: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
     vehicle_position: FloatArray = field(default_factory=lambda: np.zeros(2))
@@ -43,7 +42,7 @@ class ConeSortingState:
     use_unknown_cones: bool
     position_global: FloatArray = field(default_factory=lambda: np.zeros(2))
     direction_global: FloatArray = field(default_factory=lambda: np.array([0, 1.0]))
-    cones_by_type: List[FloatArray] = field(
+    cones_by_type: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
 
@@ -136,7 +135,7 @@ class ConeSorting:
 
     def run_cone_sorting(
         self,
-        input: Optional[ConeSortingInput] = None,
+        input: ConeSortingInput | None = None,
     ) -> SortingResult:
         """
         Calculate the sorted cones.

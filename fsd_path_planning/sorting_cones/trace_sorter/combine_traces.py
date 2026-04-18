@@ -6,8 +6,6 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import numpy as np
 
 from fsd_path_planning.types import FloatArray, IntArray
@@ -18,14 +16,14 @@ from fsd_path_planning.utils.math_utils import (
 
 
 def calc_final_configs_for_left_and_right(
-    left_scores: Optional[FloatArray],
-    left_configs: Optional[IntArray],
-    right_scores: Optional[FloatArray],
-    right_configs: Optional[IntArray],
+    left_scores: FloatArray | None,
+    left_configs: IntArray | None,
+    right_scores: FloatArray | None,
+    right_configs: IntArray | None,
     cones: FloatArray,
     car_pos: FloatArray,
     car_dir: FloatArray,
-) -> Tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray]:
     left_score_is_none = left_scores is None
     left_config_is_none = left_configs is None
     assert left_score_is_none == left_config_is_none
@@ -65,9 +63,9 @@ def calc_final_configs_for_left_and_right(
 
 
 def calc_final_configs_when_only_one_side_has_configs(
-    left_configs: Optional[IntArray],
-    right_configs: Optional[IntArray],
-) -> Tuple[IntArray, IntArray]:
+    left_configs: IntArray | None,
+    right_configs: IntArray | None,
+) -> tuple[IntArray, IntArray]:
     empty_config = np.zeros(0, dtype=int)
 
     left_config_is_none = left_configs is None
@@ -97,7 +95,7 @@ def calc_final_configs_when_both_available(
     cones: FloatArray,
     car_position: FloatArray,
     car_direction: FloatArray,
-) -> Tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray]:
     # we need to pick the best one for each side
 
     left_config = left_configs[0]
@@ -117,7 +115,7 @@ def handle_same_cone_in_both_configs(
     cones: FloatArray,
     left_config: IntArray,
     right_config: IntArray,
-) -> Tuple[Optional[IntArray], Optional[IntArray]]:
+) -> tuple[IntArray | None, IntArray | None]:
     (
         same_cone_intersection,
         left_intersection_idxs,
@@ -158,7 +156,7 @@ def calc_new_length_for_configs_for_same_cone_intersection(
     right_config: IntArray,
     left_intersection_index: int,
     right_intersection_index: int,
-) -> Tuple[int, int]:
+) -> tuple[int, int]:
     cones_xy = cones[:, :2]
     if left_intersection_index > 0 and right_intersection_index > 0:
         prev_left = left_config[left_intersection_index - 1]

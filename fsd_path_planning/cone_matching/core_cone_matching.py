@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -21,14 +20,14 @@ from fsd_path_planning.config_dataclasses import MatchingConfig
 from fsd_path_planning.types import FloatArray, IntArray, MatchingResult
 from fsd_path_planning.utils.cone_types import ConeTypes
 
-MatchedCones = Tuple[FloatArray, FloatArray, IntArray, IntArray]
+MatchedCones = tuple[FloatArray, FloatArray, IntArray, IntArray]
 
 
 @dataclass
 class ConeMatchingInput:
     """Dataclass holding inputs."""
 
-    sorted_cones: List[FloatArray] = field(
+    sorted_cones: list[FloatArray] = field(
         default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
     )
     vehicle_position: FloatArray = field(default_factory=lambda: np.zeros(2))
@@ -113,7 +112,7 @@ class ConeMatching:
         self.state.sorted_right = self.input.sorted_cones[ConeTypes.RIGHT]
 
     def run_cone_matching(
-        self, input: Optional[ConeMatchingInput] = None
+        self, input: ConeMatchingInput | None = None
     ) -> MatchingResult:
         """
         Calculate matched cones.

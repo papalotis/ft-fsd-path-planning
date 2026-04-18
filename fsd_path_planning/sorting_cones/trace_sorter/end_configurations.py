@@ -6,8 +6,6 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
@@ -27,7 +25,7 @@ from fsd_path_planning.utils.math_utils import (
 @my_njit
 def adjacency_matrix_to_borders_and_targets(
     adjacency_matrix: IntArray,
-) -> Tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray]:
     """
     Convert an adjacency matrix to two flat arrays, one representing the neighbors of
     each node and one which indicates the starting index of each node in the neighbors
@@ -364,8 +362,8 @@ def calculate_mask_within_ellipse(
 
 @my_njit
 def angle_difference(
-    angle1: "float | FloatArray", angle2: "float | FloatArray"
-) -> "float | FloatArray":
+    angle1: float | FloatArray, angle2: float | FloatArray
+) -> float | FloatArray:
     """
     Calculate the difference between two angles. The range of the difference is [-pi, pi].
     The order of the angles *is* important.
@@ -396,7 +394,7 @@ def _impl_find_all_end_configurations(
     car_direction: FloatArray,
     car_size: float,
     store_all_end_configurations: bool,
-) -> Tuple[IntArray, Optional[Tuple[IntArray, BoolArray]]]:
+) -> tuple[IntArray, tuple[IntArray, BoolArray] | None]:
     """
     Finds all the possible paths up to length target length. If a path
     Args:
@@ -528,7 +526,7 @@ def find_all_end_configurations(
     car_direction: FloatArray,
     car_size: float,
     store_all_end_configurations: bool,
-) -> Tuple[IntArray, Optional[Tuple[IntArray, BoolArray]]]:
+) -> tuple[IntArray, tuple[IntArray, BoolArray] | None]:
     """
     Finds all the possible paths that include all the reachable nodes from the starting
     Args:

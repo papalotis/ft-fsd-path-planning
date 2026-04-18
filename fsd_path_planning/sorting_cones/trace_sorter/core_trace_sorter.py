@@ -8,7 +8,7 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -37,7 +37,7 @@ from fsd_path_planning.utils.math_utils import (
 from fsd_path_planning.utils.utils import Timer
 
 
-def flatten_cones_by_type_array(cones_by_type: List[FloatArray]) -> FloatArray:
+def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
     """Ravel the cones_by_type_array"""
 
     if (
@@ -102,8 +102,8 @@ class ConeSortingCacheEntry:
     input_cones: FloatArray  # x, y, color
     left_starting_cones: FloatArray
     right_starting_cones: FloatArray
-    left_result: Tuple[Any, ...]
-    right_result: Tuple[Any, ...]
+    left_result: tuple[Any, ...]
+    right_result: tuple[Any, ...]
 
 
 class TraceSorter:
@@ -145,10 +145,10 @@ class TraceSorter:
 
     def sort_left_right(
         self,
-        cones_by_type: List[FloatArray],
+        cones_by_type: list[FloatArray],
         car_pos: FloatArray,
         car_dir: FloatArray,
-    ) -> Tuple[FloatArray, FloatArray]:
+    ) -> tuple[FloatArray, FloatArray]:
         timer_no_print = True
         cones_flat = flatten_cones_by_type_array(cones_by_type)
 
@@ -249,7 +249,7 @@ class TraceSorter:
         cone_type: ConeTypes,
         car_pos: FloatArray,
         car_dir: FloatArray,
-    ) -> Tuple[Optional[FloatArray], Optional[IntArray], Optional[FloatArray]]:
+    ) -> tuple[FloatArray | None, IntArray | None, FloatArray | None]:
         """
         Args:
             cones: The trace to be sorted.
@@ -342,8 +342,8 @@ class TraceSorter:
         car_direction: FloatArray,
         cones: FloatArray,
         cone_type: ConeTypes,
-        index_to_skip: Optional[np.ndarray] = None,
-    ) -> Optional[int]:
+        index_to_skip: np.ndarray | None = None,
+    ) -> int | None:
         """
         Return the index of the starting cone
             int: The index of the stating cone
@@ -413,7 +413,7 @@ class TraceSorter:
         car_direction: FloatArray,
         cones: FloatArray,
         cone_type: ConeTypes,
-    ) -> Optional[np.ndarray]:
+    ) -> np.ndarray | None:
         """
         Return the index of the starting cones. Pick the cone that is closest in front
         of the car and the cone that is closest behind the car.

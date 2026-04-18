@@ -11,7 +11,7 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Type, Union
+from typing import Any
 
 import numpy as np
 
@@ -52,7 +52,7 @@ from fsd_path_planning.utils.math_utils import (
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
 
-MissionToRelocalizer: dict[MissionTypes, Type[Relocalizer]] = {
+MissionToRelocalizer: dict[MissionTypes, type[Relocalizer]] = {
     MissionTypes.acceleration: AccelerationRelocalizer,
     MissionTypes.ebs_test: AccelerationRelocalizer,
     MissionTypes.skidpad: SkidpadRelocalizer,
@@ -90,7 +90,7 @@ class PathPlanner:
             or create_default_cone_matching_with_non_monotonic_matches(mission)
         )
         self.pathing = pathing or create_default_pathing(mission)
-        self.global_path: Optional[FloatArray] = None
+        self.global_path: FloatArray | None = None
 
         self.experimental_performance_improvements = (
             experimental_performance_improvements
@@ -111,12 +111,19 @@ class PathPlanner:
 
     def _run_relocalization(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
         noprint: bool,
-    ) -> Tuple[
-        FloatArray, FloatArray, FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray
+    ) -> tuple[
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        IntArray,
+        IntArray,
     ]:
         """Run the relocalization path (skidpad/acceleration)."""
         with Timer("Relocalization", noprint=noprint):
@@ -138,7 +145,9 @@ class PathPlanner:
             self.global_path = self.relocalizer.get_known_global_path()
 
         sorted_left, sorted_right = np.zeros((2, 0, 2), dtype=float)
-        left_cones_with_virtual, right_cones_with_virtual = np.zeros((2, 0, 2), dtype=float)
+        left_cones_with_virtual, right_cones_with_virtual = np.zeros(
+            (2, 0, 2), dtype=float
+        )
         left_to_right_match, right_to_left_match = np.zeros((2, 0), dtype=int)
 
         return (
@@ -154,11 +163,11 @@ class PathPlanner:
 
     def _run_sorting_and_matching(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
         noprint: bool,
-    ) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray]:
+    ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray]:
         """Run the standard sorting → matching pipeline."""
         with Timer("Cone sorting", noprint=noprint):
             cone_sorting_input = ConeSortingInput(
@@ -193,13 +202,13 @@ class PathPlanner:
 
     def calculate_path_in_global_frame(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
-        vehicle_direction: Union[FloatArray, float],
+        vehicle_direction: FloatArray | float,
         return_intermediate_results: bool = False,
-    ) -> Union[
-        FloatArray,
-        Tuple[
+    ) -> (
+        FloatArray
+        | tuple[
             FloatArray,
             FloatArray,
             FloatArray,
@@ -207,8 +216,8 @@ class PathPlanner:
             FloatArray,
             IntArray,
             IntArray,
-        ],
-    ]:
+        ]
+    ):
         """
         Runs the whole path planning pipeline.
 

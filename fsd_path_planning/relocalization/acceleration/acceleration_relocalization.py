@@ -5,8 +5,6 @@ Description: Place the car in the known accelearation map and relocalize it.
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 
 from fsd_path_planning.relocalization.relocalization_base_class import (
@@ -119,10 +117,10 @@ def best_fit(points, subset_size, iterations):
 class AccelerationRelocalizer(Relocalizer):
     def do_relocalization_once(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
+    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
         if self._original_vehicle_position is None:
             return
 

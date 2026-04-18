@@ -7,7 +7,6 @@ Project: fsd_path_planning
 
 import time
 from types import TracebackType
-from typing import List, Optional, Type
 
 import numpy as np
 from scipy.stats import describe
@@ -30,7 +29,7 @@ class Timer:
         """
         self.name = name
         self.print = not noprint
-        self.intervals: List[float] = []
+        self.intervals: list[float] = []
         self.start: float
 
     def reset(self) -> None:
@@ -52,9 +51,9 @@ class Timer:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """
         Measure the exit time and print the difference in time since `__enter__` if
