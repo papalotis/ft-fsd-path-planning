@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, Tuple
 
 import numpy as np
 import pytest
@@ -17,7 +16,7 @@ GOLDEN_DIR = Path(__file__).resolve().parent / "golden_data"
 
 def load_data_json(
     data_path: Path,
-) -> Tuple[np.ndarray, np.ndarray, List[List[np.ndarray]]]:
+) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
     """Load a demo JSON file. Replicates logic from fsd_path_planning.demo.json_demo."""
     data = json.loads(data_path.read_text())
     positions = np.array([d["car_position"] for d in data])
@@ -80,7 +79,7 @@ def planner_skidpad(skidpad_data):
 # ---------------------------------------------------------------------------
 
 
-def sample_frame_indices(total: int, step: int = 10) -> List[int]:
+def sample_frame_indices(total: int, step: int = 10) -> list[int]:
     """Return indices: first, last, and every `step`-th frame."""
     indices = list(range(0, total, step))
     if (total - 1) not in indices:

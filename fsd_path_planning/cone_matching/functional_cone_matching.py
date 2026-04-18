@@ -8,7 +8,7 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import List, Literal, Tuple, cast
+from typing import Literal, cast
 
 import numpy as np
 
@@ -115,6 +115,7 @@ def find_boolean_mask_of_all_potential_matches(
             from_start_points_to_other_side,
             angles,
             start_point_direction_other_side_direction_angle_diff,
+            strict=False,
         )
     ):
         # (N, 2)
@@ -142,7 +143,11 @@ def find_boolean_mask_of_all_potential_matches(
         return_value[i, mask_direction_diff_over_threshold] = False
 
     for i, (mask_cone_to_candidates, distance_to_other_side) in enumerate(
-        zip(return_value, np.linalg.norm(from_start_points_to_other_side, axis=-1))
+        zip(
+            return_value,
+            np.linalg.norm(from_start_points_to_other_side, axis=-1),
+            strict=False,
+        )
     ):
         distance_to_other_side[~mask_cone_to_candidates] = np.inf
         idxs_candidates_sorted = np.argsort(distance_to_other_side)[:2]
@@ -214,7 +219,7 @@ def insert_virtual_cones_to_existing(
     other_side_virtual_cones: FloatArray,
     car_position: FloatArray,
     virtual_cone_angle_threshold: float = None,
-) -> Tuple[FloatArray, List[FloatArray]]:
+) -> tuple[FloatArray, list[FloatArray]]:
     """
     Combine the virtual with the real cones into a single array.
     """
@@ -232,7 +237,7 @@ def insert_virtual_cones_to_existing(
     )
     cones_to_insert = cones_to_insert[order_to_insert]
 
-    history: List[FloatArray] = []
+    history: list[FloatArray] = []
 
     for cone_to_insert in cones_to_insert:
         distance_to_existing_cones = np.linalg.norm(
@@ -339,7 +344,7 @@ def combine_and_sort_virtual_with_real(
     other_side_cone_type: SortableConeTypes,  # pylint : disable=unused-argument
     car_pos: FloatArray,
     car_dir: FloatArray,  # pylint: disable=unused-argument
-) -> Tuple[FloatArray, BoolArray, List[FloatArray]]:
+) -> tuple[FloatArray, BoolArray, list[FloatArray]]:
     """
     Combine the existing cones with the newly calculated cones into a single array.
     """
@@ -377,7 +382,7 @@ def calculate_matches_for_side(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool,
-) -> Tuple[FloatArray, IntArray, FloatArray]:
+) -> tuple[FloatArray, IntArray, FloatArray]:
     """
     Find a match for each cone from one side to the other.
     """
@@ -429,7 +434,7 @@ def calculate_cones_for_other_side(
     car_pos: FloatArray,
     car_dir: FloatArray,
     matches_should_be_monotonic: bool,
-) -> Tuple[FloatArray, BoolArray]:
+) -> tuple[FloatArray, BoolArray]:
     """
     Calculate the virtual cones for the other side.
     """
@@ -481,7 +486,7 @@ def match_both_sides_with_virtual_cones(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool,
-) -> Tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray]:
     """
     After virtual cones have been placed for each side, rerun matching algorithm
     to get final matches.
@@ -520,9 +525,9 @@ def calculate_virtual_cones_for_both_sides(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool = True,
-) -> Tuple[
-    Tuple[FloatArray, BoolArray, IntArray],
-    Tuple[FloatArray, BoolArray, IntArray],
+) -> tuple[
+    tuple[FloatArray, BoolArray, IntArray],
+    tuple[FloatArray, BoolArray, IntArray],
 ]:
     """
     The main function of the module. It applies all the steps to return two results

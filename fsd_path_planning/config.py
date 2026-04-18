@@ -6,7 +6,7 @@ Description: Config file to create instances of the pathing related classes.
 Project: fsd_path_planning
 """
 
-from typing import Any, Dict, Type
+from typing import Any
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath as CalculatePath,
@@ -25,7 +25,7 @@ from fsd_path_planning.config_dataclasses import (
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting
 from fsd_path_planning.utils.mission_types import MissionTypes
 
-KwargsType = Dict[str, Any]
+KwargsType = dict[str, Any]
 
 
 def get_cone_sorting_config(
@@ -79,7 +79,7 @@ def create_default_pathing(mission: MissionTypes) -> CalculatePath:
     """
     cfg = default_config(mission)
 
-    possible_path_calculation_classes: Dict[MissionTypes, Type[CalculatePath]] = {
+    possible_path_calculation_classes: dict[MissionTypes, type[CalculatePath]] = {
         MissionTypes.skidpad: SkidpadCalculatePath,
     }
 

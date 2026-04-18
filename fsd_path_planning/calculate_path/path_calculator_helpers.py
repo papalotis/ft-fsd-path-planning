@@ -10,8 +10,9 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+from typing import Literal
+
 import numpy as np
-from typing_extensions import Literal
 
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes

@@ -34,7 +34,7 @@ class TestCalculateMatchSearchDirection:
         left_dirs = calculate_match_search_direction(cones, ConeTypes.LEFT)
         right_dirs = calculate_match_search_direction(cones, ConeTypes.RIGHT)
         # Left and right should point in opposite directions (y-components)
-        for ld, rd in zip(left_dirs, right_dirs):
+        for ld, rd in zip(left_dirs, right_dirs, strict=False):
             assert np.sign(ld[1]) != np.sign(rd[1]) or (abs(ld[1]) < 1e-10)
 
     def test_single_pair_of_cones(self):

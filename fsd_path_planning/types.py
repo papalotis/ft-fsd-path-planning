@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, fields
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 from numpy.typing import NDArray

@@ -4,8 +4,6 @@ Description: This File calculates the costs for the different path versions
 Project: fsd_path_planning
 """
 
-from typing import Optional
-
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
@@ -194,7 +192,7 @@ def calc_cones_on_either_cost(
     points: FloatArray,
     configurations: IntArray,
     cone_type: SortableConeTypes,
-    nearby_searcher: Optional[NearbyConeSearcher] = None,
+    nearby_searcher: NearbyConeSearcher | None = None,
 ) -> FloatArray:
     with Timer("calc_cones_on_either_cost", noprint=True) as _:
         if nearby_searcher is not None:
@@ -233,7 +231,7 @@ def cost_configurations(
     vehicle_direction: FloatArray,  # pylint: disable=unused-argument (future proofing)
     *,
     return_individual_costs: bool,
-    nearby_searcher: Optional[NearbyConeSearcher] = None,
+    nearby_searcher: NearbyConeSearcher | None = None,
 ) -> FloatArray:
     """
     Calculates a cost for each provided configuration

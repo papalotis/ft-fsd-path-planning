@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
-import numpy as np
-
 from fsd_path_planning.types import FloatArray, IntArray
-from fsd_path_planning.utils.cone_types import ConeTypes
 
 
 def side_score(matches: IntArray) -> tuple:
@@ -21,7 +16,7 @@ def select_side_to_use(
     right_cones: FloatArray,
     left_to_right_matches: IntArray,
     right_to_left_matches: IntArray,
-) -> Tuple[FloatArray, IntArray, FloatArray]:
+) -> tuple[FloatArray, IntArray, FloatArray]:
     """Select the main side to use for path calculation."""
     left_score = side_score(left_to_right_matches)
     right_score = side_score(right_to_left_matches)

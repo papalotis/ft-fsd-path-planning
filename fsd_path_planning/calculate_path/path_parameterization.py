@@ -8,7 +8,7 @@ Project: fsd_path_planning
 """
 
 from dataclasses import dataclass
-from typing import Tuple, cast
+from typing import cast
 
 import numpy as np
 from scipy.ndimage import uniform_filter1d
@@ -194,7 +194,7 @@ class PathParameterizer:
 
     def _calculate_smallest_distance_to_path(
         self, path_spline: SplineEvaluator, point: FloatArray
-    ) -> Tuple[float, int]:
+    ) -> tuple[float, int]:
         """
         Calculate the closest point on the path to a point.
 
@@ -253,7 +253,7 @@ class PathParameterizer:
         self,
         path_spline: SplineEvaluator,
         path_curvature: FloatArray,
-    ) -> Tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
+    ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray]:
         """
         Sample the path parameters for the prediction horizon. The splines are predicted
         in a high resolution and the parameters are sampled in a low resolution.

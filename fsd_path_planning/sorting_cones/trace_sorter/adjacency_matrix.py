@@ -4,8 +4,6 @@ Description: This File calculates the Adjacency Matrix
 Project: fsd_path_planning
 """
 
-from typing import Optional, Tuple
-
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
@@ -18,10 +16,10 @@ class AdjacencyMatrixCache:
     """Instance-scoped cache for distance matrix and k-nearest-neighbor calculations."""
 
     def __init__(self) -> None:
-        self._matrix_hash: Optional[int] = None
-        self._distance_matrix: Optional[FloatArray] = None
-        self._idxs_hash: Optional[int] = None
-        self._idxs_calculated: Optional[IntArray] = None
+        self._matrix_hash: int | None = None
+        self._distance_matrix: FloatArray | None = None
+        self._idxs_hash: int | None = None
+        self._idxs_calculated: IntArray | None = None
 
     def calculate_distance_matrix(self, cones_xy: FloatArray) -> FloatArray:
         input_hash = hash(cones_xy.tobytes())
@@ -80,8 +78,8 @@ def create_adjacency_matrix(
     start_idx: int,
     max_dist: float,
     cone_type: ConeTypes,
-    cache: Optional[AdjacencyMatrixCache] = None,
-) -> Tuple[IntArray, IntArray]:
+    cache: AdjacencyMatrixCache | None = None,
+) -> tuple[IntArray, IntArray]:
     """
     Creates the adjacency matrix that defines the possible points each point can be connected with
     Args:
@@ -122,12 +120,12 @@ def create_adjacency_matrix(
 
     adjacency_matrix: IntArray = np.zeros((n_points, n_points), dtype=np.uint8)
 
-    adjacency_matrix[
-        sources, targets
-    ] = 1  # for each node set its closest n_neighbor to 1
-    adjacency_matrix[
-        pairwise_distances > (max_dist * max_dist)
-    ] = 0  # but if distance is too high set to 0 again
+    adjacency_matrix[sources, targets] = (
+        1  # for each node set its closest n_neighbor to 1
+    )
+    adjacency_matrix[pairwise_distances > (max_dist * max_dist)] = (
+        0  # but if distance is too high set to 0 again
+    )
 
     # remove all edges that don't have a revere i.e. convert to undirected graph
     adjacency_matrix = np.logical_and(adjacency_matrix, adjacency_matrix.T)
