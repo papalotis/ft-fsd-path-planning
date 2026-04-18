@@ -9,8 +9,7 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
-from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning import MissionTypes, PathPlanner
 
 DEMO_DIR = Path(__file__).resolve().parent.parent / "fsd_path_planning" / "demo"
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden_data"
@@ -32,6 +31,7 @@ def load_data_json(
 # ---------------------------------------------------------------------------
 # Demo data fixtures (session-scoped – loaded once for the whole test run)
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def fsg_data():
@@ -55,6 +55,7 @@ def skidpad_data():
 # PathPlanner fixtures (session-scoped – amortises JIT warmup)
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="session")
 def planner_trackdrive(fsg_data):
     """Session-scoped trackdrive PathPlanner, warmed up on the first frame."""
@@ -77,6 +78,7 @@ def planner_skidpad(skidpad_data):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def sample_frame_indices(total: int, step: int = 10) -> List[int]:
     """Return indices: first, last, and every `step`-th frame."""

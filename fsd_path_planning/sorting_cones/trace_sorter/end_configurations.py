@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: This File calculates all the possible paths
 Project: fsd_path_planning
@@ -12,7 +11,9 @@ from typing import Optional, Tuple
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import lines_segments_intersect_indicator
+from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
+    lines_segments_intersect_indicator,
+)
 from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
@@ -21,8 +22,6 @@ from fsd_path_planning.utils.math_utils import (
     points_inside_ellipse,
     vec_angle_between,
 )
-
-# my_njit = lambda x: x  # XXX: just for debugging
 
 
 @my_njit
@@ -106,9 +105,97 @@ def resize_stack_if_needed(stack: GenericArray, stack_pointer: int) -> GenericAr
 
 
 @my_njit
+def _check_angle_continuity(
+    trace: FloatArray,
+    current_attempt: IntArray,
+    position_in_stack: int,
+    candidate_pos: FloatArray,
+    cone_type: int,
+    threshold_directional_angle: float,
+    threshold_absolute_angle: float,
+) -> bool:
+    """Check that the angle between consecutive path segments is within thresholds."""
+    second_to_last = trace[current_attempt[position_in_stack - 1]]
+    last = trace[current_attempt[position_in_stack]]
+    second_to_last_to_last = last - second_to_last
+    last_to_candidate = candidate_pos - last
+
+    angle_1: float = np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0])
+    angle_2: float = np.arctan2(last_to_candidate[1], last_to_candidate[0])
+
+    difference = angle_difference(angle_2, angle_1)
+    len_last_to_candidate = np.linalg.norm(last_to_candidate)
+
+    if np.abs(difference) > threshold_absolute_angle:
+        return False
+    elif cone_type == ConeTypes.LEFT:
+        if not (
+            difference < threshold_directional_angle or len_last_to_candidate < 4.0
+        ):
+            return False
+    elif cone_type == ConeTypes.RIGHT:
+        if not (
+            difference > -threshold_directional_angle or len_last_to_candidate < 4.0
+        ):
+            return False
+
+    # check if candidate causes change in direction in attempt
+    if position_in_stack >= 2:
+        third_to_last = trace[current_attempt[position_in_stack - 2]]
+        third_to_last_to_second_to_last = second_to_last - third_to_last
+        angle_3: float = np.arctan2(
+            third_to_last_to_second_to_last[1],
+            third_to_last_to_second_to_last[0],
+        )
+
+        difference_2 = angle_difference(angle_1, angle_3)
+
+        if (
+            np.sign(difference) != np.sign(difference_2)
+            and np.abs(difference - difference_2) > 1.3
+        ):
+            return False
+
+    return True
+
+
+@my_njit
+def _check_forward_direction(
+    trace: FloatArray,
+    current_attempt: IntArray,
+    candidate_pos: FloatArray,
+    car_direction: FloatArray,
+) -> bool:
+    """Check that the candidate is in front of the car (within 90 degrees)."""
+    start = trace[current_attempt[0]]
+    diff = candidate_pos - start
+    direction_offset = vec_angle_between(car_direction, diff)
+    return bool(direction_offset < np.pi / 2)
+
+
+@my_njit
+def _check_no_car_collision(
+    trace: FloatArray,
+    current_attempt: IntArray,
+    position_in_stack: int,
+    candidate_pos: FloatArray,
+    car_position: FloatArray,
+    car_direction_normalized: FloatArray,
+    car_size: float,
+) -> bool:
+    """Check that the path segment does not intersect the car body."""
+    last_in_attempt = trace[current_attempt[position_in_stack]]
+    car_start = car_position - car_direction_normalized * car_size / 2
+    car_end = car_position + car_direction_normalized * car_size
+    return not lines_segments_intersect_indicator(
+        last_in_attempt, candidate_pos, car_start, car_end
+    )
+
+
+@my_njit
 def neighbor_bool_mask_can_be_added_to_attempt(
     trace: FloatArray,
-    cone_type: ConeTypes,
+    cone_type: int,
     current_attempt: IntArray,
     position_in_stack: int,
     neighbors: IntArray,
@@ -118,8 +205,6 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     car_direction: FloatArray,
     car_size: float,
 ) -> BoolArray:
-    # TODO: this function is too long, split it up
-    # print(locals())
     car_direction_normalized = car_direction / np.linalg.norm(car_direction)
 
     # neighbor can be added if not in current attempt
@@ -127,7 +212,9 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
     neighbors_points = trace[neighbors]
     if position_in_stack >= 1:
-        mask_in_ellipse = calculate_mask_within_ellipse(trace, current_attempt, position_in_stack, neighbors_points)
+        mask_in_ellipse = calculate_mask_within_ellipse(
+            trace, current_attempt, position_in_stack, neighbors_points
+        )
 
         can_be_added = can_be_added & mask_in_ellipse
 
@@ -146,9 +233,6 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
         candidate_neighbor = neighbors[i]
 
-        # find if there is a cone that is between the last cone in the attempt
-        # and the candidate neighbor, if so we do not want to pursue this path, because
-        # it will skip one cone
         check_if_neighbor_lies_between_last_in_attempt_and_candidate(
             trace,
             current_attempt,
@@ -159,66 +243,41 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             candidate_neighbor,
         )
 
+        if not can_be_added[i]:
+            continue
+
         candidate_neighbor_pos = trace[neighbors[i]]
-        # calculate angle between second to last to last vector in attempt
-        # and the vector between the last node and the candidate neighbor
-        # add to current attempt only if the angle between the current last
-        # vector and the potential new last vector is less than a specific
-        # threshold. there are two thresholds, one is the maximum angle in a specific direction
-        # for blue cones that is counter-clockwise and for yellow cones that is clockwise
-        # the second threshold is an absolute angle between the two vectors.
-        # XXX: There might be a bug where the can_be_added[i] is set to false and then
-        # back to true
-        if can_be_added[i] and position_in_stack >= 1:
-            second_to_last_in_attempt = trace[current_attempt[position_in_stack - 1]]
-            last_in_attempt = trace[current_attempt[position_in_stack]]
-            second_to_last_to_last = last_in_attempt - second_to_last_in_attempt
-            last_to_candidate = candidate_neighbor_pos - last_in_attempt
-            angle_1: float = np.arctan2(second_to_last_to_last[1], second_to_last_to_last[0])
-            angle_2: float = np.arctan2(last_to_candidate[1], last_to_candidate[0])
 
-            # order is important here
-            difference = angle_difference(angle_2, angle_1)
-            len_last_to_candidate = np.linalg.norm(last_to_candidate)
-
-            if np.abs(difference) > threshold_absolute_angle:
+        if position_in_stack >= 1:
+            if not _check_angle_continuity(
+                trace,
+                current_attempt,
+                position_in_stack,
+                candidate_neighbor_pos,
+                cone_type,
+                threshold_directional_angle,
+                threshold_absolute_angle,
+            ):
                 can_be_added[i] = False
-            elif cone_type == ConeTypes.LEFT:
-                can_be_added[i] = difference < threshold_directional_angle or len_last_to_candidate < 4.0
-            elif cone_type == ConeTypes.RIGHT:
-                can_be_added[i] = difference > -threshold_directional_angle or len_last_to_candidate < 4.0
-            else:
-                raise AssertionError("Unreachable code")
+                continue
 
-            # check if candidate causes change in direction in attempt
-            if position_in_stack >= 2:
-                third_to_last = trace[current_attempt[position_in_stack - 2]]
-                third_to_last_to_second_to_last = second_to_last_in_attempt - third_to_last
-                angle_3: float = np.arctan2(
-                    third_to_last_to_second_to_last[1],
-                    third_to_last_to_second_to_last[0],
-                )
+        if position_in_stack == 1:
+            if not _check_forward_direction(
+                trace, current_attempt, candidate_neighbor_pos, car_direction
+            ):
+                can_be_added[i] = False
+                continue
 
-                difference_2 = angle_difference(angle_1, angle_3)
-
-                if np.sign(difference) != np.sign(difference_2) and np.abs(difference - difference_2) > 1.3:
-                    can_be_added[i] = False
-
-        if can_be_added[i] and position_in_stack == 1:
-            start = trace[current_attempt[0]]
-            diff = candidate_neighbor_pos - start
-            direction_offset = vec_angle_between(car_direction, diff)
-            can_be_added[i] &= direction_offset < np.pi / 2
-
-        if can_be_added[i] and position_in_stack >= 0:
-            # make sure that no intersection with car occurs
-            last_in_attempt = trace[current_attempt[position_in_stack]]
-            car_start = car_position - car_direction_normalized * car_size / 2
-            car_end = car_position + car_direction_normalized * car_size
-
-            can_be_added[i] &= not lines_segments_intersect_indicator(
-                last_in_attempt, candidate_neighbor_pos, car_start, car_end
-            )
+        if not _check_no_car_collision(
+            trace,
+            current_attempt,
+            position_in_stack,
+            candidate_neighbor_pos,
+            car_position,
+            car_direction_normalized,
+            car_size,
+        ):
+            can_be_added[i] = False
 
     return can_be_added
 
@@ -237,7 +296,9 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
         if neighbor == neighbors[i]:
             continue
 
-        neighbor_to_last_in_attempt = trace[current_attempt[position_in_stack]] - trace[neighbor]
+        neighbor_to_last_in_attempt = (
+            trace[current_attempt[position_in_stack]] - trace[neighbor]
+        )
 
         neighbor_to_candidate = trace[candidate_neighbor] - trace[neighbor]
 
@@ -251,7 +312,8 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
         if (
             dist_to_candidate < 6.0
             and dist_to_last_in_attempt < 6.0
-            and vec_angle_between(neighbor_to_last_in_attempt, neighbor_to_candidate) > np.deg2rad(150)
+            and vec_angle_between(neighbor_to_last_in_attempt, neighbor_to_candidate)
+            > np.deg2rad(150)
         ):
             can_be_added[i] = False
             break
@@ -259,7 +321,7 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
 
 @my_njit
 def mask_second_in_attempt_is_on_right_vehicle_side(
-    cone_type: ConeTypes,
+    cone_type: int,
     car_position: FloatArray,
     car_direction_normalized: FloatArray,
     neighbors_points: FloatArray,
@@ -301,7 +363,9 @@ def calculate_mask_within_ellipse(
 
 
 @my_njit
-def angle_difference(angle1: FloatArray, angle2: FloatArray) -> FloatArray:
+def angle_difference(
+    angle1: "float | FloatArray", angle2: "float | FloatArray"
+) -> "float | FloatArray":
     """
     Calculate the difference between two angles. The range of the difference is [-pi, pi].
     The order of the angles *is* important.
@@ -313,14 +377,14 @@ def angle_difference(angle1: FloatArray, angle2: FloatArray) -> FloatArray:
     Returns:
         The difference between the two angles.
     """
-    return_value: FloatArray = (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi
+    return_value = (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi
     return return_value
 
 
 @my_njit
 def _impl_find_all_end_configurations(
     trace: FloatArray,
-    cone_type: ConeTypes,
+    cone_type: int,
     start_idx: int,
     adjacency_neighbors: IntArray,
     adjacency_borders: IntArray,
@@ -359,6 +423,10 @@ def _impl_find_all_end_configurations(
         all_configurations_counter = 0
         all_configurations = end_configurations.copy()
         configuration_is_end = np.zeros(end_configurations.shape[0], dtype=np.bool_)
+    else:
+        all_configurations_counter = 0
+        all_configurations = end_configurations
+        configuration_is_end = np.zeros(0, dtype=np.bool_)
 
     while stack_end_pointer >= 0:
         # pop the index and the position from the stack
@@ -370,7 +438,9 @@ def _impl_find_all_end_configurations(
         current_attempt[position_in_stack + 1 :] = -1
 
         # get the neighbors of the last node in the attempt
-        neighbors = adjacency_neighbors[adjacency_borders[next_idx] : adjacency_borders[next_idx + 1]]
+        neighbors = adjacency_neighbors[
+            adjacency_borders[next_idx] : adjacency_borders[next_idx + 1]
+        ]
 
         can_be_added = neighbor_bool_mask_can_be_added_to_attempt(
             trace,
@@ -385,7 +455,9 @@ def _impl_find_all_end_configurations(
             car_size,
         )
 
-        has_valid_neighbors = position_in_stack < target_length - 1 and np.any(can_be_added)
+        has_valid_neighbors = position_in_stack < target_length - 1 and np.any(
+            can_be_added
+        )
         # check that we haven't hit target length and that we have neighbors to add
         if has_valid_neighbors:
             for i in range(len(can_be_added)):
@@ -402,23 +474,35 @@ def _impl_find_all_end_configurations(
 
         # leaf
         else:
-            end_configurations = resize_stack_if_needed(end_configurations, end_configurations_pointer)
+            end_configurations = resize_stack_if_needed(
+                end_configurations, end_configurations_pointer
+            )
 
             end_configurations[end_configurations_pointer:] = current_attempt.copy()
 
             end_configurations_pointer += 1
 
         if store_all_end_configurations:
-            all_configurations = resize_stack_if_needed(all_configurations, all_configurations_counter)
-            configuration_is_end = resize_stack_if_needed(configuration_is_end, all_configurations_counter)
+            all_configurations = resize_stack_if_needed(
+                all_configurations, all_configurations_counter
+            )
+            configuration_is_end = resize_stack_if_needed(
+                configuration_is_end, all_configurations_counter
+            )
             all_configurations[all_configurations_counter] = current_attempt
             configuration_is_end[all_configurations_counter] = not has_valid_neighbors
             all_configurations_counter += 1
 
-    return_value_end_configurations: IntArray = end_configurations[:end_configurations_pointer]
+    return_value_end_configurations: IntArray = end_configurations[
+        :end_configurations_pointer
+    ]
 
-    mask_end_configurations_with_more_that_two_nodes = (return_value_end_configurations != -1).sum(axis=1) > 2
-    return_value_end_configurations = return_value_end_configurations[mask_end_configurations_with_more_that_two_nodes]
+    mask_end_configurations_with_more_that_two_nodes = (
+        return_value_end_configurations != -1
+    ).sum(axis=1) > 2
+    return_value_end_configurations = return_value_end_configurations[
+        mask_end_configurations_with_more_that_two_nodes
+    ]
 
     if store_all_end_configurations:
         all_configurations = all_configurations[:all_configurations_counter]
@@ -482,22 +566,33 @@ def find_all_end_configurations(
     )
 
     if len(first_k_indices_must_be) > 0 and len(end_configurations) > 0:
-        mask_keep = (end_configurations[:, : len(first_k_indices_must_be)] == first_k_indices_must_be).all(axis=1)
+        mask_keep = (
+            end_configurations[:, : len(first_k_indices_must_be)]
+            == first_k_indices_must_be
+        ).all(axis=1)
         end_configurations = end_configurations[mask_keep]
 
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3
     end_configurations = end_configurations[mask_length_is_atleast_3]
 
     # remove last cone from config if it is of unknown or orange type
-    last_cone_in_each_config_idx = (np.argmax(end_configurations == -1, axis=1) - 1) % end_configurations.shape[1]
+    last_cone_in_each_config_idx = (
+        np.argmax(end_configurations == -1, axis=1) - 1
+    ) % end_configurations.shape[1]
 
-    last_cone_in_each_config = end_configurations[np.arange(end_configurations.shape[0]), last_cone_in_each_config_idx]
+    last_cone_in_each_config = end_configurations[
+        np.arange(end_configurations.shape[0]), last_cone_in_each_config_idx
+    ]
 
     mask_last_cone_is_not_of_type = points[last_cone_in_each_config, 2] != cone_type
 
-    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[mask_last_cone_is_not_of_type]
+    last_cone_in_each_config_idx_masked = last_cone_in_each_config_idx[
+        mask_last_cone_is_not_of_type
+    ]
 
-    end_configurations[mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked] = -1
+    end_configurations[
+        mask_last_cone_is_not_of_type, last_cone_in_each_config_idx_masked
+    ] = -1
 
     # keep only configs with at least 3 cones
     mask_length_is_atleast_3 = (end_configurations != -1).sum(axis=1) >= 3

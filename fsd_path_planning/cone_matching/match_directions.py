@@ -23,7 +23,7 @@ def calculate_search_direction_for_one(cones, idxs, cone_type):
 @my_njit
 def calculate_match_search_direction(
     cones,
-    cone_type: ConeTypes,
+    cone_type: int,
 ):
     number_of_cones = len(cones)
     assert number_of_cones > 1

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Place the car in the known accelearation map and relocalize it.
 """
@@ -162,7 +161,9 @@ class AccelerationRelocalizer(Relocalizer):
             )
 
         def transform_to_base_frame(position_2d, yaw):
-            base_position = rotate(position_2d, angle_to_fix) + self._original_vehicle_position
+            base_position = (
+                rotate(position_2d, angle_to_fix) + self._original_vehicle_position
+            )
             base_yaw = yaw + angle_to_fix
             return base_position, base_yaw
 
@@ -212,7 +213,9 @@ BASE_ACCELERATION_PATH = create_acceleartion_path()
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
-    plt.scatter(*create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path())))
+    plt.scatter(
+        *create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path()))
+    )
 
     plt.axis("equal")
     plt.show()

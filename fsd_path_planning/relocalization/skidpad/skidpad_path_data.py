@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Hard coded skidpad path.
 Project: FaSTTUBe Chabo Pathing

@@ -1,4 +1,5 @@
 """Unit tests for path calculation."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -11,10 +12,9 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
 from fsd_path_planning.calculate_path.path_calculator_helpers import (
     PathCalculatorHelpers,
 )
-from fsd_path_planning.utils.cone_types import ConeTypes
-
 
 # ── PathCalculatorHelpers ────────────────────────────────────────────────────
+
 
 class TestPathCalculatorHelpers:
     @pytest.fixture()
@@ -23,13 +23,17 @@ class TestPathCalculatorHelpers:
 
     def test_chord_path_shape(self, helpers):
         path = helpers.calculate_chord_path(
-            radius=10.0, maximum_angle=np.pi / 4, number_of_points=20,
+            radius=10.0,
+            maximum_angle=np.pi / 4,
+            number_of_points=20,
         )
         assert path.shape == (20, 2)
 
     def test_chord_path_starts_at_origin(self, helpers):
         path = helpers.calculate_chord_path(
-            radius=10.0, maximum_angle=np.pi / 4, number_of_points=20,
+            radius=10.0,
+            maximum_angle=np.pi / 4,
+            number_of_points=20,
         )
         np.testing.assert_allclose(path[0], [0.0, 0.0], atol=1e-10)
 
@@ -40,6 +44,7 @@ class TestPathCalculatorHelpers:
 
 
 # ── CalculatePath class ──────────────────────────────────────────────────────
+
 
 class TestCalculatePath:
     @pytest.fixture()
@@ -60,7 +65,7 @@ class TestCalculatePath:
         """
         t = np.arange(n, dtype=float) * spacing
         # Slight curve: radius ~500m, enough to avoid collinear degeneracy
-        curve = t ** 2 / (2 * 500.0)
+        curve = t**2 / (2 * 500.0)
         left = np.column_stack([t, curve + y_offset])
         right = np.column_stack([t, curve - y_offset])
         l2r = np.arange(n)
@@ -70,8 +75,8 @@ class TestCalculatePath:
             right_cones=right,
             left_to_right_matches=l2r,
             right_to_left_matches=r2l,
-            position_global=np.array([-1.0, 0.0]),
-            direction_global=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
 
     def test_output_shape(self, calculator):
@@ -116,8 +121,8 @@ class TestCalculatePath:
             right_cones=right,
             left_to_right_matches=l2r,
             right_to_left_matches=r2l,
-            position_global=np.array([-1.0, 0.0]),
-            direction_global=np.array([1.0, 0.0]),
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
         )
         calculator.set_new_input(inp)
         final_path, _ = calculator.run_path_calculation()

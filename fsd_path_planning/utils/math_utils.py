@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: A module with common mathematical functions
 
@@ -11,6 +10,8 @@ Project: fsd_path_planning
 from typing import TypeVar, cast
 
 import numpy as np
+
+from fsd_path_planning.types import FloatArray
 
 try:
     from numba import jit
@@ -78,7 +79,9 @@ def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def vec_angle_between(vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True) -> np.ndarray:
+def vec_angle_between(
+    vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True
+) -> np.ndarray:
     """
     Calculates the angle between the vectors of the last dimension
 
@@ -161,7 +164,9 @@ def my_cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def calc_pairwise_distances(points: np.ndarray, dist_to_self: float = 0.0) -> np.ndarray:
+def calc_pairwise_distances(
+    points: np.ndarray, dist_to_self: float = 0.0
+) -> np.ndarray:
     """
     Given a set of points, creates a distance matrix from each point to every point
 
@@ -263,15 +268,15 @@ def trace_angles_between(trace: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
+def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     """
     Creates unit vectors for each value in the rad array
 
     Args:
-        rad (np.array): The angles (in radians) for which the vectors should be created
+        rad (float | FloatArray): The angles (in radians) for which the vectors should be created
 
     Returns:
-        np.array: The created unit vectors
+        FloatArray: The created unit vectors
     """
     rad = np.asarray(rad)
     new_shape = rad.shape + (2,)
@@ -284,7 +289,7 @@ def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
 # Calculates the angle of each vector in `vecs`
 # TODO: Look into fixing return type when a single vector is provided (return float)
 @my_njit
-def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
+def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     """
     Calculates the angle of each vector in `vecs`. If `vecs` is just a single 2d vector
     then one angle is calculated and a scalar is returned
@@ -397,7 +402,9 @@ def calculate_radius_from_points(points: np.ndarray) -> np.ndarray:
     perimeter = np.sum(len_sides, axis=-1, keepdims=True)
     half_perimeter = perimeter / 2
     half_perimeter_minus_sides = half_perimeter - len_sides
-    area_sqr = np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
+    area_sqr = (
+        np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
+    )
     area = np.sqrt(area_sqr)
 
     radius = prod_of_sides / (area * 4)
@@ -461,7 +468,9 @@ def euler_angles_to_quaternion(euler_angles: np.ndarray) -> np.ndarray:
     quaternion_z = cos_roll * cos_pitch * sin_yaw - sin_roll * sin_pitch * cos_yaw
     quaternion_w = cos_roll * cos_pitch * cos_yaw + sin_roll * sin_pitch * sin_yaw
 
-    return_value = np.stack([quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1)
+    return_value = np.stack(
+        [quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1
+    )
     return return_value
 
 
@@ -580,7 +589,10 @@ def center_of_circle_from_3_points(
         - slope_1 * (point_2[0] + point_3[0])
     ) / (2 * (slope_2 - slope_1))
 
-    center_y = -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1 + (point_1[1] + point_2[1]) / 2
+    center_y = (
+        -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1
+        + (point_1[1] + point_2[1]) / 2
+    )
 
     center = np.array([center_x, center_y])
     return center
@@ -646,6 +658,8 @@ def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
         x, y = x_new, y_new
 
     det = x * x - x * Mz + Cov_xy
+    if abs(det) < 1e-15:
+        det = 1e-15  # prevent division by zero for collinear points
     X_center = (Mxz * (Myy - x) - Myz * Mxy) / det / 2.0
     Y_center = (Myz * (Mxx - x) - Mxz * Mxy) / det / 2.0
 

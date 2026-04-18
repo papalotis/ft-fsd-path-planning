@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Algorithm that for sorted cone configurations, finds the number of cones
 that are on the wrong side of the track. For example, if we are considering the left
@@ -46,11 +45,13 @@ def create_search_directions_cache() -> SEARCH_DIRECTIONS_CACHE_TYPE:
 def calculate_match_search_direction_for_one_if_not_in_cache(
     cones_xy: FloatArray,
     key: SEARCH_DIRECTIONS_CACHE_KEY_TYPE,
-    cone_type: ConeTypes,
+    cone_type: int,
     cache_dict: SEARCH_DIRECTIONS_CACHE_TYPE,
 ) -> FloatArray:
     if key not in cache_dict:
-        cache_dict[key] = calculate_search_direction_for_one(cones_xy, key[0::2], cone_type)
+        cache_dict[key] = calculate_search_direction_for_one(
+            cones_xy, key[0::2], cone_type
+        )
 
     return cache_dict[key]
 
@@ -59,7 +60,7 @@ def calculate_match_search_direction_for_one_if_not_in_cache(
 def pre_caluclate_search_directions(
     cones: FloatArray,
     configs: IntArray,
-    cone_type: ConeTypes,
+    cone_type: int,
     existing_cache: Optional[SEARCH_DIRECTIONS_CACHE_TYPE] = None,
 ) -> SEARCH_DIRECTIONS_CACHE_TYPE:
     cones_xy = cones[:, :2]
@@ -75,12 +76,18 @@ def pre_caluclate_search_directions(
         key_first = (c[0], SENTINEL_VALUE, c[1])
         key_last = (c[-2], SENTINEL_VALUE, c[-1])
 
-        calculate_match_search_direction_for_one_if_not_in_cache(cones_xy, key_first, cone_type, cache)
-        calculate_match_search_direction_for_one_if_not_in_cache(cones_xy, key_last, cone_type, cache)
+        calculate_match_search_direction_for_one_if_not_in_cache(
+            cones_xy, key_first, cone_type, cache
+        )
+        calculate_match_search_direction_for_one_if_not_in_cache(
+            cones_xy, key_last, cone_type, cache
+        )
 
         for j in range(1, len(c) - 1):
             key = (c[j - 1], c[j], c[j + 1])
-            calculate_match_search_direction_for_one_if_not_in_cache(cones_xy, key, cone_type, cache)
+            calculate_match_search_direction_for_one_if_not_in_cache(
+                cones_xy, key, cone_type, cache
+            )
 
     return cache
 
@@ -95,7 +102,9 @@ def sorted_set_diff(a: IntArray, b: IntArray) -> IntArray:
 
 
 @my_njit
-def find_nearby_cones_for_idxs(idxs: IntArray, distance_matrix_sqaured: FloatArray, search_range: float) -> IntArray:
+def find_nearby_cones_for_idxs(
+    idxs: IntArray, distance_matrix_sqaured: FloatArray, search_range: float
+) -> IntArray:
     mask = distance_matrix_sqaured[idxs] < search_range * search_range
     all_idxs = np.unique(mask.nonzero()[1])
 
@@ -137,8 +146,12 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large(
 
     search_direction = search_directions_cache[directions_key]
 
-    good_angle = vec_angle_between(from_cone_to_other_cone, search_direction) < search_angle / 2
-    bad_angle = vec_angle_between(from_cone_to_other_cone, -search_direction) < search_angle / 2
+    good_angle = (
+        vec_angle_between(from_cone_to_other_cone, search_direction) < search_angle / 2
+    )
+    bad_angle = (
+        vec_angle_between(from_cone_to_other_cone, -search_direction) < search_angle / 2
+    )
 
     return good_angle, bad_angle
 
@@ -155,7 +168,9 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in
 ) -> bool:
     key = (directions_key, cone_idx, other_cone_idx)
     if key not in angle_cache:
-        angle_cache[key] = angle_between_search_direction_of_cone_and_other_cone_is_too_large(
+        angle_cache[
+            key
+        ] = angle_between_search_direction_of_cone_and_other_cone_is_too_large(
             all_cone_directions,
             directions_key,
             cone_idx,
@@ -213,7 +228,7 @@ def calculate_visible_cones_for_one_cone(
 def _impl_number_cones_on_each_side_for_each_config(
     cones: FloatArray,
     configs: IntArray,
-    cone_type: ConeTypes,
+    cone_type: int,
     search_distance: float,
     search_angle: float,
     existing_search_directions_cache: Optional[SEARCH_DIRECTIONS_CACHE_TYPE] = None,
@@ -246,7 +261,9 @@ def _impl_number_cones_on_each_side_for_each_config(
 
     if distance_matrix_square is None:
         distance_matrix_square = my_cdist_sq_euclidean(cones_xy, cones_xy)
-        np.fill_diagonal(distance_matrix_square, 1e6)  # for some reason np.inf doesn't work here
+        np.fill_diagonal(
+            distance_matrix_square, 1e6
+        )  # for some reason np.inf doesn't work here
 
     distance_matrix_mask = distance_matrix_square < search_distance * search_distance
 
@@ -254,7 +271,9 @@ def _impl_number_cones_on_each_side_for_each_config(
         cones, configs, cone_type, existing_search_directions_cache
     )
 
-    close_idxs = find_nearby_cones_for_idxs(idxs_in_all_configs, distance_matrix_square, search_distance)
+    close_idxs = find_nearby_cones_for_idxs(
+        idxs_in_all_configs, distance_matrix_square, search_distance
+    )
 
     n_bad_cones_for_all = np.zeros(len(configs), dtype=np.int_)
     n_good_cones_for_all = np.zeros(len(configs), dtype=np.int_)
@@ -299,17 +318,21 @@ def _impl_number_cones_on_each_side_for_each_config(
 
 class NearbyConeSearcher:
     def __init__(self) -> None:
-        self.caches_cache: deque[Tuple[Tuple[int, ConeTypes], Tuple[dict, dict, FloatArray, FloatArray]]] = deque(
-            maxlen=20
-        )
+        self.caches_cache: deque[
+            Tuple[Tuple[int, ConeTypes], Tuple[dict, dict, FloatArray, FloatArray]]
+        ] = deque(maxlen=20)
 
-    def get_caches(self, cones: np.ndarray, cone_type: ConeTypes) -> Tuple[dict, dict, FloatArray, FloatArray]:
+    def get_caches(
+        self, cones: np.ndarray, cone_type: ConeTypes
+    ) -> Tuple[dict, dict, FloatArray, FloatArray]:
         array_buffer = cones.tobytes()
         array_hash = hash(array_buffer)
         cache_key = (array_hash, cone_type)
 
         try:
-            index_of_hashed_values = next(i for i, (k, _) in enumerate(self.caches_cache) if k == cache_key)
+            index_of_hashed_values = next(
+                i for i, (k, _) in enumerate(self.caches_cache) if k == cache_key
+            )
         except StopIteration:
             index_of_hashed_values = None
         if index_of_hashed_values is None:

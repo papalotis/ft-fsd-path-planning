@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Special case of path calculation for skidpad.
 
@@ -14,6 +13,7 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,
     PathCalculationInput,
 )
+from fsd_path_planning.config_dataclasses import PathConfig
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
@@ -26,20 +26,24 @@ class SkidpadCalculatePath(CalculatePath):
 
     def __init__(
         self,
-        smoothing: float,
-        predict_every: float,
-        maximal_distance_for_valid_path: float,
-        max_deg: int,
-        mpc_path_length: float,
-        mpc_prediction_horizon: int,
+        config: PathConfig | None = None,
+        *,
+        # Legacy parameters (deprecated, use config instead)
+        smoothing: float | None = None,
+        predict_every: float | None = None,
+        maximal_distance_for_valid_path: float | None = None,
+        max_deg: int | None = None,
+        mpc_path_length: float | None = None,
+        mpc_prediction_horizon: int | None = None,
     ):
         super().__init__(
-            smoothing,
-            predict_every,
-            maximal_distance_for_valid_path,
-            max_deg,
-            mpc_path_length,
-            mpc_prediction_horizon,
+            config=config,
+            smoothing=smoothing,
+            predict_every=predict_every,
+            maximal_distance_for_valid_path=maximal_distance_for_valid_path,
+            max_deg=max_deg,
+            mpc_path_length=mpc_path_length,
+            mpc_prediction_horizon=mpc_prediction_horizon,
         )
         self.index_along_path = 0
 

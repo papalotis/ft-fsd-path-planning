@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Core path calculation.
 
@@ -8,6 +7,9 @@ the existing path
 
 Project: fsd_path_planning
 """
+
+from __future__ import annotations
+
 import numpy as np
 from typing_extensions import Literal
 
@@ -53,16 +55,22 @@ class PathCalculatorHelpers:
         points_centered_scaled_rotated[:, 1] *= np.sign(maximum_angle)
         return points_centered_scaled_rotated
 
-    def calculate_almost_straight_path(self) -> FloatArray:
+    def calculate_almost_straight_path(
+        self,
+        radius: float = 1000.0,
+        maximum_angle: float | None = None,
+        number_of_points: int = 40,
+    ) -> FloatArray:
         """
         Calculate a chord path with a very high radius and a very small chord angle.
 
         Returns:
             np.ndarray: The straight-like chord path update
         """
+        if maximum_angle is None:
+            maximum_angle = np.pi / 50
         return self.calculate_chord_path(
-            # values for a slightly circular path to the right
-            radius=1000,
-            maximum_angle=np.pi / 50,
-            number_of_points=40,
+            radius=radius,
+            maximum_angle=maximum_angle,
+            number_of_points=number_of_points,
         )

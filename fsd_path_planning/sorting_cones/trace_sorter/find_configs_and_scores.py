@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: This file provides the core algorithm for sorting a trace of cones into a
 plausible track
@@ -14,6 +13,7 @@ from typing import Optional, Tuple, cast
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
+    AdjacencyMatrixCache,
     create_adjacency_matrix,
 )
 from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
@@ -21,6 +21,9 @@ from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
 )
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     find_all_end_configurations,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
+    NearbyConeSearcher,
 )
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.utils import Timer
@@ -39,6 +42,8 @@ def calc_scores_and_end_configurations(
     max_length: int = sys.maxsize,
     first_k_indices_must_be: Optional[IntArray] = None,
     return_history: bool = False,
+    adjacency_cache: Optional[AdjacencyMatrixCache] = None,
+    nearby_searcher: Optional[NearbyConeSearcher] = None,
 ) -> Tuple[FloatArray, IntArray, Optional[Tuple[IntArray, BoolArray]]]:
     """
     Sorts a set of points such that the sum of the angles between the points is minimal.
@@ -71,6 +76,7 @@ def calc_scores_and_end_configurations(
             start_idx=start_idx,
             max_dist=max_dist,
             cone_type=cone_type,
+            cache=adjacency_cache,
         )
 
     target_length = min(reachable_nodes.shape[0], max_length)
@@ -104,6 +110,7 @@ def calc_scores_and_end_configurations(
             vehicle_position=vehicle_position,
             vehicle_direction=vehicle_direction,
             return_individual_costs=False,
+            nearby_searcher=nearby_searcher,
         )
     costs_sort_idx = np.argsort(costs)
     costs = cast(FloatArray, costs[costs_sort_idx])

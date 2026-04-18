@@ -1,4 +1,5 @@
 """Unit tests for fsd_path_planning.utils.math_utils."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -15,8 +16,8 @@ from fsd_path_planning.utils.math_utils import (
     lerp,
     my_cdist_sq_euclidean,
     my_in1d,
-    normalize_last_axis,
     norm_of_last_axis,
+    normalize_last_axis,
     odd_square,
     points_inside_ellipse,
     quaternion_to_euler_angles,
@@ -28,8 +29,8 @@ from fsd_path_planning.utils.math_utils import (
     vec_dot,
 )
 
-
 # ── vec_dot ──────────────────────────────────────────────────────────────────
+
 
 class TestVecDot:
     def test_orthogonal(self):
@@ -53,6 +54,7 @@ class TestVecDot:
 
 # ── norm_of_last_axis ────────────────────────────────────────────────────────
 
+
 class TestNormOfLastAxis:
     def test_unit_vectors(self):
         vecs = np.array([[1.0, 0.0], [0.0, 1.0]])
@@ -64,6 +66,7 @@ class TestNormOfLastAxis:
 
 
 # ── rotate ───────────────────────────────────────────────────────────────────
+
 
 class TestRotate:
     def test_90_degrees(self):
@@ -95,6 +98,7 @@ class TestRotate:
 
 # ── vec_angle_between ────────────────────────────────────────────────────────
 
+
 class TestVecAngleBetween:
     def test_same_direction(self):
         v = np.array([[1.0, 0.0]])
@@ -116,6 +120,7 @@ class TestVecAngleBetween:
 
 # ── my_cdist_sq_euclidean ────────────────────────────────────────────────────
 
+
 class TestMyCdistSqEuclidean:
     def test_against_manual(self):
         a = np.array([[0.0, 0.0], [1.0, 0.0]])
@@ -132,6 +137,7 @@ class TestMyCdistSqEuclidean:
 
 
 # ── calc_pairwise_distances ──────────────────────────────────────────────────
+
 
 class TestCalcPairwiseDistances:
     def test_diagonal_zero(self):
@@ -152,6 +158,7 @@ class TestCalcPairwiseDistances:
 
 # ── my_in1d ──────────────────────────────────────────────────────────────────
 
+
 class TestMyIn1d:
     def test_basic(self):
         test = np.array([1, 2, 3, 4, 5])
@@ -167,6 +174,7 @@ class TestMyIn1d:
 
 
 # ── unit_2d_vector_from_angle / angle_from_2d_vector ─────────────────────────
+
 
 class TestAngleVectorRoundtrip:
     @pytest.mark.parametrize("angle", [0.0, np.pi / 4, np.pi / 2, np.pi, -np.pi / 3])
@@ -191,6 +199,7 @@ class TestAngleVectorRoundtrip:
 
 # ── normalize_last_axis ──────────────────────────────────────────────────────
 
+
 class TestNormalizeLastAxis:
     def test_already_unit(self):
         vecs = np.array([[1.0, 0.0], [0.0, 1.0]])
@@ -204,6 +213,7 @@ class TestNormalizeLastAxis:
 
 
 # ── lerp ─────────────────────────────────────────────────────────────────────
+
 
 class TestLerp:
     def test_identity_mapping(self):
@@ -225,6 +235,7 @@ class TestLerp:
 
 # ── angle_difference ─────────────────────────────────────────────────────────
 
+
 class TestAngleDifference:
     def test_same_angle(self):
         result = angle_difference(np.array([1.0]), np.array([1.0]))
@@ -245,6 +256,7 @@ class TestAngleDifference:
 
 
 # ── circle_fit ───────────────────────────────────────────────────────────────
+
 
 class TestCircleFit:
     def test_known_circle(self):
@@ -268,6 +280,7 @@ class TestCircleFit:
 
 
 # ── points_inside_ellipse ────────────────────────────────────────────────────
+
 
 class TestPointsInsideEllipse:
     def test_center_is_inside(self):
@@ -299,6 +312,7 @@ class TestPointsInsideEllipse:
 
 # ── center_of_circle_from_3_points ───────────────────────────────────────────
 
+
 class TestCenterOfCircleFrom3Points:
     def test_unit_circle(self):
         p1 = np.array([1.0, 0.0])
@@ -317,6 +331,7 @@ class TestCenterOfCircleFrom3Points:
 
 # ── trace_distance_to_next ──────────────────────────────────────────────────
 
+
 class TestTraceDistanceToNext:
     def test_simple(self):
         trace = np.array([[0.0, 0.0], [3.0, 4.0], [3.0, 4.0]])
@@ -325,6 +340,7 @@ class TestTraceDistanceToNext:
 
 
 # ── trace_angles_between ────────────────────────────────────────────────────
+
 
 class TestTraceAnglesBetween:
     def test_straight_line(self):
@@ -340,6 +356,7 @@ class TestTraceAnglesBetween:
 
 # ── calculate_radius_from_points ─────────────────────────────────────────────
 
+
 class TestCalculateRadiusFromPoints:
     def test_unit_circle_points(self):
         # 3 points on a unit circle
@@ -350,6 +367,7 @@ class TestCalculateRadiusFromPoints:
 
 
 # ── euler_angles / quaternion roundtrip ──────────────────────────────────────
+
 
 class TestEulerQuaternionRoundtrip:
     @pytest.mark.parametrize(
@@ -367,6 +385,7 @@ class TestEulerQuaternionRoundtrip:
 
 
 # ── odd_square ───────────────────────────────────────────────────────────────
+
 
 class TestOddSquare:
     def test_positive(self):

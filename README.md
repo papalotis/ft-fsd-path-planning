@@ -16,6 +16,40 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ## Updates 
 
+### April 2026 (v0.5.0) :star: 100 stars!
+
+Thank you to everyone who has starred this repository, we have reached 100 stars! We are happy to see that the project is useful to so many teams.
+
+This release focuses on code quality, modularity, and developer experience. No algorithmic changes were made, all existing behavior is preserved. The changes have been made with the goal of making the codebase easier to understand, maintain, and extend, as well as improving the experience for contributors.
+
+#### API improvements
+
+- Pipeline modules (`ConeSorting`, `ConeMatching`, `CalculatePath`) now accept input via `run_*()` methods with dedicated input dataclasses, replacing the old `set_new_input()` + `calculate()` pattern. The old pattern still works but emits a `DeprecationWarning`.
+- Pipeline modules return typed result dataclasses (`SortingResult`, `MatchingResult`, `PathResult`) that also support tuple unpacking for backward compatibility.
+- Consistent field naming across all modules: `vehicle_position`, `vehicle_direction`, `cones_by_type`.
+- `PathPlanner` now supports dependency injection — pass custom `cone_sorting`, `cone_matching`, or `pathing` instances to the constructor.
+
+#### Modularity
+
+- `CalculatePath` internals extracted into `path_basis_selector` (side selection, centerline) and `path_extender` (path connection, extension, trimming).
+- Long function `neighbor_bool_mask_can_be_added_to_attempt()` broken into focused helpers: `_check_angle_continuity()`, `_check_forward_direction()`, `_check_no_car_collision()`.
+- Module-level global caches replaced with instance-scoped `AdjacencyMatrixCache` and `NearbyConeSearcher`, owned by `TraceSorter`.
+- Relocalization and standard sorting+matching flows extracted into separate methods in `PathPlanner`.
+
+#### Configuration
+
+- All magic numbers extracted into dataclass-based configs: `SortingConfig`, `MatchingConfig`, `PathConfig`.
+- Configs are optional constructor parameters with sensible defaults.
+
+#### Tooling
+
+- Migrated to [uv](https://docs.astral.sh/uv/) for dependency management and builds (hatchling backend).
+- Replaced black + pylint + mypy with [ruff](https://docs.astral.sh/ruff/) (linting & formatting) and [pyright](https://github.com/microsoft/pyright) (type checking).
+- Added [nox](https://nox.thea.codes/) for automated multi-version testing (Python 3.10–3.13).
+- Added [pre-commit](https://pre-commit.com/) hooks for ruff.
+- Added `py.typed` marker (PEP 561) for downstream type checking.
+- Added explicit `__all__` to the public API.
+
 ### December 2023, July 2024 (v0.4)
 
 #### (v0.4.3)
@@ -60,7 +94,7 @@ The intention of this repository is to provide teams entering the driverless cat
 
 The algorithm differs from other common path planning approaches in that it can very robustly handle one side of the track not being visible, for example the inside of a corner. This is a common problem in the driverless category, especially for teams with less sophisticated detection pipelines.
 
-Parts that are specific to the FaSTTUBe pipeline have been removed. The algorithm is now a standalone library that can be used in any pipeline. It is a Python package that can be installed using pip.
+Parts that are specific to the FaSTTUBe pipeline have been removed. The algorithm is now a standalone library that can be used in any pipeline. It is a Python package that can be installed using [uv](https://docs.astral.sh/uv/).
 
 The algorithm requires the following inputs:
 
@@ -84,16 +118,16 @@ The algorithm has demonstrated its success as part of the FaSTTUBe pipeline, con
 
 ## Installation
 
-The package can be installed using pip:
+The package can be installed using [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install "fsd-path-planning[demo] @ git+https://git@github.com/papalotis/ft-fsd-path-planning.git"
+uv add "fsd-path-planning[demo] @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
 ```
 
 This will also install the dependencies needed to run the demo (cli, matplotlib, streamlit, etc.). If you don't want to install the demo dependencies, you can install the package without the `demo` extra:
 
 ```bash
-pip install "fsd-path-planning @ git+https://git@github.com/papalotis/ft-fsd-path-planning.git"
+uv add "fsd-path-planning @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
 ```
 
 You can also clone the repository and install the package locally:
@@ -101,10 +135,27 @@ You can also clone the repository and install the package locally:
 ```bash
 git clone https://github.com/papalotis/ft-fsd-path-planning.git
 cd ft-fsd-path-planning
+uv sync --extra demo
+```
+
+You can again skip the `--extra demo` if you don't want to install the demo dependencies.
+
+<details>
+<summary>Installation with pip</summary>
+
+You can also use pip directly:
+
+```bash
+pip install "fsd-path-planning[demo] @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
+```
+
+Or for a local install:
+
+```bash
 pip install -e .[demo]
 ```
 
-You can again skip the `[demo]` extra if you don't want to install the demo dependencies.
+</details>
 
 ## Performance
 
@@ -115,7 +166,7 @@ The algorithm (with default parameters) is fast enough to run in real-time on a 
 Run the following command to run the demo on your machine:
 
 ```bash
-python -m fsd_path_planning.demo
+uv run python -m fsd_path_planning.demo
 ```
 
 ## Basic usage
@@ -152,6 +203,45 @@ Take a look at this notebook for a more detailed example: [simple_application.ip
 > [!TIP]
 > There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
 It is recommended to create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
+
+## Development
+
+### Setup
+
+```bash
+git clone https://github.com/papalotis/ft-fsd-path-planning.git
+cd ft-fsd-path-planning
+uv sync --extra dev --extra test
+```
+
+### Pre-commit hooks
+
+The project uses [pre-commit](https://pre-commit.com/) to run [ruff](https://docs.astral.sh/ruff/) formatting and linting on every commit:
+
+```bash
+pre-commit install
+```
+
+### Running tests
+
+```bash
+uv run pytest
+```
+
+### Multi-version testing
+
+The project uses [nox](https://nox.thea.codes/) to test against multiple Python versions:
+
+```bash
+uv run nox -s tests          # test on Python 3.10, 3.11, 3.12, 3.13
+uv run nox -s tests-3.12     # test on a specific version
+uv run nox -s lint            # run ruff linter and formatter check
+uv run nox -s typecheck       # run pyright type checking
+```
+
+### Type checking
+
+The package ships a `py.typed` marker (PEP 561), so type checkers like pyright will pick up the inline type annotations automatically when using the package as a dependency.
 
 ## Previous versions
 

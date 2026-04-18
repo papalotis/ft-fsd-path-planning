@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Place the car in the known skidpad map and relocalize it.
 """
@@ -44,7 +43,9 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
             points_of_set = points[set_]
 
             # get the mean distance to the closest point
-            distance = calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
+            distance = (
+                calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
+            )
             min_distances = distance.min(axis=0)
             mean_distance = min_distances.mean()
 
@@ -54,9 +55,15 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
 
             res = circle_fit(points_of_set)
 
-            residual = np.abs(np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]).mean()
+            residual = np.abs(
+                np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]
+            ).mean()
 
-            if abs(res[2] - 7.625) < 1.0 and abs(mean_distance - 2.4) < 1.5 and residual < 0.4:
+            if (
+                abs(res[2] - 7.625) < 1.0
+                and abs(mean_distance - 2.4) < 1.5
+                and residual < 0.4
+            ):
                 # print(range_smallest_distance, min_distances, mean_distance, distance)
                 # print(second_smallest_distance)
                 out.append((res, set_))
@@ -77,7 +84,10 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
 
     for label_1, label_2 in combinations(unique_labels, 2):
         cluster_centers = np.array(
-            [np.median(potential_centers[labels == label], axis=0) for label in [label_1, label_2]]
+            [
+                np.median(potential_centers[labels == label], axis=0)
+                for label in [label_1, label_2]
+            ]
         )
 
         # distance between the two centers
@@ -87,7 +97,9 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
             best_centers = cluster_centers
 
     if best_distance > 0.5:
-        raise ValueError("Could not find two clusters that have the same distance to the center of the skidpad")
+        raise ValueError(
+            "Could not find two clusters that have the same distance to the center of the skidpad"
+        )
 
     cluster_centers = best_centers
 
@@ -111,7 +123,9 @@ def calculate_transformation(
     # convert centers to vehicle frame
     original_vehicle_yaw = angle_from_2d_vector(original_vehicle_direction)
 
-    centers_in_vehicle_frame = rotate(cluster_centers - original_vehicle_position, -original_vehicle_yaw)
+    centers_in_vehicle_frame = rotate(
+        cluster_centers - original_vehicle_position, -original_vehicle_yaw
+    )
 
     mask_is_right = centers_in_vehicle_frame[:, 1] < 0.0
 
@@ -125,11 +139,15 @@ def calculate_transformation(
     translation = np.squeeze(right_reference_center - right_calculated_center)
 
     # calculate the angle between the two reference points
-    from_right_reference_to_left_reference = left_reference_center - right_reference_center
+    from_right_reference_to_left_reference = (
+        left_reference_center - right_reference_center
+    )
     reference_angle = angle_from_2d_vector(from_right_reference_to_left_reference)
 
     # calculate the angle between the two calculated points
-    from_right_calculated_to_left_calculated = left_calculated_center - right_calculated_center
+    from_right_calculated_to_left_calculated = (
+        left_calculated_center - right_calculated_center
+    )
 
     calculated_angle = angle_from_2d_vector(from_right_calculated_to_left_calculated)
 
@@ -193,7 +211,9 @@ class SkidpadRelocalizer(Relocalizer):
     def __init__(self):
         super().__init__()
 
-        self.reference_centers = calculate_reference_centers_for_skidpad_path(BASE_SKIDPAD_PATH)
+        self.reference_centers = calculate_reference_centers_for_skidpad_path(
+            BASE_SKIDPAD_PATH
+        )
 
     def do_relocalization_once(
         self,
