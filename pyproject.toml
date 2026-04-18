@@ -27,6 +27,16 @@ demo = [
     "tqdm",
     "typer",
 ]
+test = [
+    "pytest",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (full pipeline regression)",
+    "jit: marks tests that specifically validate Numba JIT behavior",
+]
 
 [tool.setuptools]
 include-package-data = true
