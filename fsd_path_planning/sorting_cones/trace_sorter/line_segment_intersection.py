@@ -317,8 +317,8 @@ def pairwise_segment_intersection(
 
     # cannot used advanced indexing twice with nopython
     # so we have to do it manually
-    for index_first_single, index_second_single, indicator_overlap_single in zip(
-        indices_first_keep, indices_second_keep, indicator_overlap, strict=False
+    for index_first_single, index_second_single, indicator_overlap_single in zip(  # noqa: B905 (cannot use strict=False in njit)
+        indices_first_keep, indices_second_keep, indicator_overlap
     ):
         indicator_matrix[index_first_single, index_second_single] = (
             indicator_overlap_single
