@@ -9,6 +9,7 @@ from fsd_path_planning.sorting_cones.core_cone_sorting import (
     ConeSorting,
     ConeSortingInput,
 )
+from fsd_path_planning.sorting_cones.trace_sorter import core_trace_sorter
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -143,3 +144,53 @@ class TestConeSorting:
         if len(sorted_right) > 1:
             dists = np.linalg.norm(np.diff(sorted_right, axis=0), axis=1)
             assert np.all(dists < 10.0)
+
+    def test_experimental_caching_reuses_previous_results(self, sorter, monkeypatch):
+        """Experimental caching should skip the expensive trace search on repeat input."""
+        n = 8
+        left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
+        right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
+
+        cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones_by_type[ConeTypes.LEFT] = left_cones
+        cones_by_type[ConeTypes.RIGHT] = right_cones
+
+        inp = ConeSortingInput(
+            cones_by_type=cones_by_type,
+            vehicle_position=np.array([-1.0, 0.0]),
+            vehicle_direction=np.array([1.0, 0.0]),
+        )
+
+        original = core_trace_sorter.calc_scores_and_end_configurations
+        call_count = 0
+
+        def counted_calc_scores_and_end_configurations(*args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(
+            core_trace_sorter,
+            "calc_scores_and_end_configurations",
+            counted_calc_scores_and_end_configurations,
+        )
+
+        sorter_without_cache = ConeSorting(
+            config=sorter.config,
+            experimental_performance_improvements=False,
+        )
+        sorter_without_cache.run_cone_sorting(inp)
+        sorter_without_cache.run_cone_sorting(inp)
+        assert call_count == 4
+
+        call_count = 0
+
+        sorter_with_cache = ConeSorting(
+            config=sorter.config,
+            experimental_performance_improvements=True,
+        )
+        sorter_with_cache.run_cone_sorting(inp)
+        sorter_with_cache.run_cone_sorting(inp)
+
+        assert call_count == 2
+        assert sorter_with_cache.trace_sorter.cached_results is not None

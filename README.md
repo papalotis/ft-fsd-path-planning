@@ -18,8 +18,6 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ### April 2026 (v0.5.0) :star: 100 stars!
 
-Thank you to everyone who has starred this repository, we have reached 100 stars! We are happy to see that the project is useful to so many teams.
-
 This release focuses on code quality, modularity, and developer experience. No algorithmic changes were made, all existing behavior is preserved. The changes have been made with the goal of making the codebase easier to understand, maintain, and extend, as well as improving the experience for contributors.
 
 #### API improvements
@@ -46,7 +44,6 @@ This release focuses on code quality, modularity, and developer experience. No a
 - Migrated to [uv](https://docs.astral.sh/uv/) for dependency management and builds (hatchling backend).
 - Replaced black + pylint + mypy with [ruff](https://docs.astral.sh/ruff/) (linting & formatting) and [pyright](https://github.com/microsoft/pyright) (type checking).
 - Added [nox](https://nox.thea.codes/) for automated multi-version testing (Python 3.10–3.13).
-- Added [pre-commit](https://pre-commit.com/) hooks for ruff.
 - Added `py.typed` marker (PEP 561) for downstream type checking.
 - Added explicit `__all__` to the public API.
 
@@ -212,14 +209,6 @@ It is recommended to create a new instance of the relevant classes when the vehi
 git clone https://github.com/papalotis/ft-fsd-path-planning.git
 cd ft-fsd-path-planning
 uv sync --extra dev --extra test
-```
-
-### Pre-commit hooks
-
-The project uses [pre-commit](https://pre-commit.com/) to run [ruff](https://docs.astral.sh/ruff/) formatting and linting on every commit:
-
-```bash
-pre-commit install
 ```
 
 ### Running tests
