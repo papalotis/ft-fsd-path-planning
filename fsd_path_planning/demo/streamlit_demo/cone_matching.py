@@ -29,7 +29,7 @@ def naive_search_directions(
         left_rotated = rotate(
             normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2
         )
-        left_rotated = np.row_stack((left_rotated, left_rotated[-1]))
+        left_rotated = np.vstack((left_rotated, left_rotated[-1]))
     else:
         left_rotated = np.zeros((0, 2))
 
@@ -37,7 +37,7 @@ def naive_search_directions(
         right_rotated = rotate(
             normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2
         )
-        right_rotated = np.row_stack((right_rotated, right_rotated[-1]))
+        right_rotated = np.vstack((right_rotated, right_rotated[-1]))
     else:
         right_rotated = np.zeros((0, 2))
 
