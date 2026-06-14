@@ -33,7 +33,7 @@ def connect_path_to_car(
     new_point = (
         vehicle_position + normalize_last_axis(car_to_first_point[None])[0] * 0.2
     )
-    return np.row_stack((new_point, path_update))
+    return np.vstack((new_point, path_update))
 
 
 def extend_path(
@@ -94,7 +94,7 @@ def extend_path(
         new_points = last + direction * np.arange(straight_extension_points)[:, None]
 
     new_points = new_points[1:]
-    return np.row_stack((path_update, new_points))
+    return np.vstack((path_update, new_points))
 
 
 def remove_path_behind_car(
