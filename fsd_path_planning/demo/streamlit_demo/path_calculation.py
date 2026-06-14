@@ -73,12 +73,13 @@ def run() -> None:
         """
     # Path Calculation
 
-    Path calculation is the last step of the path planning process. It receives the matched
-    cones and is responsible for calculating the centerline of the track part.
+    Path calculation is the last step of the path planning process. It receives the
+    matched cones and is responsible for calculating the centerline of the track part.
 
-    The algorithm has one parameter, the desired path length. This is because the control
-    module needs a fixed length path, so for the path calculation we need to have a strategy
-    for when the path that we can calculate using the cone information is too short.
+    The algorithm has one parameter, the desired path length. This is because the
+    control module needs a fixed length path, so for the path calculation we need to
+    have a strategy for when the path that we can calculate using the cone information
+    is too short.
 
     The calculation is split into three parts:
 
@@ -157,9 +158,9 @@ def run() -> None:
         """
     ## Base path calculation
 
-    The next step is to apply a parametric spline fit on the base centerpoints. This is done
-    to get a much finer path. That way we can calculate metrics of the path (e.g. curvature)
-    with much finer resolution.
+    The next step is to apply a parametric spline fit on the base centerpoints. This is
+    done to get a much finer path. That way we can calculate metrics of the path (e.g.
+    curvature) with much finer resolution.
     """
     )
     plt.subplots()
@@ -184,20 +185,21 @@ def run() -> None:
     used by the vehicle control module. For this 3 steps are performed:
 
     - The path is trimmed so that it is starts at the car pose
-    - The path is extrapolated if it shorter than the desired path length or then trimmed 
-    to that length if it is longer
-    - The curvature of the path is calculated as a function of the arc length of the path
+    - The path is extrapolated if it shorter than the desired path length or then
+    trimmed to that length if it is longer
+    - The curvature of the path is calculated as a function of the arc length of the
+    path
 
-    The path is trimmed so that it starts at the car pose. This is done by finding the closest
-    point on the path to the car pose and dropping all points before that.
+    The path is trimmed so that it starts at the car pose. This is done by finding the
+    closest point on the path to the car pose and dropping all points before that.
 
     The path is extrapolated if it shorter than the desired path length. This is done by
-    calculating the radius at the end of the path. Then a circle is drawn at the end of the
-    path so that its length is the desired path length.
+    calculating the radius at the end of the path. Then a circle is drawn at the end of
+    the path so that its length is the desired path length.
 
-    The curvature of the path is calculated as a function of the arc length of the path. This
-    is done by calculating the second derivative of the path. A uniform filter is applied to
-    the second derivative to smooth it out.
+    The curvature of the path is calculated as a function of the arc length of the path.
+    This is done by calculating the second derivative of the path. A uniform filter is
+    applied to the second derivative to smooth it out.
     """
     )
     plt.subplots()

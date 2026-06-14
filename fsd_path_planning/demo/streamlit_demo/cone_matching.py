@@ -479,7 +479,7 @@ def run() -> None:
 
     The inputs for the cone matching algorithm are the sorted traces of the two track sides
     as well as the vehicle pose.
-    """
+    """  # noqa: E501
     )
 
     position, direction, cones_by_type = get_cones_for_configuration(
@@ -514,7 +514,7 @@ def run() -> None:
         Therefore, we use an adapted version of the above method. Instead of taking the
         vector from each cone to its next, we take the vector from the previous cone to the
         next cone. This way we can get a better search direction.
-        """
+        """  # noqa: E501
     )
     use_naive_direction = st.checkbox(
         "Use naive search direction algorithm", value=False
@@ -533,7 +533,7 @@ def run() -> None:
     cones that are in a specific range (inside an ellipse with a specific radius) and angle
     from the search direction. Furthermore, if the search directions of two cones that
     can be matched point in the same direction, then this match is discarded.
-    """
+    """  # noqa: E501
     )
     major_radius = st.slider("Major radius", 5.0, 10.0, 8.0, 0.2)
     minor_radius = st.slider("Minor radius", 3.0, 10.0, 4.0, 0.2)
@@ -603,7 +603,7 @@ def run() -> None:
     of the track
 
 
-        """
+        """  # noqa: E501
     )
 
     n_without_match = (left_to_right_matches == -1).sum() + (
@@ -612,7 +612,7 @@ def run() -> None:
 
     if n_without_match == 0:
         st.info(
-            "In this instance, all cones have a match, so no virtual cones will be computed"
+            "In this instance, all cones have a match, so no virtual cones will be computed"  # noqa: E501
         )
 
     minimum_track_width = st.slider("Minimum track width", 2.5, 6.0, 3.0, step=0.1)
@@ -652,7 +652,7 @@ def run() -> None:
         - If not add it before both of them or after both of them, depending on the
             configuration.
 
-        """
+        """  # noqa: E501
     )
 
     left_with_virtual, right_with_virtual = show_merging(
@@ -672,7 +672,7 @@ def run() -> None:
     (compute search directions, find potential match candidates, find final match), once
     again, on the combined left and right cones. Since we have now added the virtual cones,
     we expect that almost all cones will have a match.
-    """
+    """  # noqa: E501
     )
 
     left_to_right_matches, right_to_left_matches = show_final_matching(
