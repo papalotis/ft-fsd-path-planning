@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+import fsd_path_planning.utils.math_utils as math_utils_module
 from fsd_path_planning.utils.math_utils import (
     angle_difference,
     angle_from_2d_vector,
@@ -16,6 +17,7 @@ from fsd_path_planning.utils.math_utils import (
     lerp,
     my_cdist_sq_euclidean,
     my_in1d,
+    my_njit,
     norm_of_last_axis,
     normalize_last_axis,
     odd_square,
@@ -28,6 +30,52 @@ from fsd_path_planning.utils.math_utils import (
     vec_angle_between,
     vec_dot,
 )
+
+
+class TestMyNjit:
+    def test_returns_original_function_when_coverage_is_running(self, monkeypatch):
+        def sample_function(value: float) -> float:
+            return value + 1.0
+
+        monkeypatch.setattr(math_utils_module, "_is_coverage_running", lambda: True)
+
+        decorated = my_njit(sample_function)
+
+        assert decorated is sample_function
+        assert decorated(2.0) == 3.0
+
+    def test_uses_jit_when_coverage_is_not_running(self, monkeypatch):
+        jit_calls = []
+
+        def fake_jit(**kwargs):
+            jit_calls.append(kwargs)
+
+            def wrapper(func):
+                def compiled(*args, **inner_kwargs):
+                    return func(*args, **inner_kwargs)
+
+                return compiled
+
+            return wrapper
+
+        def sample_function(value: float) -> float:
+            return value + 1.0
+
+        monkeypatch.setattr(math_utils_module, "_is_coverage_running", lambda: False)
+        monkeypatch.setattr(math_utils_module, "jit", fake_jit)
+
+        decorated = my_njit(sample_function)
+
+        assert decorated is not sample_function
+        assert decorated(2.0) == 3.0
+        assert jit_calls == [
+            {
+                "nopython": True,
+                "cache": True,
+                "nogil": True,
+                "fastmath": True,
+            }
+        ]
 
 # ── vec_dot ──────────────────────────────────────────────────────────────────
 
@@ -117,6 +165,14 @@ class TestVecAngleBetween:
         result = vec_angle_between(v1, v2)
         np.testing.assert_allclose(result, [np.pi], atol=1e-12)
 
+    def test_invalid_vecs1_shape_raises_value_error(self):
+        with pytest.raises(ValueError, match="vecs1 must contain 2d vectors"):
+            vec_angle_between(np.array([[1.0, 0.0, 0.0]]), np.array([[1.0, 0.0]]))
+
+    def test_invalid_vecs2_shape_raises_value_error(self):
+        with pytest.raises(ValueError, match="vecs2 must contain 2d vectors"):
+            vec_angle_between(np.array([[1.0, 0.0]]), np.array([[1.0, 0.0, 0.0]]))
+
 
 # ── my_cdist_sq_euclidean ────────────────────────────────────────────────────
 
@@ -195,6 +251,10 @@ class TestAngleVectorRoundtrip:
         vecs = unit_2d_vector_from_angle(angles)
         norms = np.linalg.norm(vecs, axis=-1)
         np.testing.assert_allclose(norms, 1.0, atol=1e-12)
+
+    def test_invalid_vector_shape_raises_value_error(self):
+        with pytest.raises(ValueError, match="vecs must be a 2d vector"):
+            angle_from_2d_vector(np.array([[1.0, 0.0, 0.0]]))
 
 
 # ── normalize_last_axis ──────────────────────────────────────────────────────
