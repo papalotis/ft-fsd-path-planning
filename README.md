@@ -45,8 +45,49 @@ This release focuses on code quality, modularity, and developer experience. No a
 - Migrated to [uv](https://docs.astral.sh/uv/) for dependency management and builds (hatchling backend).
 - Replaced black + pylint + mypy with [ruff](https://docs.astral.sh/ruff/) (linting & formatting) and [pyright](https://github.com/microsoft/pyright) (type checking).
 - Added [nox](https://nox.thea.codes/) for automated multi-version testing (Python 3.10–3.13).
+- Added GitHub Actions CI running lint, type check, and tests on every push/PR.
 - Added `py.typed` marker (PEP 561) for downstream type checking.
 - Added explicit `__all__` to the public API.
+
+#### Migration guide for deprecated patterns
+
+Two patterns from earlier releases still work but emit a `DeprecationWarning`.
+Update them at your convenience — they will be removed in a future release.
+
+**1. Keyword-argument constructors**
+
+Old (deprecated):
+
+```python
+sorter  = ConeSorting(max_n_neighbors=5, max_dist=6.5)
+matcher = ConeMatching(min_track_width=3.0)
+pather  = CalculatePath(smoothing=0.2, mpc_path_length=20.0)
+```
+
+New (use a config dataclass):
+
+```python
+from fsd_path_planning.config_dataclasses import SortingConfig, MatchingConfig, PathConfig
+
+sorter  = ConeSorting(config=SortingConfig(max_n_neighbors=5, max_dist=6.5))
+matcher = ConeMatching(config=MatchingConfig(min_track_width=3.0))
+pather  = CalculatePath(config=PathConfig(smoothing=0.2, path_length=20.0))
+```
+
+**2. `set_new_input()` + `calculate()` pattern**
+
+Old (deprecated):
+
+```python
+sorter.set_new_input(sorting_input)
+result = sorter.run_cone_sorting()
+```
+
+New (pass input directly):
+
+```python
+result = sorter.run_cone_sorting(sorting_input)
+```
 
 ### December 2023, July 2024 (v0.4)
 

@@ -73,6 +73,22 @@ class PathPlanner:
         cone_matching: ConeMatching | None = None,
         pathing: CalculatePath | None = None,
     ) -> None:
+        """Create a PathPlanner for the given mission.
+
+        Args:
+            mission: The mission type that controls default configuration and
+                relocalization behaviour.  Use one of the :class:`MissionTypes`
+                enum members (e.g. ``MissionTypes.trackdrive``).
+            experimental_performance_improvements: Enable heuristics that may be
+                faster but are less thoroughly validated.  Defaults to ``False``.
+            config: Optional :class:`~fsd_path_planning.config_dataclasses.PipelineConfig`
+                to override all algorithm parameters.  When ``None`` the defaults
+                for the given *mission* are used.
+            cone_sorting: Override the default :class:`ConeSorting` instance.
+                Useful for dependency injection in tests or custom pipelines.
+            cone_matching: Override the default :class:`ConeMatching` instance.
+            pathing: Override the default :class:`CalculatePath` instance.
+        """
         self.mission = mission
 
         if config is None:
@@ -211,21 +227,50 @@ class PathPlanner:
             IntArray,
         ]
     ):
-        """
-        Runs the whole path planning pipeline.
+        """Calculate the planned path in the global frame.
 
         Args:
-            cones: List of cones in global frame. Position of Nx2 arrays based on
-            `ConeTypes`.
-            vehicle_position: Vehicle position in global frame. 2 element array (x,y).
-            vehicle_direction: Vehicle direction in global frame. 2 element array
-            (dir_x,dir_y).
-            return_intermediate_results: If True, returns intermediate results (sorting)
-            and matching).
+            cones: A sequence of **exactly 5** arrays, one per cone type ordered
+                by :class:`~fsd_path_planning.utils.cone_types.ConeTypes`::
+
+                    index 0 – UNKNOWN
+                    index 1 – RIGHT  (yellow)
+                    index 2 – LEFT   (blue)
+                    index 3 – ORANGE_SMALL  (start/finish area)
+                    index 4 – ORANGE_BIG   (start/finish line)
+
+                Each array must be numeric, finite, and shaped ``(N, 2)`` where
+                *N* may be zero.  Pass ``np.zeros((0, 2))`` for absent cone types.
+            vehicle_position: Current vehicle position in the global frame.
+                Must be a finite numeric array with shape ``(2,)`` — ``[x, y]``.
+            vehicle_direction: Current vehicle heading in the global frame.
+                Two accepted forms:
+
+                * A finite numeric array with shape ``(2,)`` — ``[dir_x, dir_y]``.
+                  The vector must be **non-zero**; it is normalized internally.
+                * A finite scalar — the heading angle in **radians** measured
+                  counter-clockwise from the positive x-axis.
+
+            return_intermediate_results: When ``True`` the method returns a
+                7-tuple instead of just the path array (see *Returns* below).
 
         Returns:
-            A Nx4 array of waypoints in global frame. Each waypoint is a 4 element array
-            (spline_parameter, path_x, path_y, curvature).
+            When *return_intermediate_results* is ``False`` (default): a
+            ``(N, 4)`` array of waypoints in the global frame.  Each row is
+            ``[spline_parameter, path_x, path_y, curvature]``.
+
+            When *return_intermediate_results* is ``True``: a 7-tuple
+            ``(path, sorted_left, sorted_right, left_with_virtual,
+            right_with_virtual, left_to_right_matches, right_to_left_matches)``
+            where ``path`` is the array described above.
+
+        Raises:
+            TypeError: If any element of *cones* contains non-numeric values, or
+                if *vehicle_position* or *vehicle_direction* are non-numeric.
+            ValueError: If *cones* does not contain exactly 5 arrays; if any cone
+                array has the wrong shape or contains non-finite values; if
+                *vehicle_position* has the wrong shape or non-finite values; or if
+                *vehicle_direction* is a zero vector or contains non-finite values.
         """
         cones = validate_and_normalize_cones(cones)
         vehicle_position = validate_vehicle_position(vehicle_position)
