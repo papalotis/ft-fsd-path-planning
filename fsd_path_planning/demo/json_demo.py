@@ -49,7 +49,7 @@ def select_mission_by_filename(filename: str) -> MissionTypes:
 
     if is_accel:
         print(
-            'The filename contains "accel", so we assume that the mission is acceleration.'
+            'The filename contains "accel", so we assume that the mission is acceleration.'  # noqa: E501
         )
 
         return MissionTypes.acceleration
