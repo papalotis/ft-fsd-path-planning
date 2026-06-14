@@ -7,12 +7,14 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from loguru import logger
 from scipy.interpolate import splev, splprep
+
+logger = logging.getLogger(__name__)
 
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
@@ -119,7 +121,7 @@ class SplineFitterFactory:
             )
         except ValueError:
             logger.debug(
-                "Spline fitting failed: smoothing={}, max_deg={}, trace shape={}",
+                "Spline fitting failed: smoothing=%s, max_deg=%s, trace shape=%s",
                 self.smoothing,
                 self.max_deg,
                 trace.shape,
