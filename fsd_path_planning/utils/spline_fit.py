@@ -14,9 +14,9 @@ from typing import Any
 import numpy as np
 from scipy.interpolate import splev, splprep
 
-logger = logging.getLogger(__name__)
-
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -86,8 +86,8 @@ class SplineFitterFactory:
 
         Args:
             smoothing (float): The smoothing factor. 0 means no smoothing
-            predict_every (float): The approximate distance along the fitted trace to calculate a
-            point for
+            predict_every (float): The approximate distance along the fitted
+                trace to calculate a point for
             max_deg (int): The maximum degree of the fitted splines
         """
         self.smoothing = smoothing

@@ -19,10 +19,15 @@ import numpy as np
 
 # Ensure the project root is on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
+sys.path.insert(0, str(PROJECT_ROOT))  # noqa: E402
 
-from fsd_path_planning import MissionTypes, PathPlanner
-from tests.conftest import DEMO_DIR, GOLDEN_DIR, load_data_json, sample_frame_indices
+from fsd_path_planning import MissionTypes, PathPlanner  # noqa: E402
+from tests.conftest import (  # noqa: E402
+    DEMO_DIR,
+    GOLDEN_DIR,
+    load_data_json,
+    sample_frame_indices,
+)
 
 # Dataset definitions: (json filename, mission type)
 DATASETS = [
