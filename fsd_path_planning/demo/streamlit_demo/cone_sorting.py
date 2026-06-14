@@ -549,8 +549,8 @@ this we add this parameter which limits the angle maximum angle in the direction
 Now that we have all the candidates, we need to calculate the cost of each configuration.
 The cost configuration is consists of the following:
 - Mean angle between consecutive cones
-- Number of edge intersections ($2^{\#=intersections}-1$)
-- Number of nodes (cones) in the configuration (more nodes are preferred) ($1/{\#nodes}$)
+- Number of edge intersections
+- Number of nodes (cones) in the configuration (more nodes are preferred)
 
 The final cost function is a weighted sum of the above cost functions.
 """  # noqa: E501

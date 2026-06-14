@@ -227,7 +227,7 @@ def run() -> None:
         label="Curvature",
     )
     plt.title("Path arclength vs curvature")
-    plt.ylim([-0.3, 0.3])
+    plt.ylim((-0.3, 0.3))
     # plt.xticks(np.arange(0, path.path_arclength[-1], 0.5))
     plt.yticks(np.arange(-0.3, 0.3, 0.1))
     plt.grid()
