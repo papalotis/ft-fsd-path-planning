@@ -61,8 +61,8 @@ def get_path_calculation_config(
     cfg = PathConfig()
     return dict(
         maximal_distance_for_valid_path=cfg.maximal_distance_for_valid_path,
-        mpc_path_length=cfg.mpc_path_length,
-        mpc_prediction_horizon=cfg.mpc_prediction_horizon,
+        mpc_path_length=cfg.path_length,
+        mpc_prediction_horizon=cfg.number_of_samples,
     )
 
 
