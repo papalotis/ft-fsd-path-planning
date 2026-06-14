@@ -11,6 +11,8 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+from typing import Literal, overload
+
 import numpy as np
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
@@ -212,6 +214,32 @@ class PathPlanner:
             right_to_left_match,
         )
 
+    @overload
+    def calculate_path_in_global_frame(
+        self,
+        cones: list[FloatArray],
+        vehicle_position: FloatArray,
+        vehicle_direction: FloatArray | float,
+        return_intermediate_results: Literal[False] = ...,
+    ) -> FloatArray: ...
+
+    @overload
+    def calculate_path_in_global_frame(
+        self,
+        cones: list[FloatArray],
+        vehicle_position: FloatArray,
+        vehicle_direction: FloatArray | float,
+        return_intermediate_results: Literal[True],
+    ) -> tuple[
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        FloatArray,
+        IntArray,
+        IntArray,
+    ]: ...
+
     def calculate_path_in_global_frame(
         self,
         cones: list[FloatArray],
@@ -236,11 +264,11 @@ class PathPlanner:
             cones: A sequence of **exactly 5** arrays, one per cone type ordered
                 by :class:`~fsd_path_planning.utils.cone_types.ConeTypes`::
 
-                    index 0 – UNKNOWN
-                    index 1 – RIGHT  (yellow)
-                    index 2 – LEFT   (blue)
-                    index 3 – ORANGE_SMALL  (start/finish area)
-                    index 4 – ORANGE_BIG   (start/finish line)
+                    index 0 - UNKNOWN
+                    index 1 - RIGHT  (yellow)
+                    index 2 - LEFT   (blue)
+                    index 3 - ORANGE_SMALL  (start/finish area)
+                    index 4 - ORANGE_BIG   (start/finish line)
 
                 Each array must be numeric, finite, and shaped ``(N, 2)`` where
                 *N* may be zero.  Pass ``np.zeros((0, 2))`` for absent cone types.

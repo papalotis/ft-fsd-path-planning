@@ -11,6 +11,7 @@ from fsd_path_planning.sorting_cones.core_cone_sorting import (
 )
 from fsd_path_planning.sorting_cones.trace_sorter import core_trace_sorter
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
+from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 # ── breadth_first_order ──────────────────────────────────────────────────────
@@ -60,10 +61,14 @@ class TestConeSorting:
     def test_straight_track_sorting(self, sorter):
         """Left and right cones on a straight track should be sorted into two sides."""
         n = 6
-        left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
-        right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
+        left_cones: FloatArray = np.column_stack(
+            [np.arange(n, dtype=float) * 3, np.full(n, 2.0)]
+        )
+        right_cones: FloatArray = np.column_stack(
+            [np.arange(n, dtype=float) * 3, np.full(n, -2.0)]
+        )
 
-        cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
         cones_by_type[ConeTypes.LEFT] = left_cones
         cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -88,7 +93,7 @@ class TestConeSorting:
         right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
         unknown = np.vstack([left_cones, right_cones])
 
-        cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
         cones_by_type[ConeTypes.UNKNOWN] = unknown
 
         inp = ConeSortingInput(
@@ -125,7 +130,7 @@ class TestConeSorting:
         left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
         right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
 
-        cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
         cones_by_type[ConeTypes.LEFT] = left_cones
         cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -153,7 +158,7 @@ class TestConeSorting:
         left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
         right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
 
-        cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
         cones_by_type[ConeTypes.LEFT] = left_cones
         cones_by_type[ConeTypes.RIGHT] = right_cones
 
