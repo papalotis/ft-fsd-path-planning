@@ -3,8 +3,6 @@ name = "fsd_path_planning"
 version = "0.5.0"
 readme = "README.md"
 dependencies = [
-    "icecream",
-    "loguru",
     "numba",
     "numpy>=1.25",
     "scipy",

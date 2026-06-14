@@ -8,11 +8,13 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+import logging
 import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
-from loguru import logger
+
+logger = logging.getLogger(__name__)
 
 from fsd_path_planning.calculate_path.path_basis_selector import (
     calculate_centerline_points,
@@ -275,7 +277,7 @@ class CalculatePath:
         except Exception:
             mask = np.all(final_path[:-1] == final_path[1:], axis=1)
             logger.debug(
-                "Spline refit failed. Duplicate points at indices: {}",
+                "Spline refit failed. Duplicate points at indices: %s",
                 np.where(mask),
             )
             raise

@@ -390,8 +390,8 @@ def trace_intersections(
     )
     if not intersect_with_consecutive_segments:
         # set the diagonals next to the main diagonal (see np.eye with k=1,-1)
-        # to be false
-        for i in range(len(segment_starts)):
+        # to be false; stop one short so next_diagonal_index stays in bounds
+        for i in range(len(segment_starts) - 1):
             next_diagonal_index = i + 1
             intersections[i, next_diagonal_index] = False
             intersections[next_diagonal_index, i] = False
