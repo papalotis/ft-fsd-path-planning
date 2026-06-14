@@ -223,10 +223,14 @@ def batch_lines_segments_intersect_indicator(
     Returns:
         A boolean array indicating if the two line segments intersect.
     """
-    assert segments_a_start.shape[-1] == 2
-    assert segments_a_start.shape == segments_a_end.shape
-    assert segments_a_start.shape == segments_b_start.shape
-    assert segments_a_start.shape == segments_b_end.shape
+    if segments_a_start.shape[-1] != 2:
+        raise ValueError("segment inputs must contain 2d points")
+    if segments_a_start.shape != segments_a_end.shape:
+        raise ValueError("segment start and end arrays must have matching shapes")
+    if segments_a_start.shape != segments_b_start.shape:
+        raise ValueError("all segment arrays must have matching shapes")
+    if segments_a_start.shape != segments_b_end.shape:
+        raise ValueError("all segment arrays must have matching shapes")
 
     segment_a_start_flat = segments_a_start.reshape(-1, 2)
     segment_a_end_flat = segments_a_end.reshape(-1, 2)
@@ -275,7 +279,8 @@ def pairwise_segment_intersection(
         A square boolean array of shape (n_segments, n_segments) where the
         intersection is True if the two line segments intersect.
     """
-    assert len(segment_starts) == len(segment_ends)
+    if len(segment_starts) != len(segment_ends):
+        raise ValueError("segment_starts and segment_ends must have the same length")
 
     number_of_segments = len(segment_starts)
 
