@@ -353,7 +353,7 @@ def number_of_intersections(intersection_matrix: BoolArray) -> int:
     # we only count the lower triangle, otherwise we double count intersections not
     # on the diagonal because the matrix is symmetric
     lower_triangle_matrix = np.tril(intersection_matrix)  # type: ignore
-    return np.count_nonzero(lower_triangle_matrix)
+    return int(np.count_nonzero(lower_triangle_matrix))
 
 
 @my_njit
