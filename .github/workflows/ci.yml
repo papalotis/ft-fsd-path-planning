@@ -77,8 +77,6 @@ jobs:
     name: Regression (Python 3.12)
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/improv'
-    env:
-      NUMBA_DISABLE_JIT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
