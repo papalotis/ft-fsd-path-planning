@@ -11,8 +11,6 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
@@ -45,6 +43,11 @@ from fsd_path_planning.sorting_cones.core_cone_sorting import (
 )
 from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.input_validation import (
+    convert_direction_to_array,
+    validate_and_normalize_cones,
+    validate_vehicle_position,
+)
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     unit_2d_vector_from_angle,
@@ -95,16 +98,6 @@ class PathPlanner:
         self.experimental_performance_improvements = (
             experimental_performance_improvements
         )
-
-    def _convert_direction_to_array(self, direction: Any) -> FloatArray:
-        direction = np.squeeze(np.array(direction))
-        if direction.shape == (2,):
-            return direction
-
-        if direction.shape in [(1,), ()]:
-            return unit_2d_vector_from_angle(direction)
-
-        raise ValueError("direction must be a float or a 2 element array")
 
     def set_global_path(self, global_path):
         self.global_path = global_path
@@ -234,7 +227,9 @@ class PathPlanner:
             A Nx4 array of waypoints in global frame. Each waypoint is a 4 element array
             (spline_parameter, path_x, path_y, curvature).
         """
-        vehicle_direction = self._convert_direction_to_array(vehicle_direction)
+        cones = validate_and_normalize_cones(cones)
+        vehicle_position = validate_vehicle_position(vehicle_position)
+        vehicle_direction = convert_direction_to_array(vehicle_direction)
 
         noprint = True
 
