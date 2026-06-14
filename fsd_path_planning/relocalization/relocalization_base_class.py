@@ -15,8 +15,7 @@ from fsd_path_planning.types import FloatArray
 class RelocalizationCallable(Protocol):
     def __call__(
         self, position_2d: FloatArray, direction_yaw: float
-    ) -> tuple[FloatArray, float]:
-        pass
+    ) -> tuple[FloatArray, float]: ...
 
 
 class Relocalizer(ABC):

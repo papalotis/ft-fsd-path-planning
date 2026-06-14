@@ -91,11 +91,11 @@ def get_cones_for_configuration(
         cones_right = np.column_stack((cones_x, cones_right_y))
 
     elif configuration == "Simple Corner":
-        phi_inner = np.arange(0, np.pi / 2, np.pi / 15)
-        phi_outer = np.arange(0, np.pi / 2, np.pi / 20)
+        phi_inner = np.arange(0, np.pi / 2, np.pi / 15).astype(np.float64)
+        phi_outer = np.arange(0, np.pi / 2, np.pi / 20).astype(np.float64)
 
-        points_inner = unit_2d_vector_from_angle(phi_inner) * 9
-        points_outer = unit_2d_vector_from_angle(phi_outer) * 12
+        points_inner = unit_2d_vector_from_angle(phi_inner).astype(np.float64) * 9
+        points_outer = unit_2d_vector_from_angle(phi_outer).astype(np.float64) * 12
 
         center = np.mean((points_inner[:2] + points_outer[:2]) / 2, axis=0)
         points_inner -= center
@@ -350,7 +350,7 @@ def get_cones_for_configuration(
         cones_left = cones_left[rng.random(len(cones_left)).argsort()]
         cones_right = cones_right[rng.random(len(cones_right)).argsort()]
 
-    cones = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     # cones = [np.zeros((0, 2)), cones_left, cones_right]
     cones[ConeTypes.LEFT] = cones_left
     cones[ConeTypes.RIGHT] = cones_right

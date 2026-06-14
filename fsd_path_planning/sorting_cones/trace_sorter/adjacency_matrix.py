@@ -7,7 +7,7 @@ Project: fsd_path_planning
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
-from fsd_path_planning.types import FloatArray, IntArray
+from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
 from fsd_path_planning.utils.math_utils import calc_pairwise_distances
 
@@ -29,6 +29,7 @@ class AdjacencyMatrixCache:
                 cones_xy, dist_to_self=np.inf
             )
 
+        assert self._distance_matrix is not None
         return self._distance_matrix.copy()
 
     def find_k_closest_in_point_cloud(
@@ -50,6 +51,7 @@ class AdjacencyMatrixCache:
             self._idxs_hash = input_hash
             self._idxs_calculated = np.argsort(pairwise_distances, axis=1)[:, :k]
 
+        assert self._idxs_calculated is not None
         return self._idxs_calculated.copy()
 
 
@@ -79,7 +81,7 @@ def create_adjacency_matrix(
     max_dist: float,
     cone_type: ConeTypes,
     cache: AdjacencyMatrixCache | None = None,
-) -> tuple[IntArray, IntArray]:
+) -> tuple[BoolArray, IntArray]:
     """
     Creates the adjacency matrix that defines the possible points each point
     can be connected with
@@ -119,7 +121,7 @@ def create_adjacency_matrix(
     sources = np.repeat(np.arange(n_points), n_neighbors)
     targets = k_closest_each.flatten()
 
-    adjacency_matrix: IntArray = np.zeros((n_points, n_points), dtype=np.uint8)
+    adjacency_matrix = np.zeros((n_points, n_points), dtype=int)
 
     adjacency_matrix[sources, targets] = (
         1  # for each node set its closest n_neighbor to 1

@@ -132,7 +132,7 @@ def vec_angle_between(
 
 
 @my_njit
-def rotate(points: np.ndarray, theta: float) -> np.ndarray:
+def rotate(points: np.ndarray, theta: float | np.ndarray) -> np.ndarray:
     """
     Rotates the points in `points` by angle `theta` around the origin
 

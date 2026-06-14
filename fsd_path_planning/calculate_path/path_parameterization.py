@@ -297,8 +297,8 @@ class PathParameterizer:
     def parameterize_path(
         self,
         path: FloatArray,
-        vehicle_position: FloatArray,
-        vehicle_direction: FloatArray,
+        vehicle_position: FloatArray | None,
+        vehicle_direction: FloatArray | None,
         path_is_closed: bool,
     ) -> FloatArray:
         """

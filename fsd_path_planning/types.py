@@ -8,30 +8,24 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, fields
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 import numpy as np
 from numpy.typing import NDArray
+from typing_extensions import TypeAlias
 
 from fsd_path_planning.utils.cone_types import ConeTypes
 
-if TYPE_CHECKING:
-    GenericArray = NDArray[Any]
-    FloatArray = NDArray[np.float64]
-    IntArray = NDArray[np.signedinteger[Any]]
-    BoolArray = NDArray[np.bool_]
-    SortableConeTypes = Literal[
-        ConeTypes.LEFT,
-        ConeTypes.BLUE,
-        ConeTypes.RIGHT,
-        ConeTypes.YELLOW,
-    ]
-else:
-    GenericArray = None  # pylint: disable=invalid-name
-    FloatArray = None  # pylint: disable=invalid-name
-    IntArray = None  # pylint: disable=invalid-name
-    BoolArray = None  # pylint: disable=invalid-name
-    SortableConeTypes = ConeTypes
+GenericArray: TypeAlias = NDArray[Any]
+FloatArray: TypeAlias = NDArray[np.float64]
+IntArray: TypeAlias = NDArray[np.signedinteger[Any]]
+BoolArray: TypeAlias = NDArray[np.bool_]
+SortableConeTypes: TypeAlias = Literal[
+    ConeTypes.LEFT,
+    ConeTypes.BLUE,
+    ConeTypes.RIGHT,
+    ConeTypes.YELLOW,
+]
 
 
 @dataclass

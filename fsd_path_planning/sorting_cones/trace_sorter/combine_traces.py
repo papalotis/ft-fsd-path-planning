@@ -51,6 +51,10 @@ def calc_final_configs_for_left_and_right(
     # both sides have valid configurations
     # we need to pick the best one for each side
 
+    assert left_scores is not None
+    assert left_configs is not None
+    assert right_scores is not None
+    assert right_configs is not None
     return calc_final_configs_when_both_available(
         left_scores,
         left_configs,
@@ -75,6 +79,7 @@ def calc_final_configs_when_only_one_side_has_configs(
 
     if left_configs is None:
         left_config = empty_config
+        assert right_configs is not None
         right_config = right_configs[0]
         right_config = right_config[right_config != -1]
     elif right_configs is None:
@@ -104,8 +109,16 @@ def calc_final_configs_when_both_available(
     right_config = right_configs[0]
     right_config = right_config[right_config != -1]
 
-    left_config, right_config = handle_same_cone_in_both_configs(
+    left_config_or_none, right_config_or_none = handle_same_cone_in_both_configs(
         cones, left_config, right_config
+    )
+
+    empty_config = np.zeros(0, dtype=int)
+    left_config = (
+        left_config_or_none if left_config_or_none is not None else empty_config
+    )
+    right_config = (
+        right_config_or_none if right_config_or_none is not None else empty_config
     )
 
     return (left_config, right_config)
@@ -267,6 +280,8 @@ def calc_new_length_for_configs_for_same_cone_intersection(
             left_stop_idx = left_intersection_index
             right_stop_idx = right_intersection_index
 
+    assert left_stop_idx is not None
+    assert right_stop_idx is not None
     return left_stop_idx, right_stop_idx
 
 
@@ -287,4 +302,4 @@ def calc_angle_change_at_position(
 
     angle = angle_difference(angle_intersection_to_next, angle_intersection_to_prev)
 
-    return angle
+    return float(angle)

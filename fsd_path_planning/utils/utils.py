@@ -86,7 +86,7 @@ class Timer:
         Returns:
             float: The average time
         """
-        return_value: float = np.mean(self.intervals)
+        return_value: float = float(np.mean(self.intervals))
         return return_value
 
     def get_std_time(self) -> float:
@@ -96,7 +96,7 @@ class Timer:
         Returns:
             float: The average time
         """
-        return_value: float = np.mean(self.intervals)
+        return_value: float = float(np.mean(self.intervals))
         return return_value
 
     def report_cum_time(self) -> None:

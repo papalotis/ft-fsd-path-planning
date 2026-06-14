@@ -218,7 +218,7 @@ def insert_virtual_cones_to_existing(
     other_side_cones: FloatArray,
     other_side_virtual_cones: FloatArray,
     car_position: FloatArray,
-    virtual_cone_angle_threshold: float = None,
+    virtual_cone_angle_threshold: float | None = None,
 ) -> tuple[FloatArray, list[FloatArray]]:
     """
     Combine the virtual with the real cones into a single array.

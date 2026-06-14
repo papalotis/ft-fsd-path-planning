@@ -40,3 +40,4 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pyright]
 pythonVersion = "3.10"
+typeCheckingMode = "basic"

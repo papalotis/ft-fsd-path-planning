@@ -23,11 +23,11 @@ except ImportError:
     raise
 
 try:
-    from tqdm import tqdm
+    from tqdm import tqdm  # type: ignore[assignment]
 except ImportError:
     print("You can get a progress bar by installing tqdm: pip install tqdm")
 
-    def tqdm(x, total=None):
+    def tqdm(x, total=None):  # type: ignore[misc]
         return x
 
 
@@ -169,7 +169,7 @@ planner, you should run the demo one more time after it is finished.
     for i, (position, direction, cones) in tqdm(
         enumerate(zip(positions, directions, cone_observations, strict=False)),
         total=len(positions),
-        desc="Calculating paths",
+        desc="Calculating paths",  # type: ignore[call-arg]
     ):
         prev_relocalization_info = relocalization_info
         relocalization_info = planner.relocalization_info
@@ -243,7 +243,7 @@ planner, you should run the demo one more time after it is finished.
     # plot animation
     frames = []
 
-    for i in tqdm(range(len(results)), desc="Generating animation"):
+    for i in tqdm(range(len(results)), desc="Generating animation"):  # type: ignore[call-arg]
         co = cone_observations[i]
 
         # Use cone colors based on the mode
@@ -318,7 +318,7 @@ planner, you should run the demo one more time after it is finished.
     if output_path is not None:
         absolute_path_str = str(output_path.absolute())
         typer.echo(f"Saving animation to {absolute_path_str}")
-        anim.save(absolute_path_str, fps=data_rate)
+        anim.save(absolute_path_str, fps=int(data_rate))
 
     plt.show()
 
@@ -349,7 +349,7 @@ def load_data_json(
     if remove_color_info:
         cones_observations_all_unknown = []
         for cones in cone_observations:
-            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
+            new_observation: list[np.ndarray] = [np.zeros((0, 2)) for _ in ConeTypes]
             new_observation[ConeTypes.UNKNOWN] = np.row_stack(
                 [c.reshape(-1, 2) for c in cones]
             )
