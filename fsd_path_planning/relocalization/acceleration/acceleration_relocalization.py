@@ -212,13 +212,3 @@ def create_acceleartion_path() -> FloatArray:
 
 
 BASE_ACCELERATION_PATH = create_acceleartion_path()
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    plt.scatter(
-        *create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path()))
-    )
-
-    plt.axis("equal")
-    plt.show()

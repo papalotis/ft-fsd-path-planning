@@ -23,5 +23,5 @@ def lint(session: nox.Session) -> None:
 @nox.session
 def typecheck(session: nox.Session) -> None:
     """Run pyright type checking."""
-    session.install(".[dev]")
+    session.install(".[dev,demo]")
     session.run("pyright", "fsd_path_planning")
