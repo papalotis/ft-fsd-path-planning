@@ -10,6 +10,7 @@ from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatchingInput,
 )
 from fsd_path_planning.cone_matching.match_directions import (
+    calculate_search_direction_for_one,
     calculate_match_search_direction,
 )
 from fsd_path_planning.config_dataclasses import MatchingConfig
@@ -19,6 +20,17 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 
 
 class TestCalculateMatchSearchDirection:
+    def test_helper_returns_normalized_perpendicular_direction(self):
+        cones = np.array([[0.0, 0.0], [2.0, 2.0]])
+
+        direction = calculate_search_direction_for_one(
+            cones, np.array([0, 1]), ConeTypes.LEFT
+        )
+
+        expected = np.array([np.sqrt(0.5), -np.sqrt(0.5)])
+        np.testing.assert_allclose(direction, expected)
+        np.testing.assert_allclose(np.linalg.norm(direction), 1.0)
+
     def test_left_cones_direction_is_perpendicular(self):
         # Cones arranged along x-axis → search direction should be perpendicular (~+y or -y)
         cones = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
@@ -41,6 +53,26 @@ class TestCalculateMatchSearchDirection:
         cones = np.array([[0.0, 0.0], [1.0, 0.0]])
         dirs = calculate_match_search_direction(cones, ConeTypes.LEFT)
         assert dirs.shape == (2, 2)
+
+    def test_uses_only_xy_columns(self):
+        cones = np.array(
+            [
+                [0.0, 0.0, 10.0],
+                [1.0, 0.0, 20.0],
+                [2.0, 0.0, 30.0],
+            ]
+        )
+
+        dirs = calculate_match_search_direction(cones, ConeTypes.RIGHT)
+
+        expected = np.tile(np.array([0.0, 1.0]), (3, 1))
+        np.testing.assert_allclose(dirs, expected, atol=1e-12)
+
+    def test_requires_at_least_two_cones(self):
+        cones = np.array([[0.0, 0.0]])
+
+        with pytest.raises(AssertionError):
+            calculate_match_search_direction(cones, ConeTypes.LEFT)
 
 
 # ── ConeMatching class ──────────────────────────────────────────────────────
