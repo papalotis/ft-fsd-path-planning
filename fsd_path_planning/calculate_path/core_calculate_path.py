@@ -115,13 +115,22 @@ class CalculatePath:
                     DeprecationWarning,
                     stacklevel=2,
                 )
+            if "mpc_path_length" in provided and "path_length" not in provided:
+                provided["path_length"] = provided.pop("mpc_path_length")
+            if (
+                "mpc_prediction_horizon" in provided
+                and "number_of_samples" not in provided
+            ):
+                provided["number_of_samples"] = provided.pop(
+                    "mpc_prediction_horizon"
+                )
             self.config = PathConfig(**provided)
 
         self.input = PathCalculationInput()
         self.scalars = PathCalculationScalarValues(
             maximal_distance_for_valid_path=self.config.maximal_distance_for_valid_path,
-            mpc_path_length=self.config.mpc_path_length,
-            mpc_prediction_horizon=self.config.mpc_prediction_horizon,
+            mpc_path_length=self.config.path_length,
+            mpc_prediction_horizon=self.config.number_of_samples,
         )
         self.path_calculator_helpers = PathCalculatorHelpers()
         self.spline_fitter_factory = SplineFitterFactory(
@@ -157,7 +166,17 @@ class CalculatePath:
         return initial_path
 
     def set_new_input(self, new_input: PathCalculationInput) -> None:
-        """Update the state of the calculation."""
+        """Update the state of the calculation.
+
+        .. deprecated::
+            Pass input directly to :meth:`run_path_calculation` instead.
+        """
+        warnings.warn(
+            "set_new_input() is deprecated. Pass input directly to "
+            "run_path_calculation().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.input = new_input
 
     def calculate_trivial_path(self) -> FloatArray:
