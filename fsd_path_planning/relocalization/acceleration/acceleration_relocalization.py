@@ -81,9 +81,10 @@ def random_subset_fit_error(points, subset_size):
     return coefficients, error
 
 
-def best_fit(points, subset_size, iterations):
+def best_fit(points: FloatArray, subset_size: int, iterations: int) -> FloatArray:
     """
-    Calls the random_subset_fit_error function many times and returns the coefficients with the smallest error.
+    Calls the random_subset_fit_error function many times and returns the coefficients
+    with the smallest error.
 
     Parameters:
     - points: A numpy array of shape (n, 2) where n is the number of points.
@@ -93,7 +94,7 @@ def best_fit(points, subset_size, iterations):
     Returns:
     - Coefficients of the linear fit with the smallest error.
     """
-    best_coefficients = None
+    best_coefficients = np.zeros(2)
     smallest_error = np.inf
 
     for _ in range(iterations):
