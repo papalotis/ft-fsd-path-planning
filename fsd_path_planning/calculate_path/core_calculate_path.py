@@ -14,8 +14,6 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-logger = logging.getLogger(__name__)
-
 from fsd_path_planning.calculate_path.path_basis_selector import (
     calculate_centerline_points,
 )
@@ -49,6 +47,8 @@ from fsd_path_planning.utils.math_utils import (
     rotate,
 )
 from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
+
+logger = logging.getLogger(__name__)
 
 SplineEvalByType = list[SplineEvaluator]
 
@@ -123,9 +123,7 @@ class CalculatePath:
                 "mpc_prediction_horizon" in provided
                 and "number_of_samples" not in provided
             ):
-                provided["number_of_samples"] = provided.pop(
-                    "mpc_prediction_horizon"
-                )
+                provided["number_of_samples"] = provided.pop("mpc_prediction_horizon")
             self.config = PathConfig(**provided)
 
         self.input = PathCalculationInput()
@@ -267,7 +265,8 @@ class CalculatePath:
     ) -> FloatArray:
         """
         Refit the path for MPC with a safety factor. The length of the path is 1.5 times
-        the length of the path required by MPC. The path will be trimmed to the correct length
+        the length of the path required by MPC. The path will be trimmed to
+        the correct length
         in another step
         """
         try:
@@ -285,7 +284,10 @@ class CalculatePath:
         return path_length_fixed
 
     def extend_path(self, path_update: FloatArray) -> FloatArray:
-        """If the path is not long enough, extend it with a circular arc or straight line."""
+        """
+        If the path is not long enough, extend it with a circular arc or
+        straight line.
+        """
         return _extend_path(
             path_update,
             self.input.vehicle_position,
@@ -306,8 +308,9 @@ class CalculatePath:
         the new path.
 
         First a linear path is added at the end of the path update. This ensures that
-        the path is long enough for MPC. Otherwise we would have to use spline extrapolation
-        to get a path that is long enough, however polynomial extrapolation is not stable
+        the path is long enough for MPC. Otherwise we would have to use
+        spline extrapolation to get a path that is long enough, however
+        polynomial extrapolation is not stable
         enough for our purposes.
 
         Then the path is fitted again as a spline. Because we have now added the linear
@@ -427,7 +430,8 @@ class CalculatePath:
         """Calculate path.
 
         Args:
-            input: The path calculation input. If not provided, uses previously set input.
+            input: The path calculation input. If not provided, uses
+                previously set input.
         """
         if input is not None:
             self.input = input
