@@ -17,13 +17,13 @@ def run() -> None:
     np.random.seed(19680801)
 
     data = np.random.rand(2, 25)
-    (l,) = plt.plot([], [], "r-")
+    (line_obj,) = plt.plot([], [], "r-")
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.xlabel("x")
     plt.title("test")
     line_ani = animation.FuncAnimation(
-        fig, update_line, 25, fargs=(data, l), interval=200, blit=True
+        fig, update_line, 25, fargs=(data, line_obj), interval=200, blit=True
     )
 
     st.title("Embed Matplotlib animation in Streamlit")

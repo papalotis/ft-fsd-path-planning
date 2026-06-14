@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import List
-
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
@@ -23,7 +21,7 @@ def show_base_points(
     left_to_right_matches: IntArray,
     position: FloatArray,
     direction: FloatArray,
-    cones_by_type: List[FloatArray],
+    cones_by_type: list[FloatArray],
 ) -> None:
     middle = []
 
@@ -33,7 +31,9 @@ def show_base_points(
     left_base_points = []
     right_base_points = []
 
-    for left_cone, right_match_index in zip(left_cones, left_to_right_matches):
+    for left_cone, right_match_index in zip(
+        left_cones, left_to_right_matches, strict=False
+    ):
         if right_match_index == -1:
             continue
         right_cone = right_cones[right_match_index]
@@ -55,7 +55,9 @@ def show_base_points(
     plt.plot(*middle_array.T, "o", color="green", label="Path base points")
     plt.legend()
 
-    for left_base_point, right_base_point in zip(left_base_points, right_base_points):
+    for left_base_point, right_base_point in zip(
+        left_base_points, right_base_points, strict=False
+    ):
         plt.plot(
             [left_base_point[0], right_base_point[0]],
             [left_base_point[1], right_base_point[1]],
