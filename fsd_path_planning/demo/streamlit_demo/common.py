@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +13,9 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 
 
-def calculate_pose_triangle_position(position: FloatArray, direction: FloatArray, size: float) -> FloatArray:
+def calculate_pose_triangle_position(
+    position: FloatArray, direction: FloatArray, size: float
+) -> FloatArray:
     pos_1 = position + direction * size
     pos_2 = position - rotate(direction, np.pi / 2) * size * 0.5
     pos_3 = position - rotate(direction, -np.pi / 2) * size * 0.5
@@ -33,7 +34,7 @@ CONE_TYPE_TO_COLOR = {
 def visualize_configuration(
     position: FloatArray,
     direction: FloatArray,
-    cones_by_type: List[FloatArray],
+    cones_by_type: list[FloatArray],
     *,
     with_cone_index: bool,
     with_lines: bool,
@@ -45,7 +46,7 @@ def visualize_configuration(
 
     marker_string = "-o" if with_lines else "o"
     text_offset = 0.5
-    for cone_type, cones in zip(ConeTypes, cones_by_type):
+    for cone_type, cones in zip(ConeTypes, cones_by_type, strict=False):
         if len(cones) == 0:
             continue
         color = CONE_TYPE_TO_COLOR[cone_type]
@@ -71,16 +72,20 @@ def visualize_configuration(
 
 def get_cones_for_configuration(
     configuration: str, do_shuffle: bool
-) -> Tuple[FloatArray, FloatArray, List[FloatArray]]:
+) -> tuple[FloatArray, FloatArray, list[FloatArray]]:
     rng = np.random.default_rng(0)
     vehicle_position = np.array([0, 0], dtype=float)
     vehicle_direction = np.array([1, 0], dtype=float)
     if configuration == "Straight":
         cones_x = np.arange(-2, 20, 4)
         noise_range = 0.3
-        cones_left_y = np.ones(len(cones_x)) * 1.5 + rng.uniform(-noise_range, noise_range, len(cones_x))
+        cones_left_y = np.ones(len(cones_x)) * 1.5 + rng.uniform(
+            -noise_range, noise_range, len(cones_x)
+        )
 
-        cones_right_y = np.ones(len(cones_x)) * -1.5 + rng.uniform(-noise_range, noise_range, len(cones_x))
+        cones_right_y = np.ones(len(cones_x)) * -1.5 + rng.uniform(
+            -noise_range, noise_range, len(cones_x)
+        )
 
         cones_left = np.column_stack((cones_x, cones_left_y))
         cones_right = np.column_stack((cones_x, cones_right_y))
@@ -102,7 +107,9 @@ def get_cones_for_configuration(
         cones_right = rotated_points_outer
 
     elif configuration == "Corner Missing Blue":
-        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration("Simple Corner", do_shuffle)
+        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration(
+            "Simple Corner", do_shuffle
+        )
 
         cones_left = cones_simple[ConeTypes.LEFT]
         cones_right = cones_simple[ConeTypes.RIGHT]
@@ -113,7 +120,9 @@ def get_cones_for_configuration(
         cones_left = cones_left[mask_keep]
 
     elif configuration == "Corner Missing Blue Alt":
-        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration("Simple Corner", do_shuffle)
+        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration(
+            "Simple Corner", do_shuffle
+        )
 
         cones_left = cones_simple[ConeTypes.LEFT]
         cones_right = cones_simple[ConeTypes.RIGHT]
@@ -173,7 +182,9 @@ def get_cones_for_configuration(
         vehicle_position = (cones_left[0] + cones_right[0]) / 2
 
     elif configuration == "Hairpin Extreme":
-        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration("Hairpin", False)
+        vehicle_position, vehicle_direction, cones_simple = get_cones_for_configuration(
+            "Hairpin", False
+        )
 
         cones_left = cones_simple[ConeTypes.LEFT]
         cones_right = cones_simple[ConeTypes.RIGHT]
@@ -267,13 +278,17 @@ def get_cones_for_configuration(
 
         with st.sidebar:
             if len(json_text) == 0:
-                st.info("Enter a JSON string in the sidebar to load a custom configuration.")
+                st.info(
+                    "Enter a JSON string in the sidebar to load a custom configuration."
+                )
                 st.stop()
 
             try:
                 json_dict = json.loads(json_text)
             except json.JSONDecodeError as e:
-                st.error("The JSON string could not be parsed.\n\n Error message: " + str(e))
+                st.error(
+                    "The JSON string could not be parsed.\n\n Error message: " + str(e)
+                )
                 st.stop()
 
             if not isinstance(json_dict, dict):
@@ -288,21 +303,40 @@ def get_cones_for_configuration(
             ]
             missing_keys = [key for key in required_keys if key not in json_dict]
             if len(missing_keys) > 0:
-                st.error("The JSON string is missing the following keys: " + ", ".join(missing_keys))
+                st.error(
+                    "The JSON string is missing the following keys: "
+                    + ", ".join(missing_keys)
+                )
 
             vehicle_position = np.array(json_dict["vehicle_position"])
             vehicle_direction = np.array(json_dict["vehicle_direction"])
             cones_left = np.array(json_dict["cones_left"])
             cones_right = np.array(json_dict["cones_right"])
 
-            assert vehicle_position.shape == (2,), "The vehicle position should be a list of two numbers."
-            assert vehicle_direction.shape == (2,), "The vehicle direction should be a list of two numbers."
-            assert cones_left.ndim == 2, "The cones should be a list of lists of two numbers."
-            assert cones_left.shape[1] == 2, "The cones should be a list of lists of two numbers."
-            assert cones_left.shape[0] > 0, "The cones should be a list of lists of two numbers."
-            assert cones_right.ndim == 2, "The cones should be a list of lists of two numbers."
-            assert cones_right.shape[1] == 2, "The cones should be a list of lists of two numbers."
-            assert cones_right.shape[0] > 0, "The cones should be a list of lists of two numbers."
+            assert vehicle_position.shape == (2,), (
+                "The vehicle position should be a list of two numbers."
+            )
+            assert vehicle_direction.shape == (2,), (
+                "The vehicle direction should be a list of two numbers."
+            )
+            assert cones_left.ndim == 2, (
+                "The cones should be a list of lists of two numbers."
+            )
+            assert cones_left.shape[1] == 2, (
+                "The cones should be a list of lists of two numbers."
+            )
+            assert cones_left.shape[0] > 0, (
+                "The cones should be a list of lists of two numbers."
+            )
+            assert cones_right.ndim == 2, (
+                "The cones should be a list of lists of two numbers."
+            )
+            assert cones_right.shape[1] == 2, (
+                "The cones should be a list of lists of two numbers."
+            )
+            assert cones_right.shape[0] > 0, (
+                "The cones should be a list of lists of two numbers."
+            )
 
     else:
         raise ValueError("Unknown configuration")
@@ -324,7 +358,7 @@ def get_cones_for_configuration(
     return vehicle_position, vehicle_direction, cones
 
 
-def create_animation(frames: List[go.Frame]) -> go.Figure:
+def create_animation(frames: list[go.Frame]) -> go.Figure:
     if len(frames) == 0:
         return go.Figure()
 

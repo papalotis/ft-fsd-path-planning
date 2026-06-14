@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -102,9 +101,7 @@ def print_runtime_summary(intervals: list[float]) -> None:
             f"frame {int(outlier_indices[idx])}={outlier_values[idx]:.2f} ms"
             for idx in sorted_outlier_order[:5]
         ]
-        print(
-            f"  outliers: {outlier_values.size} above {outlier_threshold:.2f} ms"
-        )
+        print(f"  outliers: {outlier_values.size} above {outlier_threshold:.2f} ms")
         print(f"  slowest outliers: {', '.join(top_outliers)}")
 
     print("\nRuntime overview")
@@ -124,11 +121,11 @@ def print_runtime_summary(intervals: list[float]) -> None:
 
 @app.command()
 def main(
-    data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
+    data_path: Path | None = typer.Option(None, "--data-path", "-i"),  # noqa: B008
     data_rate: float = 10,
     remove_color_info: bool = False,
     show_runtime_histogram: bool = False,
-    output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
+    output_path: Path | None = typer.Option(None, "--output-path", "-o"),  # noqa: B008
     experimental_performance_improvements: bool = False,
     dark_mode: bool = False,
     disable_visualization: bool = False,
@@ -170,7 +167,7 @@ planner, you should run the demo one more time after it is finished.
     # tqdm = lambda x, desc=None, total=None: x
 
     for i, (position, direction, cones) in tqdm(
-        enumerate(zip(positions, directions, cone_observations)),
+        enumerate(zip(positions, directions, cone_observations, strict=False)),
         total=len(positions),
         desc="Calculating paths",
     ):
@@ -339,7 +336,7 @@ def numba_cache_files_exist() -> bool:
 def load_data_json(
     data_path: Path,
     remove_color_info: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, List[List[np.ndarray]]]:
+) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
     # extract data
     data = json.loads(data_path.read_text())[:]
 
