@@ -7,6 +7,7 @@ Taken from ft-as-utils
 Project: fsd_path_planning
 """
 
+import os
 from typing import TypeVar, cast
 
 import numpy as np
@@ -27,6 +28,18 @@ except ImportError:
 T = TypeVar("T")
 
 
+def _is_coverage_running() -> bool:
+    if os.getenv("COVERAGE_PROCESS_START"):
+        return True
+
+    try:
+        from coverage import Coverage
+    except ImportError:
+        return False
+
+    return Coverage.current() is not None
+
+
 def my_njit(func: T) -> T:
     """
     numba.njit is an untyped decorator. This wrapper helps type checkers keep the
@@ -39,6 +52,9 @@ def my_njit(func: T) -> T:
     Returns:
         T: The jitted function
     """
+    if _is_coverage_running():
+        return func
+
     jit_func: T = jit(
         nopython=True,
         cache=True,
@@ -95,8 +111,10 @@ def vec_angle_between(
         np.ndarray: A vector, such that each element i contains the angle between
         vectors vecs1[i] and vecs2[i]
     """
-    assert vecs1.shape[-1] == 2
-    assert vecs2.shape[-1] == 2
+    if vecs1.shape[-1] != 2:
+        raise ValueError("vecs1 must contain 2d vectors")
+    if vecs2.shape[-1] != 2:
+        raise ValueError("vecs2 must contain 2d vectors")
 
     cos_theta = vec_dot(vecs1, vecs2)
 
@@ -308,7 +326,8 @@ def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     Returns:
         np.array: The angle of each vector in `vecs`
     """
-    assert vecs.shape[-1] == 2, "vecs must be a 2d vector"
+    if vecs.shape[-1] != 2:
+        raise ValueError("vecs must be a 2d vector")
 
     vecs_flat = vecs.reshape(-1, 2)
 
