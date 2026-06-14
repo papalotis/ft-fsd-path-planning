@@ -274,10 +274,7 @@ class TraceSorter:
         )
         if first_k is not None:
             start_idx = first_k[0]
-            if len(first_k) > 1:
-                first_k_indices_must_be = first_k.copy()
-            else:
-                first_k_indices_must_be = None
+            first_k_indices_must_be = first_k.copy() if len(first_k) > 1 else None
         else:
             start_idx = None
             first_k_indices_must_be = None

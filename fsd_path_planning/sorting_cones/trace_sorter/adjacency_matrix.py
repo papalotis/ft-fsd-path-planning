@@ -35,8 +35,8 @@ class AdjacencyMatrixCache:
         self, pairwise_distances: FloatArray, k: int
     ) -> IntArray:
         """
-        Finds the indices of the k closest points for each point in a point cloud from its
-        pairwise distances.
+        Finds the indices of the k closest points for each point in a point
+        cloud from its pairwise distances.
 
         Args:
             pairwise_distances: A square matrix containing the distance from each
@@ -81,7 +81,8 @@ def create_adjacency_matrix(
     cache: AdjacencyMatrixCache | None = None,
 ) -> tuple[IntArray, IntArray]:
     """
-    Creates the adjacency matrix that defines the possible points each point can be connected with
+    Creates the adjacency matrix that defines the possible points each point
+    can be connected with
     Args:
         cones: The trace containing all the points
         n_neighbors: The maximum number of neighbors each node can have

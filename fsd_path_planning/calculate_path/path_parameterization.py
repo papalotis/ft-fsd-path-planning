@@ -33,7 +33,8 @@ class PathParameterizerState:
 
 def angle_difference(angle1: Numeric, angle2: Numeric) -> Numeric:
     """
-    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    Calculate the difference between two angles. The range of the difference
+    is [-pi, pi].
     The order of the angles *is* important.
 
     Args:
@@ -71,10 +72,7 @@ def calculate_path_curvature(
             diff = window[1:] - window[:-1]
             if np.any(diff != 1):
                 idx_cutoff = int(np.argmax(diff != 1) + 1)
-                if i < window_size:
-                    window = window[idx_cutoff:]
-                else:
-                    window = window[:idx_cutoff]
+                window = window[idx_cutoff:] if i < window_size else window[:idx_cutoff]
 
         points_in_window = path[window]
 
@@ -152,8 +150,8 @@ class PathParameterizer:
         path_skipped = path[::skip_factor]
 
         # very little smoothing, because we assume that the incoming points are already
-        # smooth, and max_deg is set to 3 because we cannot have a constant second derivative
-        # for good curvature calculations
+        # smooth, and max_deg is set to 3 because we cannot have a constant
+        # second derivative for good curvature calculations
         factory = SplineFitterFactory(
             smoothing=0.01, predict_every=predict_every, max_deg=3
         )
@@ -227,12 +225,14 @@ class PathParameterizer:
     ) -> float:
         """
         Calculate the relative direction difference between the path and the vehicle.
-        The relative direction difference is the difference between the direction of the vehicle
-        and the direction of the path at the closest point.
+        The relative direction difference is the difference between the
+        direction of the vehicle and the direction of the path at the closest
+        point.
 
         Args:
             path_spline: The spline of the path.
-            vehicle_direction: The direction of the vehicle. The direction is a 2D vector.
+            vehicle_direction: The direction of the vehicle. The direction is
+                a 2D vector.
             index_of_closest_point: The index of the closest point on the path.
 
         Returns:
@@ -261,8 +261,8 @@ class PathParameterizer:
         Args:
             path_spline: The spline of the path.
             path_curvature: The curvature of the path.
-            path_evaluation_parameters: The spline parameter values for which the path have
-            been evaluated.
+            path_evaluation_parameters: The spline parameter values for which
+                the path have been evaluated.
 
         Returns:
             The sampled path parameters for the prediction horizon. The parameters are:
@@ -306,8 +306,10 @@ class PathParameterizer:
 
         Args:
             path: The path as a 2D array of shape (N, 2).
-            vehicle_position: The position of the vehicle. The position is a 2D vector.
-            vehicle_direction: The direction of the vehicle. The direction is a 2D vector.
+            vehicle_position: The position of the vehicle. The position is a
+                2D vector.
+            vehicle_direction: The direction of the vehicle. The direction is
+                a 2D vector.
             path_is_closed: Should be `True` if the path is closed (full track).
         Returns:
             The path parameterized as a 2D array of shape (N, 4). The parameters are:

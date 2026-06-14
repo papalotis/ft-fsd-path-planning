@@ -124,7 +124,8 @@ class TestTrackdriveFSGRegression:
 
     @pytest.fixture(scope="class")
     def planner_and_results(self, dataset, golden):
-        """Run all frames sequentially (pipeline may be stateful) and collect results."""
+        """Run all frames sequentially (pipeline may be stateful) and collect
+        results."""
         positions, directions, cones = dataset
         frame_indices = golden["frame_indices"]
 
@@ -331,7 +332,8 @@ class TestTrackdriveFSSRegression:
                 actual = result[key_idx]
                 # Longer dataset: tiny float differences accumulate across
                 # stateful frames, so we use a slightly relaxed tolerance.
-                # use higher atol as FSS dataset is longer and more prone to small floating point differences accumulating across frames
+                # use higher atol as FSS dataset is longer and more prone to
+                # small floating point differences accumulating across frames
                 np.testing.assert_allclose(
                     actual,
                     expected,

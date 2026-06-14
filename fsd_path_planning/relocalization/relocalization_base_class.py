@@ -60,7 +60,8 @@ class Relocalizer(ABC):
         is_vehicle_direction_none = self._original_vehicle_direction is None
 
         assert is_vehicle_position_none == is_vehicle_direction_none, (
-            f"One of position or direction is not None but the other is {is_vehicle_position_none=!r} | {is_vehicle_direction_none=!r}"
+            f"One of position or direction is not None but the other is "
+            f"{is_vehicle_position_none=!r} | {is_vehicle_direction_none=!r}"
         )
 
         if is_vehicle_position_none and is_vehicle_direction_none:

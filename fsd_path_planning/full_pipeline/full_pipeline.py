@@ -81,7 +81,8 @@ class PathPlanner:
                 enum members (e.g. ``MissionTypes.trackdrive``).
             experimental_performance_improvements: Enable heuristics that may be
                 faster but are less thoroughly validated.  Defaults to ``False``.
-            config: Optional :class:`~fsd_path_planning.config_dataclasses.PipelineConfig`
+            config: Optional
+                :class:`~fsd_path_planning.config_dataclasses.PipelineConfig`
                 to override all algorithm parameters.  When ``None`` the defaults
                 for the given *mission* are used.
             cone_sorting: Override the default :class:`ConeSorting` instance.

@@ -131,11 +131,10 @@ def _check_angle_continuity(
             difference < threshold_directional_angle or len_last_to_candidate < 4.0
         ):
             return False
-    elif cone_type == ConeTypes.RIGHT:
-        if not (
-            difference > -threshold_directional_angle or len_last_to_candidate < 4.0
-        ):
-            return False
+    elif cone_type == ConeTypes.RIGHT and not (
+        difference > -threshold_directional_angle or len_last_to_candidate < 4.0
+    ):
+        return False
 
     # check if candidate causes change in direction in attempt
     if position_in_stack >= 2:
@@ -246,25 +245,23 @@ def neighbor_bool_mask_can_be_added_to_attempt(
 
         candidate_neighbor_pos = trace[neighbors[i]]
 
-        if position_in_stack >= 1:
-            if not _check_angle_continuity(
-                trace,
-                current_attempt,
-                position_in_stack,
-                candidate_neighbor_pos,
-                cone_type,
-                threshold_directional_angle,
-                threshold_absolute_angle,
-            ):
-                can_be_added[i] = False
-                continue
+        if position_in_stack >= 1 and not _check_angle_continuity(
+            trace,
+            current_attempt,
+            position_in_stack,
+            candidate_neighbor_pos,
+            cone_type,
+            threshold_directional_angle,
+            threshold_absolute_angle,
+        ):
+            can_be_added[i] = False
+            continue
 
-        if position_in_stack == 1:
-            if not _check_forward_direction(
-                trace, current_attempt, candidate_neighbor_pos, car_direction
-            ):
-                can_be_added[i] = False
-                continue
+        if position_in_stack == 1 and not _check_forward_direction(
+            trace, current_attempt, candidate_neighbor_pos, car_direction
+        ):
+            can_be_added[i] = False
+            continue
 
         if not _check_no_car_collision(
             trace,
@@ -365,7 +362,8 @@ def angle_difference(
     angle1: float | FloatArray, angle2: float | FloatArray
 ) -> float | FloatArray:
     """
-    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    Calculate the difference between two angles. The range of the difference
+    is [-pi, pi].
     The order of the angles *is* important.
 
     Args:
