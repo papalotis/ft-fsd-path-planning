@@ -24,7 +24,7 @@ from fsd_path_planning.utils.math_utils import (
 
 @my_njit
 def adjacency_matrix_to_borders_and_targets(
-    adjacency_matrix: IntArray,
+    adjacency_matrix: BoolArray | IntArray,
 ) -> tuple[IntArray, IntArray]:
     """
     Convert an adjacency matrix to two flat arrays, one representing the neighbors of
@@ -515,7 +515,7 @@ def find_all_end_configurations(
     points: FloatArray,
     cone_type: ConeTypes,
     start_idx: int,
-    adjacency_matrix: IntArray,
+    adjacency_matrix: BoolArray | IntArray,
     target_length: int,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,

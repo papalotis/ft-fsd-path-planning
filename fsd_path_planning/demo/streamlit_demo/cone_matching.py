@@ -66,7 +66,7 @@ def show_search_direction(
     left_search_direction_ends = left_cones + left_rotated
     right_search_direction_ends = right_cones + right_rotated
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -151,7 +151,7 @@ def show_potential_matches(
     max_search_angle: float,
     focus_cone: tuple[ConeTypes, int] | None,
     side_to_show: str,
-) -> tuple[FloatArray, FloatArray]:
+) -> tuple[BoolArray, BoolArray]:
     left_mask = find_boolean_mask_of_all_potential_matches(
         left_cones,
         left_directions,
@@ -172,7 +172,7 @@ def show_potential_matches(
         max_search_angle,
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -215,7 +215,7 @@ def show_best_match_candidate(
     right_directions: FloatArray,
     left_potential_matches_mask: BoolArray,
     right_potential_matches_mask: BoolArray,
-) -> tuple[FloatArray, FloatArray]:
+) -> tuple[IntArray, IntArray]:
     matches_from_left_to_right = select_best_match_candidate(
         left_cones,
         left_directions,
@@ -243,7 +243,7 @@ def show_best_match_candidate(
         new_mask_right[np.arange(len(right_cones)), matches_from_right_to_left] = 1
         new_mask_right *= right_potential_matches_mask
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -291,7 +291,7 @@ def show_virtual_cones(
         right_cones, right_idx_no_match, right_directions, min_track_width
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -377,7 +377,7 @@ def show_merging(
         direction,
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = combined_left
     cones_by_type[ConeTypes.RIGHT] = combined_right
 
@@ -406,7 +406,7 @@ def show_final_matching(
     major_radius: float,
     minor_radius: float,
     max_search_angle: float,
-) -> None:
+) -> tuple[IntArray, IntArray]:
     _, left_to_right_match, _ = calculate_matches_for_side(
         left_cones_with_virtual,
         ConeTypes.LEFT,

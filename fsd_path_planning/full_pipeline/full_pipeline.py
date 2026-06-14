@@ -188,7 +188,9 @@ class PathPlanner:
             sorted_right = sorting_result.right_cones
 
         with Timer("Cone matching", noprint=noprint):
-            matched_cones_input = [np.zeros((0, 2), dtype=float) for _ in ConeTypes]
+            matched_cones_input: list[FloatArray] = [
+                np.zeros((0, 2), dtype=float) for _ in ConeTypes
+            ]
             matched_cones_input[ConeTypes.LEFT] = sorted_left
             matched_cones_input[ConeTypes.RIGHT] = sorted_right
 
@@ -321,8 +323,7 @@ class PathPlanner:
         if self.relocalizer is not None and self.relocalizer.is_relocalized:
             final_path = final_path.copy()
             path_xy = final_path[:, 1:3]
-            fake_yaw = np.zeros(len(path_xy))
-            path_xy, _ = self.relocalizer.transform_to_original_frame(path_xy, fake_yaw)
+            path_xy, _ = self.relocalizer.transform_to_original_frame(path_xy, 0.0)
             final_path = final_path.copy()
             final_path[:, 1:3] = path_xy
 

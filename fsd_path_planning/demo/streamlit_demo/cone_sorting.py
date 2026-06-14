@@ -42,7 +42,7 @@ def get_points_on_ellipse(thetas: FloatArray, a: float, b: float) -> np.ndarray:
 def show_starting_cone(
     position: FloatArray,
     direction: FloatArray,
-    cones_by_type: FloatArray,
+    cones_by_type: list[FloatArray],
     max_distance: float,
 ) -> list[IntArray | None]:
     plt.subplots()
@@ -63,7 +63,7 @@ def show_starting_cone(
         threshold_absolute_angle=0,
         threshold_directional_angle=0.5,
     )
-    out: list[int | None] = [None for _ in ConeTypes]
+    out: list[IntArray | None] = [None for _ in ConeTypes]
     cones_flat = flatten_cones_by_type_array(cones_by_type)
     for cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT):
         idx = sorter.select_first_k_starting_cones(
@@ -122,6 +122,8 @@ def show_adjacency_matrix(
 
     for i, cone_type in enumerate((ConeTypes.LEFT, ConeTypes.RIGHT)):
         start_idx = start_indices[cone_type]
+        if start_idx is None:
+            continue
         adjacency_matrix, reachable_nodes = create_adjacency_matrix(
             cones_flat, n_neighbors, start_idx, max_distance, cone_type
         )
@@ -154,18 +156,15 @@ def show_graph_search(
     for cone_type, col in zip((ConeTypes.LEFT, ConeTypes.RIGHT), cols, strict=False):
         adjacency_matrix = adjacency_matrices[cone_type]
         first_k = start_indices[cone_type]
+        if first_k is None or adjacency_matrix is None:
+            all_end_configs[cone_type] = np.zeros((0, target_length), dtype=int)
+            continue
         with Timer():
             try:
-                (
-                    end_configurations,
-                    (
-                        all_configurations,
-                        configuration_is_end,
-                    ),
-                ) = find_all_end_configurations(
+                end_configurations, _inner = find_all_end_configurations(
                     cones_flat,
                     cone_type,
-                    first_k[0],
+                    int(first_k[0]),
                     adjacency_matrix,
                     target_length,
                     threshold_directional_angle,
@@ -176,6 +175,11 @@ def show_graph_search(
                     car_size=2.5,
                     store_all_end_configurations=True,
                 )
+                if _inner is None:
+                    all_configurations = np.zeros((0, target_length), dtype=int)
+                    configuration_is_end = np.zeros((0,), dtype=bool)
+                else:
+                    all_configurations, configuration_is_end = _inner
             except NoPathError:
                 end_configurations = np.zeros((0, target_length), dtype=int)
                 all_configurations = np.zeros((0, target_length), dtype=int)
@@ -247,20 +251,18 @@ def show_graph_search(
 
 # @st.cache_data
 def show_costs(
-    cones_by_type: list[FloatArray | None],
+    cones_by_type: list[FloatArray],
     end_configurations_by_type: list[IntArray | None],
     position: FloatArray,
     direction: FloatArray,
 ) -> list[FloatArray]:
-    final_out = [np.zeros((0, 2)) for _ in ConeTypes]
+    final_out: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_flat = flatten_cones_by_type_array(cones_by_type)
     for cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT):
         end_configurations = end_configurations_by_type[cone_type]
-        if len(end_configurations) == 0:
+        if end_configurations is None or len(end_configurations) == 0:
             st.info(f"No {cone_type.name.lower()} configurations found")
             continue
-
-        assert end_configurations is not None
 
         costs = cost_configurations(
             cones_flat,
@@ -405,7 +407,7 @@ demo you can choose whether to use the color information or not.
         "Use color information", help="Use color information for sorting", value=True
     )
     if not use_color_info:
-        new_cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+        new_cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
         new_cones_by_type[ConeTypes.UNKNOWN] = np.vstack(cones_by_type)
         np.random.default_rng(0).shuffle(new_cones_by_type[ConeTypes.UNKNOWN], axis=0)
         cones_by_type = new_cones_by_type

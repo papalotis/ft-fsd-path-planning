@@ -80,7 +80,7 @@ def cone_arrays_are_similar(
 
     if cones.shape[1] == 2:
         # in this case we have no color information, we only use distance as indicator
-        return distances_all_close
+        return bool(distances_all_close)
 
     if not distances_all_close:
         # distances not close no need to check color
@@ -90,7 +90,7 @@ def cone_arrays_are_similar(
     idx_closest = distances.argmin(axis=1)
 
     color_match = cones[:, 2] == other_cones[idx_closest, 2]
-    return distances_all_close and color_match.all()
+    return bool(distances_all_close and color_match.all())
 
 
 @dataclass
@@ -100,8 +100,8 @@ class ConeSortingCacheEntry:
     """
 
     input_cones: FloatArray  # x, y, color
-    left_starting_cones: FloatArray
-    right_starting_cones: FloatArray
+    left_starting_cones: FloatArray | None
+    right_starting_cones: FloatArray | None
     left_result: tuple[Any, ...]
     right_result: tuple[Any, ...]
 
@@ -283,6 +283,7 @@ class TraceSorter:
             return no_result
 
         assert first_k is not None
+        assert start_idx is not None
 
         starting_cones = cones[first_k]
 
@@ -290,6 +291,7 @@ class TraceSorter:
             cones, starting_cones, threshold=0.1, cone_type=cone_type
         ):
             cr = self.cached_results
+            assert cr is not None
             return cr.left_result if cone_type == ConeTypes.LEFT else cr.right_result
 
         n_neighbors = min(self.max_n_neighbors, len(cones) - 1)

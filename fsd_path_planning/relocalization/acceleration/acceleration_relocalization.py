@@ -153,18 +153,22 @@ class AccelerationRelocalizer(Relocalizer):
 
         angle_to_fix = np.arctan(slope) + vehicle_yaw
 
-        def transform_to_known_frame(position_2d, yaw):
+        def transform_to_known_frame(
+            position_2d: FloatArray, direction_yaw: float
+        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
             return (
-                rotate(position_2d - self._original_vehicle_position, -angle_to_fix),
-                yaw - angle_to_fix,
+                rotate(position_2d - self._original_vehicle_position, -angle_to_fix),  # type: ignore[return-value]
+                direction_yaw - angle_to_fix,  # type: ignore[return-value]
             )
 
-        def transform_to_base_frame(position_2d, yaw):
+        def transform_to_base_frame(
+            position_2d: FloatArray, direction_yaw: float
+        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
             base_position = (
-                rotate(position_2d, angle_to_fix) + self._original_vehicle_position
+                rotate(position_2d, angle_to_fix) + self._original_vehicle_position  # type: ignore[operator]
             )
-            base_yaw = yaw + angle_to_fix
-            return base_position, base_yaw
+            base_yaw = direction_yaw + angle_to_fix
+            return base_position, base_yaw  # type: ignore[return-value]
 
         return transform_to_known_frame, transform_to_base_frame
 
@@ -204,7 +208,7 @@ def create_acceleartion_path() -> FloatArray:
         ]
     )
 
-    return np.array([path_x_final, path_y_final]).T
+    return np.array([path_x_final, path_y_final], dtype=np.float64).T
 
 
 BASE_ACCELERATION_PATH = create_acceleartion_path()

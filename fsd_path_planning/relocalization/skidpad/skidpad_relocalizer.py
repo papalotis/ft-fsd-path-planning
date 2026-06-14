@@ -103,6 +103,8 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
 
     cluster_centers = best_centers
 
+    assert cluster_centers is not None
+
     # sign_y_values_of_centers = np.sign(cluster_centers[:, 1])
     # if set(sign_y_values_of_centers) != {-1, 1}:
     #     raise ValueError("Found center only on one side")
@@ -155,7 +157,9 @@ def calculate_transformation(
     # calculate the rotation
     rotation = np.squeeze(reference_angle - calculated_angle)
 
-    def transform_pose(position_2d, yaw):
+    def transform_pose(
+        position_2d: FloatArray, direction_yaw: float
+    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
         # handle position
         position_translated = position_2d + translation
         # translate to reference right center
@@ -166,11 +170,13 @@ def calculate_transformation(
         position_rotated = position_rotated + right_reference_center
 
         # handle yaw
-        yaw_rotated = yaw + rotation
+        yaw_rotated = direction_yaw + rotation
 
-        return position_rotated, yaw_rotated
+        return position_rotated, yaw_rotated  # type: ignore[return-value]
 
-    def transform_back_to_original(position_2d, yaw):
+    def transform_back_to_original(
+        position_2d: FloatArray, direction_yaw: float
+    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
         # handle position
         position_translated = position_2d - translation
         # translate to skidpad right center
@@ -181,9 +187,9 @@ def calculate_transformation(
         position_rotated = position_rotated + right_calculated_center
 
         # handle yaw
-        yaw_rotated = yaw - rotation
+        yaw_rotated = direction_yaw - rotation
 
-        return position_rotated, yaw_rotated
+        return position_rotated, yaw_rotated  # type: ignore[return-value]
 
     return transform_pose, transform_back_to_original
 
@@ -246,6 +252,8 @@ class SkidpadRelocalizer(Relocalizer):
 
         # calculate the transformation
         try:
+            assert self._original_vehicle_position is not None
+            assert self._original_vehicle_direction is not None
             (
                 transform_to_skidpad_frame,
                 transform_to_original_frame,

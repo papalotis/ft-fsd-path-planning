@@ -152,7 +152,7 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large(
         vec_angle_between(from_cone_to_other_cone, -search_direction) < search_angle / 2
     )
 
-    return good_angle, bad_angle
+    return bool(good_angle), bool(bad_angle)
 
 
 @my_njit
@@ -164,7 +164,7 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in
     search_directions_cache: SEARCH_DIRECTIONS_CACHE_TYPE,
     angle_cache: ANGLE_MASK_CACHE_TYPE,
     search_angle: float,
-) -> bool:
+) -> tuple[bool, bool]:
     key = (directions_key, cone_idx, other_cone_idx)
     if key not in angle_cache:
         angle_cache[key] = (

@@ -1,18 +1,19 @@
 from copy import deepcopy
 
+import matplotlib.figure
+import matplotlib.patches
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
-from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
-from fsd_path_planning.skidpad.skidpad_relocalizer import (
-    PowersetCirceFitResult,
-    circle_fit_powerset,
-)
 
 from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
+)
+from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
+from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
+    circle_fit_powerset,
 )
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -20,7 +21,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 
 def show_powerset(
     cones_by_type: list[FloatArray], position: FloatArray, direction: FloatArray
-) -> PowersetCirceFitResult:
+) -> None:
     all_cones = np.row_stack(cones_by_type)
     r = circle_fit_powerset(all_cones)
 
@@ -34,10 +35,12 @@ def show_powerset(
     )
 
     for (cx, cy, cr), _idxs in r:
-        circle = plt.Circle((cx, cy), cr, fill=False)
+        circle = matplotlib.patches.Circle((cx, cy), cr, fill=False)
         ax.add_artist(circle)
 
-    st.pyplot(ax.figure)
+    fig = ax.figure
+    assert isinstance(fig, matplotlib.figure.Figure)
+    st.pyplot(fig)
 
 
 def show_path() -> None:
