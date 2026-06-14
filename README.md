@@ -38,6 +38,7 @@ This release focuses on code quality, modularity, and developer experience. No a
 
 - All magic numbers extracted into dataclass-based configs: `SortingConfig`, `MatchingConfig`, `PathConfig`.
 - Configs are optional constructor parameters with sensible defaults.
+- `PathConfig` uses the clearer names `path_length` and `number_of_samples`; the old `mpc_path_length` and `mpc_prediction_horizon` names still work as compatibility aliases.
 
 #### Tooling
 
@@ -174,7 +175,7 @@ from fsd_path_planning import PathPlanner, MissionTypes, ConeTypes
 path_planner = PathPlanner(MissionTypes.trackdrive)
 # you have to load/get the data, this is just an example
 global_cones, car_position, car_direction = load_data() 
-# global_cones is a sequence that contains 5 numpy arrays with shape (N, 2),
+# global_cones must contain exactly 5 numeric numpy arrays with shape (N, 2),
 # where N is the number of cones of that type
 
 # ConeTypes is an enum that contains the following values:
@@ -184,9 +185,11 @@ global_cones, car_position, car_direction = load_data()
 # ConeTypes.START_FINISH_AREA/ConeTypes.ORANGE_SMALL which maps to index 3
 # ConeTypes.START_FINISH_LINE/ConeTypes.ORANGE_BIG which maps to index 4
 
-# car_position is a 2D numpy array with shape (2,)
-# car_direction is a 2D numpy array with shape (2,) representing the car's direction vector
-# car_direction can also be a float representing the car's direction in radians
+# car_position must be a finite 2D numpy array with shape (2,)
+# car_direction must be either:
+# - a finite 2D numpy array with shape (2,) representing the car's direction vector
+# - a finite float representing the car's direction in radians
+# A zero direction vector is rejected.
 
 path = path_planner.calculate_path_in_global_frame(global_cones, car_position, car_direction)
 
@@ -194,6 +197,18 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 # the columns represent the spline parameter (distance along path), x, y and path curvature
 
 ```
+
+`calculate_path_in_global_frame()` validates its public inputs before running the
+pipeline. Invalid inputs raise `TypeError` or `ValueError` with a stable error
+message instead of failing later in the geometry code.
+
+The most important input rules are:
+
+- `global_cones` must contain exactly 5 arrays ordered by `ConeTypes`.
+- Every cone array must be numeric, finite, and shaped `(N, 2)`.
+- `car_position` must be numeric, finite, and shaped `(2,)`.
+- `car_direction` must be either a finite scalar angle or a finite non-zero vector
+  shaped `(2,)`.
 
 Take a look at this notebook for a more detailed example: [simple_application.ipynb](fsd_path_planning/demo/simple_application.ipynb)
 
