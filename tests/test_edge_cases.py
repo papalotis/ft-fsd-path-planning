@@ -137,3 +137,122 @@ class TestEdgeCases:
         assert final_path.shape[1] == 4
         assert sl.shape[1] == 2 or len(sl) == 0
         assert sr.shape[1] == 2 or len(sr) == 0
+
+
+class TestInputValidation:
+    @pytest.fixture()
+    def planner(self):
+        return PathPlanner(MissionTypes.trackdrive)
+
+    def test_invalid_cone_shape_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones[ConeTypes.LEFT] = np.array([[1.0, 2.0, 3.0]])
+
+        with pytest.raises(ValueError, match=r"cones\[2\] must have shape \(N, 2\)"):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_nan_vehicle_position_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(
+            ValueError, match="vehicle_position must contain only finite values"
+        ):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([np.nan, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_invalid_direction_shape_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(
+            ValueError, match="direction must be a float or a 2 element array"
+        ):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0, 0.0]),
+            )
+
+    def test_non_numeric_cones_fail_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones[ConeTypes.LEFT] = np.array([["left", "cone"]], dtype=object)
+
+        with pytest.raises(TypeError, match=r"cones\[2\] must contain numeric values"):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_zero_direction_vector_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(ValueError, match="direction vector must not be zero"):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([0.0, 0.0]),
+            )
+
+    def test_wrong_number_of_cone_arrays_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in range(len(ConeTypes) - 1)]
+
+        with pytest.raises(ValueError, match=r"cones must contain 5 arrays"):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_inf_in_cones_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+        cones[ConeTypes.LEFT] = np.array([[1.0, np.inf]])
+
+        with pytest.raises(
+            ValueError, match=r"cones\[2\] must contain only finite values"
+        ):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_non_numeric_vehicle_position_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(
+            TypeError, match="vehicle_position must contain numeric values"
+        ):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array(["x", "y"], dtype=object),
+                vehicle_direction=np.array([1.0, 0.0]),
+            )
+
+    def test_non_numeric_direction_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(TypeError, match="direction must contain numeric values"):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.array(["forward", "left"], dtype=object),
+            )
+
+    def test_nan_direction_angle_fails_early(self, planner):
+        cones = [np.zeros((0, 2)) for _ in ConeTypes]
+
+        with pytest.raises(
+            ValueError, match="direction must contain only finite values"
+        ):
+            planner.calculate_path_in_global_frame(
+                cones,
+                vehicle_position=np.array([0.0, 0.0]),
+                vehicle_direction=np.nan,
+            )
