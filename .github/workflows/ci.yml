@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # ── Fast checks (single Python version) ──────────────────────────────────
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run ruff
+        run: nox -s lint
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-typecheck-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: uv-typecheck-${{ runner.os }}-
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run pyright
+        run: nox -s typecheck
+
+  # ── Test matrix ──────────────────────────────────────────────────────────
+
+  tests:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      # Disable Numba JIT so the suite runs fast and is measurable by coverage.
+      # JIT-specific behaviour is validated separately with the `jit` marker.
+      NUMBA_DISABLE_JIT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-tests-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: uv-tests-${{ runner.os }}-${{ matrix.python-version }}-
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run tests (excluding slow regression and JIT tests)
+        run: nox -s "tests-${{ matrix.python-version }}" -- -m "not slow and not jit"
+
+  # ── Slow regression tests (on push to main/improv only) ──────────────────
+
+  regression:
+    name: Regression (Python 3.12)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/improv'
+    env:
+      NUMBA_DISABLE_JIT: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: uv-regression-${{ runner.os }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: uv-regression-${{ runner.os }}-
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run slow regression tests
+        run: nox -s "tests-3.12" -- -m "slow"
