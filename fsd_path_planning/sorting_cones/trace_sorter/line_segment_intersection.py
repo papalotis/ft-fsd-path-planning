@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: A module for finding line segment intersections. It can be used as part
 of the cost function of the sorting algorithm.
 
 Project: fsd_path_planning
 """
-
-from typing import Tuple
 
 import numpy as np
 
@@ -63,10 +60,14 @@ def _handle_line_segment_intersection_parallel_case(
 
     if segment_a_start[axis_to_use] < segment_b_start[axis_to_use]:
         left_segment_end_scalar = segment_a_end[axis_to_use]
-        right_segment_start_scalar = min(segment_b_start[axis_to_use], segment_b_end[axis_to_use])
+        right_segment_start_scalar = min(
+            segment_b_start[axis_to_use], segment_b_end[axis_to_use]
+        )
     else:
         left_segment_end_scalar = segment_b_end[axis_to_use]
-        right_segment_start_scalar = min(segment_a_start[axis_to_use], segment_a_end[axis_to_use])
+        right_segment_start_scalar = min(
+            segment_a_start[axis_to_use], segment_a_end[axis_to_use]
+        )
 
     return_value: bool = left_segment_end_scalar >= right_segment_start_scalar
     return return_value
@@ -76,7 +77,7 @@ _DEFAULT_EPSILON = 1e-6
 
 
 @my_njit
-def calc_intersections(homogeneous: FloatArray) -> Tuple[float, float, float]:
+def calc_intersections(homogeneous: FloatArray) -> tuple[float, float, float]:
     line_a = np.cross(homogeneous[0], homogeneous[1])  # get first line
     line_b = np.cross(homogeneous[2], homogeneous[3])  # get second line
     inter_x, inter_y, inter_z = np.cross(line_a, line_b)  # point of intersection
@@ -87,7 +88,7 @@ def calc_intersections(homogeneous: FloatArray) -> Tuple[float, float, float]:
 @my_njit
 def intersection_in_bounding_box(
     inter_x: float, inter_y: float, inter_z: float, homogeneous: FloatArray
-) -> Tuple[float, float, float, float, float, float, float, float, float, float]:
+) -> tuple[float, float, float, float, float, float, float, float, float, float]:
     # find intersection point
     intersection_x, intersection_y = np.array([inter_x / inter_z, inter_y / inter_z])
 
@@ -142,8 +143,8 @@ def lines_segments_intersect_indicator(
     epsilon: float = _DEFAULT_EPSILON,
 ) -> bool:
     """
-    Given the start- and endpoint of two 2d-line segments indicate if the two line segments
-    intersect.
+    Given the start- and endpoint of two 2d-line segments indicate if the
+    two line segments intersect.
 
     Args:
         segment_a_start: The start point of the first line segment.
@@ -156,7 +157,9 @@ def lines_segments_intersect_indicator(
         A boolean indicating if the two line segments intersect.
     """
     # Adapted from https://stackoverflow.com/a/42727584
-    homogeneous = _make_segments_homogeneous(segment_a_start, segment_a_end, segment_b_start, segment_b_end)
+    homogeneous = _make_segments_homogeneous(
+        segment_a_start, segment_a_end, segment_b_start, segment_b_end
+    )
 
     inter_x, inter_y, inter_z = calc_intersections(homogeneous)
 
@@ -220,10 +223,14 @@ def batch_lines_segments_intersect_indicator(
     Returns:
         A boolean array indicating if the two line segments intersect.
     """
-    assert segments_a_start.shape[-1] == 2
-    assert segments_a_start.shape == segments_a_end.shape
-    assert segments_a_start.shape == segments_b_start.shape
-    assert segments_a_start.shape == segments_b_end.shape
+    if segments_a_start.shape[-1] != 2:
+        raise ValueError("segment inputs must contain 2d points")
+    if segments_a_start.shape != segments_a_end.shape:
+        raise ValueError("segment start and end arrays must have matching shapes")
+    if segments_a_start.shape != segments_b_start.shape:
+        raise ValueError("all segment arrays must have matching shapes")
+    if segments_a_start.shape != segments_b_end.shape:
+        raise ValueError("all segment arrays must have matching shapes")
 
     segment_a_start_flat = segments_a_start.reshape(-1, 2)
     segment_a_end_flat = segments_a_end.reshape(-1, 2)
@@ -272,7 +279,8 @@ def pairwise_segment_intersection(
         A square boolean array of shape (n_segments, n_segments) where the
         intersection is True if the two line segments intersect.
     """
-    assert len(segment_starts) == len(segment_ends)
+    if len(segment_starts) != len(segment_ends):
+        raise ValueError("segment_starts and segment_ends must have the same length")
 
     number_of_segments = len(segment_starts)
 
@@ -282,7 +290,9 @@ def pairwise_segment_intersection(
     # [0,0,0,1,1,1,2,2,2]
     indices_first = np.repeat(indices, number_of_segments)
     # [0,1,2,0,1,2,0,1,2] (tile is not allowed in njit)
-    indices_second: IntArray = indices_first.reshape(number_of_segments, -1).T.copy().reshape(-1)
+    indices_second: IntArray = (
+        indices_first.reshape(number_of_segments, -1).T.copy().reshape(-1)
+    )
 
     # keep lower triangle
     # intersect_with_self just turns the main diagonal on (done later)
@@ -299,20 +309,28 @@ def pairwise_segment_intersection(
     second_starts = segment_starts[indices_second_keep]
     second_ends = segment_ends[indices_second_keep]
 
-    indicator_overlap = batch_lines_segments_intersect_indicator(first_starts, first_ends, second_starts, second_ends)
+    indicator_overlap = batch_lines_segments_intersect_indicator(
+        first_starts, first_ends, second_starts, second_ends
+    )
 
     if intersect_with_self:
         indicator_matrix = np.eye(number_of_segments, dtype=np.bool_)
     else:
-        indicator_matrix = np.zeros((number_of_segments, number_of_segments), dtype=np.bool_)
+        indicator_matrix = np.zeros(
+            (number_of_segments, number_of_segments), dtype=np.bool_
+        )
 
     # cannot used advanced indexing twice with nopython
     # so we have to do it manually
-    for index_first_single, index_second_single, indicator_overlap_single in zip(
+    for index_first_single, index_second_single, indicator_overlap_single in zip(  # noqa: B905 (cannot use strict=False in njit)
         indices_first_keep, indices_second_keep, indicator_overlap
     ):
-        indicator_matrix[index_first_single, index_second_single] = indicator_overlap_single
-        indicator_matrix[index_second_single, index_first_single] = indicator_overlap_single
+        indicator_matrix[index_first_single, index_second_single] = (
+            indicator_overlap_single
+        )
+        indicator_matrix[index_second_single, index_first_single] = (
+            indicator_overlap_single
+        )
 
     return indicator_matrix
 
@@ -335,7 +353,7 @@ def number_of_intersections(intersection_matrix: BoolArray) -> int:
     # we only count the lower triangle, otherwise we double count intersections not
     # on the diagonal because the matrix is symmetric
     lower_triangle_matrix = np.tril(intersection_matrix)  # type: ignore
-    return np.count_nonzero(lower_triangle_matrix)
+    return int(np.count_nonzero(lower_triangle_matrix))
 
 
 @my_njit
@@ -372,8 +390,8 @@ def trace_intersections(
     )
     if not intersect_with_consecutive_segments:
         # set the diagonals next to the main diagonal (see np.eye with k=1,-1)
-        # to be false
-        for i in range(len(segment_starts)):
+        # to be false; stop one short so next_diagonal_index stays in bounds
+        for i in range(len(segment_starts) - 1):
             next_diagonal_index = i + 1
             intersections[i, next_diagonal_index] = False
             intersections[next_diagonal_index, i] = False
@@ -413,7 +431,9 @@ def number_of_intersections_in_trace(
 
 
 @my_njit
-def number_of_intersections_in_configurations(points: FloatArray, configurations: IntArray) -> IntArray:
+def number_of_intersections_in_configurations(
+    points: FloatArray, configurations: IntArray
+) -> IntArray:
     """
     Calculate the number of intersections for a given set of configurations of 2d
     points.
@@ -435,7 +455,9 @@ def number_of_intersections_in_configurations(points: FloatArray, configurations
         configuration = configurations[i]
         configuration_filtered = configuration[configuration != -1]
         points_configuration = points[configuration_filtered]
-        number_of_intersections_for_configuration = number_of_intersections_in_trace(points_configuration)
+        number_of_intersections_for_configuration = number_of_intersections_in_trace(
+            points_configuration
+        )
         result_array[i] = number_of_intersections_for_configuration
 
     return result_array

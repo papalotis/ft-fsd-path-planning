@@ -16,6 +16,79 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ## Updates 
 
+### April 2026 (v0.5.0) :star: 100 stars!
+
+This release focuses on code quality, modularity, and developer experience. No algorithmic changes were made, all existing behavior is preserved. The changes have been made with the goal of making the codebase easier to understand, maintain, and extend, as well as improving the experience for contributors.
+
+#### API improvements
+
+- Pipeline modules (`ConeSorting`, `ConeMatching`, `CalculatePath`) now accept input via `run_*()` methods with dedicated input dataclasses, replacing the old `set_new_input()` + `calculate()` pattern. The old pattern still works but emits a `DeprecationWarning`.
+- Pipeline modules return typed result dataclasses (`SortingResult`, `MatchingResult`, `PathResult`) that also support tuple unpacking for backward compatibility.
+- Consistent field naming across all modules: `vehicle_position`, `vehicle_direction`, `cones_by_type`.
+- `PathPlanner` now supports dependency injection — pass custom `cone_sorting`, `cone_matching`, or `pathing` instances to the constructor.
+
+#### Modularity
+
+- `CalculatePath` internals extracted into `path_basis_selector` (side selection, centerline) and `path_extender` (path connection, extension, trimming).
+- Long function `neighbor_bool_mask_can_be_added_to_attempt()` broken into focused helpers: `_check_angle_continuity()`, `_check_forward_direction()`, `_check_no_car_collision()`.
+- Module-level global caches replaced with instance-scoped `AdjacencyMatrixCache` and `NearbyConeSearcher`, owned by `TraceSorter`.
+- Relocalization and standard sorting+matching flows extracted into separate methods in `PathPlanner`.
+
+#### Configuration
+
+- All magic numbers extracted into dataclass-based configs: `SortingConfig`, `MatchingConfig`, `PathConfig`.
+- Configs are optional constructor parameters with sensible defaults.
+- `PathConfig` uses the clearer names `path_length` and `number_of_samples`; the old `mpc_path_length` and `mpc_prediction_horizon` names still work as compatibility aliases.
+
+#### Tooling
+
+- Migrated to [uv](https://docs.astral.sh/uv/) for dependency management and builds (hatchling backend).
+- Replaced black + pylint + mypy with [ruff](https://docs.astral.sh/ruff/) (linting & formatting) and [pyright](https://github.com/microsoft/pyright) (type checking).
+- Added [nox](https://nox.thea.codes/) for automated multi-version testing (Python 3.10–3.13).
+- Added GitHub Actions CI running lint, type check, and tests on every push/PR.
+- Added `py.typed` marker (PEP 561) for downstream type checking.
+- Added explicit `__all__` to the public API.
+
+#### Migration guide for deprecated patterns
+
+Two patterns from earlier releases still work but emit a `DeprecationWarning`.
+Update them at your convenience — they will be removed in a future release.
+
+**1. Keyword-argument constructors**
+
+Old (deprecated):
+
+```python
+sorter  = ConeSorting(max_n_neighbors=5, max_dist=6.5)
+matcher = ConeMatching(min_track_width=3.0)
+pather  = CalculatePath(smoothing=0.2, mpc_path_length=20.0)
+```
+
+New (use a config dataclass):
+
+```python
+from fsd_path_planning.config_dataclasses import SortingConfig, MatchingConfig, PathConfig
+
+sorter  = ConeSorting(config=SortingConfig(max_n_neighbors=5, max_dist=6.5))
+matcher = ConeMatching(config=MatchingConfig(min_track_width=3.0))
+pather  = CalculatePath(config=PathConfig(smoothing=0.2, path_length=20.0))
+```
+
+**2. `set_new_input()` + `calculate()` pattern**
+
+Old (deprecated):
+
+```python
+sorter.set_new_input(sorting_input)
+result = sorter.run_cone_sorting()
+```
+
+New (pass input directly):
+
+```python
+result = sorter.run_cone_sorting(sorting_input)
+```
+
 ### December 2023, July 2024 (v0.4)
 
 #### (v0.4.3)
@@ -60,7 +133,7 @@ The intention of this repository is to provide teams entering the driverless cat
 
 The algorithm differs from other common path planning approaches in that it can very robustly handle one side of the track not being visible, for example the inside of a corner. This is a common problem in the driverless category, especially for teams with less sophisticated detection pipelines.
 
-Parts that are specific to the FaSTTUBe pipeline have been removed. The algorithm is now a standalone library that can be used in any pipeline. It is a Python package that can be installed using pip.
+Parts that are specific to the FaSTTUBe pipeline have been removed. The algorithm is now a standalone library that can be used in any pipeline. It is a Python package that can be installed using [uv](https://docs.astral.sh/uv/).
 
 The algorithm requires the following inputs:
 
@@ -84,16 +157,16 @@ The algorithm has demonstrated its success as part of the FaSTTUBe pipeline, con
 
 ## Installation
 
-The package can be installed using pip:
+The package can be installed using [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install "fsd-path-planning[demo] @ git+https://git@github.com/papalotis/ft-fsd-path-planning.git"
+uv add "fsd-path-planning[demo] @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
 ```
 
 This will also install the dependencies needed to run the demo (cli, matplotlib, streamlit, etc.). If you don't want to install the demo dependencies, you can install the package without the `demo` extra:
 
 ```bash
-pip install "fsd-path-planning @ git+https://git@github.com/papalotis/ft-fsd-path-planning.git"
+uv add "fsd-path-planning @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
 ```
 
 You can also clone the repository and install the package locally:
@@ -101,10 +174,27 @@ You can also clone the repository and install the package locally:
 ```bash
 git clone https://github.com/papalotis/ft-fsd-path-planning.git
 cd ft-fsd-path-planning
+uv sync --extra demo
+```
+
+You can again skip the `--extra demo` if you don't want to install the demo dependencies.
+
+<details>
+<summary>Installation with pip</summary>
+
+You can also use pip directly:
+
+```bash
+pip install "fsd-path-planning[demo] @ git+https://github.com/papalotis/ft-fsd-path-planning.git"
+```
+
+Or for a local install:
+
+```bash
 pip install -e .[demo]
 ```
 
-You can again skip the `[demo]` extra if you don't want to install the demo dependencies.
+</details>
 
 ## Performance
 
@@ -115,7 +205,7 @@ The algorithm (with default parameters) is fast enough to run in real-time on a 
 Run the following command to run the demo on your machine:
 
 ```bash
-python -m fsd_path_planning.demo
+uv run python -m fsd_path_planning.demo
 ```
 
 ## Basic usage
@@ -126,7 +216,7 @@ from fsd_path_planning import PathPlanner, MissionTypes, ConeTypes
 path_planner = PathPlanner(MissionTypes.trackdrive)
 # you have to load/get the data, this is just an example
 global_cones, car_position, car_direction = load_data() 
-# global_cones is a sequence that contains 5 numpy arrays with shape (N, 2),
+# global_cones must contain exactly 5 numeric numpy arrays with shape (N, 2),
 # where N is the number of cones of that type
 
 # ConeTypes is an enum that contains the following values:
@@ -136,9 +226,11 @@ global_cones, car_position, car_direction = load_data()
 # ConeTypes.START_FINISH_AREA/ConeTypes.ORANGE_SMALL which maps to index 3
 # ConeTypes.START_FINISH_LINE/ConeTypes.ORANGE_BIG which maps to index 4
 
-# car_position is a 2D numpy array with shape (2,)
-# car_direction is a 2D numpy array with shape (2,) representing the car's direction vector
-# car_direction can also be a float representing the car's direction in radians
+# car_position must be a finite 2D numpy array with shape (2,)
+# car_direction must be either:
+# - a finite 2D numpy array with shape (2,) representing the car's direction vector
+# - a finite float representing the car's direction in radians
+# A zero direction vector is rejected.
 
 path = path_planner.calculate_path_in_global_frame(global_cones, car_position, car_direction)
 
@@ -147,11 +239,54 @@ path = path_planner.calculate_path_in_global_frame(global_cones, car_position, c
 
 ```
 
+`calculate_path_in_global_frame()` validates its public inputs before running the
+pipeline. Invalid inputs raise `TypeError` or `ValueError` with a stable error
+message instead of failing later in the geometry code.
+
+The most important input rules are:
+
+- `global_cones` must contain exactly 5 arrays ordered by `ConeTypes`.
+- Every cone array must be numeric, finite, and shaped `(N, 2)`.
+- `car_position` must be numeric, finite, and shaped `(2,)`.
+- `car_direction` must be either a finite scalar angle or a finite non-zero vector
+  shaped `(2,)`.
+
 Take a look at this notebook for a more detailed example: [simple_application.ipynb](fsd_path_planning/demo/simple_application.ipynb)
 
 > [!TIP]
 > There is no resetting functionality in the classes. If you want to reset the path planner, you can simply create a new instance of the class.
 It is recommended to create a new instance of the relevant classes when the vehicle enters `AS-READY` state.
+
+## Development
+
+### Setup
+
+```bash
+git clone https://github.com/papalotis/ft-fsd-path-planning.git
+cd ft-fsd-path-planning
+uv sync --extra dev --extra test
+```
+
+### Running tests
+
+```bash
+uv run pytest
+```
+
+### Multi-version testing
+
+The project uses [nox](https://nox.thea.codes/) to test against multiple Python versions:
+
+```bash
+uv run nox -s tests          # test on Python 3.10, 3.11, 3.12, 3.13
+uv run nox -s tests-3.12     # test on a specific version
+uv run nox -s lint            # run ruff linter and formatter check
+uv run nox -s typecheck       # run pyright type checking
+```
+
+### Type checking
+
+The package ships a `py.typed` marker (PEP 561), so type checkers like pyright will pick up the inline type annotations automatically when using the package as a dependency.
 
 ## Previous versions
 

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import numpy as np
 
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
 from fsd_path_planning.utils.utils import Timer
+
+RUNTIME_SUMMARY_WARMUP_FRAMES = 10
+OUTLIER_IQR_SCALE = 1.5
 
 try:
     import matplotlib.animation
@@ -21,11 +23,11 @@ except ImportError:
     raise
 
 try:
-    from tqdm import tqdm
+    from tqdm import tqdm  # type: ignore[assignment]
 except ImportError:
     print("You can get a progress bar by installing tqdm: pip install tqdm")
 
-    def tqdm(x, total=None):
+    def tqdm(x, total=None):  # type: ignore[misc]
         return x
 
 
@@ -40,11 +42,15 @@ def select_mission_by_filename(filename: str) -> MissionTypes:
     is_accel = "accel" in filename
 
     if is_skidpad:
-        print('The filename contains "skidpad", so we assume that the mission is skidpad.')
+        print(
+            'The filename contains "skidpad", so we assume that the mission is skidpad.'
+        )
         return MissionTypes.skidpad
 
     if is_accel:
-        print('The filename contains "accel", so we assume that the mission is acceleration.')
+        print(
+            'The filename contains "accel", so we assume that the mission is acceleration.'  # noqa: E501
+        )
 
         return MissionTypes.acceleration
 
@@ -58,15 +64,71 @@ def get_filename(data_path: Path | None) -> Path:
     return data_path
 
 
+def print_runtime_summary(intervals: list[float]) -> None:
+    if not intervals:
+        print("No runtime data collected.")
+        return
+
+    runtime_ms = np.asarray(intervals, dtype=float) * 1_000
+    frame_indices = np.arange(runtime_ms.size)
+
+    def summarize(values: np.ndarray, indices: np.ndarray, label: str) -> None:
+        q1, q3 = np.percentile(values, [25, 75])
+        iqr = q3 - q1
+        outlier_threshold = q3 + OUTLIER_IQR_SCALE * iqr
+        outlier_mask = values > outlier_threshold
+        outlier_indices = indices[outlier_mask]
+        outlier_values = values[outlier_mask]
+
+        print(f"{label} runtime summary ({values.size} frames):")
+        print(
+            "  avg="
+            f"{values.mean():.2f} ms, median={np.median(values):.2f} ms, "
+            f"std={values.std():.2f} ms"
+        )
+        print(
+            "  min="
+            f"{values.min():.2f} ms, p95={np.percentile(values, 95):.2f} ms, "
+            f"max={values.max():.2f} ms, total={values.sum():.2f} ms"
+        )
+
+        if outlier_values.size == 0:
+            print(f"  outliers: none above {outlier_threshold:.2f} ms")
+            return
+
+        sorted_outlier_order = np.argsort(outlier_values)[::-1]
+        top_outliers = [
+            f"frame {int(outlier_indices[idx])}={outlier_values[idx]:.2f} ms"
+            for idx in sorted_outlier_order[:5]
+        ]
+        print(f"  outliers: {outlier_values.size} above {outlier_threshold:.2f} ms")
+        print(f"  slowest outliers: {', '.join(top_outliers)}")
+
+    print("\nRuntime overview")
+    summarize(runtime_ms, frame_indices, "All frames")
+
+    if runtime_ms.size > RUNTIME_SUMMARY_WARMUP_FRAMES:
+        print(
+            f"Warmup note: excluding the first {RUNTIME_SUMMARY_WARMUP_FRAMES} "
+            "frames for steady-state stats."
+        )
+        summarize(
+            runtime_ms[RUNTIME_SUMMARY_WARMUP_FRAMES:],
+            frame_indices[RUNTIME_SUMMARY_WARMUP_FRAMES:],
+            "Steady-state",
+        )
+
+
 @app.command()
 def main(
-    data_path: Optional[Path] = typer.Option(None, "--data-path", "-i"),
+    data_path: Path | None = typer.Option(None, "--data-path", "-i"),  # noqa: B008
     data_rate: float = 10,
     remove_color_info: bool = False,
     show_runtime_histogram: bool = False,
-    output_path: Optional[Path] = typer.Option(None, "--output-path", "-o"),
+    output_path: Path | None = typer.Option(None, "--output-path", "-o"),  # noqa: B008
     experimental_performance_improvements: bool = False,
     dark_mode: bool = False,
+    disable_visualization: bool = False,
 ) -> None:
     data_path = get_filename(data_path)
 
@@ -74,7 +136,9 @@ def main(
 
     planner = PathPlanner(mission, experimental_performance_improvements)
 
-    positions, directions, cone_observations = load_data_json(data_path, remove_color_info=remove_color_info)
+    positions, directions, cone_observations = load_data_json(
+        data_path, remove_color_info=remove_color_info
+    )
 
     if not numba_cache_files_exist():
         print(
@@ -88,7 +152,9 @@ planner, you should run the demo one more time after it is finished.
     # run planner once to "warm up" the JIT compiler / load all cached jit functions
     try:
         extra_planner = PathPlanner(mission)
-        extra_planner.calculate_path_in_global_frame(cone_observations[0], positions[0], directions[0])
+        extra_planner.calculate_path_in_global_frame(
+            cone_observations[0], positions[0], directions[0]
+        )
     except Exception:
         print("Error during warmup")
         raise
@@ -101,9 +167,9 @@ planner, you should run the demo one more time after it is finished.
     # tqdm = lambda x, desc=None, total=None: x
 
     for i, (position, direction, cones) in tqdm(
-        enumerate(zip(positions, directions, cone_observations)),
+        enumerate(zip(positions, directions, cone_observations, strict=False)),
         total=len(positions),
-        desc="Calculating paths",
+        desc="Calculating paths",  # type: ignore[call-arg]
     ):
         prev_relocalization_info = relocalization_info
         relocalization_info = planner.relocalization_info
@@ -129,6 +195,11 @@ planner, you should run the demo one more time after it is finished.
 
         if timer.intervals[-1] > 0.1:
             print(f"Frame {i} took {timer.intervals[-1]:.4f} seconds")
+
+    print_runtime_summary(timer.intervals)
+
+    if disable_visualization:
+        return
 
     if show_runtime_histogram:
         # skip the first few frames, because they include "warmup time"
@@ -172,13 +243,19 @@ planner, you should run the demo one more time after it is finished.
     # plot animation
     frames = []
 
-    for i in tqdm(range(len(results)), desc="Generating animation"):
+    for i in tqdm(range(len(results)), desc="Generating animation"):  # type: ignore[call-arg]
         co = cone_observations[i]
 
         # Use cone colors based on the mode
-        (yellow_cones,) = plt.plot(*co[ConeTypes.YELLOW].T, cone_colors["yellow"])  # Yellow cones
-        (blue_cones,) = plt.plot(*co[ConeTypes.BLUE].T, cone_colors["blue"])  # Blue cones
-        (unknown_cones,) = plt.plot(*co[ConeTypes.UNKNOWN].T, cone_colors["unknown"])  # Unknown cones
+        (yellow_cones,) = plt.plot(
+            *co[ConeTypes.YELLOW].T, cone_colors["yellow"]
+        )  # Yellow cones
+        (blue_cones,) = plt.plot(
+            *co[ConeTypes.BLUE].T, cone_colors["blue"]
+        )  # Blue cones
+        (unknown_cones,) = plt.plot(
+            *co[ConeTypes.UNKNOWN].T, cone_colors["unknown"]
+        )  # Unknown cones
         (orange_small_cones,) = plt.plot(
             *co[ConeTypes.ORANGE_SMALL].T, "o", c=cone_colors["orange_small"]
         )  # Small orange cones
@@ -190,12 +267,16 @@ planner, you should run the demo one more time after it is finished.
         )
 
         # Sorted cones and path
-        (yellow_cones_sorted,) = plt.plot(*results[i][2].T, cone_colors["yellow_sorted"])
+        (yellow_cones_sorted,) = plt.plot(
+            *results[i][2].T, cone_colors["yellow_sorted"]
+        )
         (blue_cones_sorted,) = plt.plot(*results[i][1].T, cone_colors["blue_sorted"])
         (path,) = plt.plot(*results[i][0][:, 1:3].T, cone_colors["path"])  # Path color
 
         # Position and direction
-        (position,) = plt.plot([positions[i][0]], [positions[i][1]], cone_colors["position"])  # Position marker
+        (position,) = plt.plot(
+            [positions[i][0]], [positions[i][1]], cone_colors["position"]
+        )  # Position marker
         (direction,) = plt.plot(
             *np.array([positions[i], positions[i] + directions[i]]).T,
             cone_colors["direction"],  # Direction line
@@ -237,7 +318,7 @@ planner, you should run the demo one more time after it is finished.
     if output_path is not None:
         absolute_path_str = str(output_path.absolute())
         typer.echo(f"Saving animation to {absolute_path_str}")
-        anim.save(absolute_path_str, fps=data_rate)
+        anim.save(absolute_path_str, fps=int(data_rate))
 
     plt.show()
 
@@ -255,19 +336,23 @@ def numba_cache_files_exist() -> bool:
 def load_data_json(
     data_path: Path,
     remove_color_info: bool = False,
-) -> Tuple[np.ndarray, np.ndarray, List[List[np.ndarray]]]:
+) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:
     # extract data
     data = json.loads(data_path.read_text())[:]
 
     positions = np.array([d["car_position"] for d in data])
     directions = np.array([d["car_direction"] for d in data])
-    cone_observations = [[np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data]
+    cone_observations = [
+        [np.array(c).reshape(-1, 2) for c in d["slam_cones"]] for d in data
+    ]
 
     if remove_color_info:
         cones_observations_all_unknown = []
         for cones in cone_observations:
-            new_observation = [np.zeros((0, 2)) for _ in ConeTypes]
-            new_observation[ConeTypes.UNKNOWN] = np.row_stack([c.reshape(-1, 2) for c in cones])
+            new_observation: list[np.ndarray] = [np.zeros((0, 2)) for _ in ConeTypes]
+            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
+                [c.reshape(-1, 2) for c in cones]
+            )
             cones_observations_all_unknown.append(new_observation)
 
         cone_observations = cones_observations_all_unknown.copy()

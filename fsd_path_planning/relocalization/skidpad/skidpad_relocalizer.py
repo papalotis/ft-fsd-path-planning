@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Place the car in the known skidpad map and relocalize it.
 """
@@ -7,7 +6,6 @@ Description: Place the car in the known skidpad map and relocalize it.
 from __future__ import annotations
 
 from itertools import combinations
-from typing import List, Tuple
 
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -25,12 +23,12 @@ from fsd_path_planning.utils.math_utils import (
     rotate,
 )
 
-PowersetCirceFitResult = List[Tuple[FloatArray, IntArray]]
+PowersetCirceFitResult = list[tuple[FloatArray, IntArray]]
 
 
 def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     out = []
-    idxs = range(len(points))
+    all_indices = range(len(points))
 
     max_powerset_size = 5
     max_actual_powerset_size = min(max_powerset_size, len(points))
@@ -38,13 +36,15 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     rng = np.random.RandomState(42)
 
     for i in range(3, max_actual_powerset_size + 1):
-        for idxs in combinations(idxs, i):
+        for idxs in combinations(all_indices, i):
             set_ = np.array(idxs)
             # get the points in the set
             points_of_set = points[set_]
 
             # get the mean distance to the closest point
-            distance = calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
+            distance = (
+                calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
+            )
             min_distances = distance.min(axis=0)
             mean_distance = min_distances.mean()
 
@@ -54,9 +54,15 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
 
             res = circle_fit(points_of_set)
 
-            residual = np.abs(np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]).mean()
+            residual = np.abs(
+                np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]
+            ).mean()
 
-            if abs(res[2] - 7.625) < 1.0 and abs(mean_distance - 2.4) < 1.5 and residual < 0.4:
+            if (
+                abs(res[2] - 7.625) < 1.0
+                and abs(mean_distance - 2.4) < 1.5
+                and residual < 0.4
+            ):
                 # print(range_smallest_distance, min_distances, mean_distance, distance)
                 # print(second_smallest_distance)
                 out.append((res, set_))
@@ -77,7 +83,10 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
 
     for label_1, label_2 in combinations(unique_labels, 2):
         cluster_centers = np.array(
-            [np.median(potential_centers[labels == label], axis=0) for label in [label_1, label_2]]
+            [
+                np.median(potential_centers[labels == label], axis=0)
+                for label in [label_1, label_2]
+            ]
         )
 
         # distance between the two centers
@@ -87,9 +96,14 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
             best_centers = cluster_centers
 
     if best_distance > 0.5:
-        raise ValueError("Could not find two clusters that have the same distance to the center of the skidpad")
+        raise ValueError(
+            "Could not find two clusters that have the same distance"
+            " to the center of the skidpad"
+        )
 
     cluster_centers = best_centers
+
+    assert cluster_centers is not None
 
     # sign_y_values_of_centers = np.sign(cluster_centers[:, 1])
     # if set(sign_y_values_of_centers) != {-1, 1}:
@@ -103,7 +117,7 @@ def calculate_transformation(
     cluster_centers: FloatArray,
     original_vehicle_position: FloatArray,
     original_vehicle_direction: FloatArray,
-) -> Tuple[RelocalizationCallable, RelocalizationCallable]:
+) -> tuple[RelocalizationCallable, RelocalizationCallable]:
     # Your code here
     """
     Given two reference points and two new points calculate
@@ -111,7 +125,9 @@ def calculate_transformation(
     # convert centers to vehicle frame
     original_vehicle_yaw = angle_from_2d_vector(original_vehicle_direction)
 
-    centers_in_vehicle_frame = rotate(cluster_centers - original_vehicle_position, -original_vehicle_yaw)
+    centers_in_vehicle_frame = rotate(
+        cluster_centers - original_vehicle_position, -original_vehicle_yaw
+    )
 
     mask_is_right = centers_in_vehicle_frame[:, 1] < 0.0
 
@@ -121,22 +137,29 @@ def calculate_transformation(
     right_reference_center = reference_centers[0]
     left_reference_center = reference_centers[1]
 
-    # translate the calculated centers so that the right center aligns with the right reference center
+    # translate the calculated centers so that the right center aligns with
+    # the right reference center
     translation = np.squeeze(right_reference_center - right_calculated_center)
 
     # calculate the angle between the two reference points
-    from_right_reference_to_left_reference = left_reference_center - right_reference_center
+    from_right_reference_to_left_reference = (
+        left_reference_center - right_reference_center
+    )
     reference_angle = angle_from_2d_vector(from_right_reference_to_left_reference)
 
     # calculate the angle between the two calculated points
-    from_right_calculated_to_left_calculated = left_calculated_center - right_calculated_center
+    from_right_calculated_to_left_calculated = (
+        left_calculated_center - right_calculated_center
+    )
 
     calculated_angle = angle_from_2d_vector(from_right_calculated_to_left_calculated)
 
     # calculate the rotation
     rotation = np.squeeze(reference_angle - calculated_angle)
 
-    def transform_pose(position_2d, yaw):
+    def transform_pose(
+        position_2d: FloatArray, direction_yaw: float
+    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
         # handle position
         position_translated = position_2d + translation
         # translate to reference right center
@@ -147,11 +170,13 @@ def calculate_transformation(
         position_rotated = position_rotated + right_reference_center
 
         # handle yaw
-        yaw_rotated = yaw + rotation
+        yaw_rotated = direction_yaw + rotation
 
-        return position_rotated, yaw_rotated
+        return position_rotated, yaw_rotated  # type: ignore[return-value]
 
-    def transform_back_to_original(position_2d, yaw):
+    def transform_back_to_original(
+        position_2d: FloatArray, direction_yaw: float
+    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
         # handle position
         position_translated = position_2d - translation
         # translate to skidpad right center
@@ -162,9 +187,9 @@ def calculate_transformation(
         position_rotated = position_rotated + right_calculated_center
 
         # handle yaw
-        yaw_rotated = yaw - rotation
+        yaw_rotated = direction_yaw - rotation
 
-        return position_rotated, yaw_rotated
+        return position_rotated, yaw_rotated  # type: ignore[return-value]
 
     return transform_pose, transform_back_to_original
 
@@ -193,14 +218,16 @@ class SkidpadRelocalizer(Relocalizer):
     def __init__(self):
         super().__init__()
 
-        self.reference_centers = calculate_reference_centers_for_skidpad_path(BASE_SKIDPAD_PATH)
+        self.reference_centers = calculate_reference_centers_for_skidpad_path(
+            BASE_SKIDPAD_PATH
+        )
 
     def do_relocalization_once(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
+    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
         cones_array = np.row_stack(cones)
         cones_array_xy = cones_array[:, :2]
 
@@ -225,6 +252,8 @@ class SkidpadRelocalizer(Relocalizer):
 
         # calculate the transformation
         try:
+            assert self._original_vehicle_position is not None
+            assert self._original_vehicle_direction is not None
             (
                 transform_to_skidpad_frame,
                 transform_to_original_frame,

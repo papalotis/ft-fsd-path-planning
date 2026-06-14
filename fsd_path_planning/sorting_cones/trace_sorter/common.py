@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: This File provides several functions used in several other files in the
 sorting algorithm
@@ -20,7 +19,8 @@ class NoPathError(RuntimeError):
 
 def get_configurations_diff(points: FloatArray, configurations: IntArray) -> FloatArray:
     """
-    Gets the difference from each point to its next for each order defined by configurations
+    Gets the difference from each point to its next for each order defined
+    by configurations
     Args:
         points: The points for which the differences should be calculated
         configurations: (n,m), all the configurations that define the orders
@@ -41,7 +41,8 @@ def breadth_first_order(adjacency_matrix: IntArray, start_idx: int) -> IntArray:
         adjacency_matrix: The adjacency matrix describing the graph
         start_idx: The index of the starting node
     Returns:
-        np.array: An array containing the nodes reachable from the starting node in BFS order
+        np.array: An array containing the nodes reachable from the starting
+        node in BFS order
     """
     visited = np.zeros(adjacency_matrix.shape[0], dtype=np.uint8)
     queue = np.full(adjacency_matrix.shape[0], fill_value=-1)

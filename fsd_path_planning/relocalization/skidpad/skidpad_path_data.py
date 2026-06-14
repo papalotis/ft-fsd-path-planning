@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Hard coded skidpad path.
 Project: FaSTTUBe Chabo Pathing
@@ -5797,18 +5796,3 @@ BASE_SKIDPAD_PATH = np.array(
         [3.99745292e01, -4.51087327e-03],
     ]
 )
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    # with np.printoptions(threshold=np.inf):
-    #     print(repr(BASE_SKIDPAD_PATH[::50]))
-    # plot xy values
-    plt.plot(BASE_SKIDPAD_PATH[:, 0], BASE_SKIDPAD_PATH[:, 1], ".")
-    plt.show()
-
-    # plot skidpad path in 3d where z axis is index
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, projection='3d')
-    # ax.plot(BASE_SKIDPAD_PATH[:, 0], BASE_SKIDPAD_PATH[:, 1], np.arange(len(BASE_SKIDPAD_PATH))/500)
-    # plt.show()

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: A module with common utility python functions
 
@@ -8,7 +7,6 @@ Project: fsd_path_planning
 
 import time
 from types import TracebackType
-from typing import List, Optional, Type
 
 import numpy as np
 from scipy.stats import describe
@@ -26,12 +24,12 @@ class Timer:
 
         Args:
             name (str, optional): The name of the timer. Defaults to "".
-            noprint (bool, optional): If set to True print the time every time the context
-            manager is exited. Defaults to False.
+            noprint (bool, optional): If set to True print the time every time
+            the context manager is exited. Defaults to False.
         """
         self.name = name
         self.print = not noprint
-        self.intervals: List[float] = []
+        self.intervals: list[float] = []
         self.start: float
 
     def reset(self) -> None:
@@ -53,9 +51,9 @@ class Timer:
 
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """
         Measure the exit time and print the difference in time since `__enter__` if
@@ -88,7 +86,7 @@ class Timer:
         Returns:
             float: The average time
         """
-        return_value: float = np.mean(self.intervals)
+        return_value: float = float(np.mean(self.intervals))
         return return_value
 
     def get_std_time(self) -> float:
@@ -98,7 +96,7 @@ class Timer:
         Returns:
             float: The average time
         """
-        return_value: float = np.mean(self.intervals)
+        return_value: float = float(np.mean(self.intervals))
         return return_value
 
     def report_cum_time(self) -> None:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: This File calculates the costs for the different path versions
 Project: fsd_path_planning
@@ -12,6 +11,7 @@ from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
     calc_distance_cost,
 )
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
+    NearbyConeSearcher,
     number_cones_on_each_side_for_each_config,
 )
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
@@ -192,15 +192,28 @@ def calc_cones_on_either_cost(
     points: FloatArray,
     configurations: IntArray,
     cone_type: SortableConeTypes,
+    nearby_searcher: NearbyConeSearcher | None = None,
 ) -> FloatArray:
     with Timer("calc_cones_on_either_cost", noprint=True) as _:
-        n_good, n_bad = number_cones_on_each_side_for_each_config(
-            points,
-            configurations,
-            cone_type,
-            6.0,
-            np.pi / 1.5,
-        )
+        if nearby_searcher is not None:
+            (
+                n_good,
+                n_bad,
+            ) = nearby_searcher.number_of_cones_on_each_side_for_each_config(
+                points,
+                configurations,
+                cone_type,
+                6.0,
+                np.pi / 1.5,
+            )
+        else:
+            n_good, n_bad = number_cones_on_each_side_for_each_config(
+                points,
+                configurations,
+                cone_type,
+                6.0,
+                np.pi / 1.5,
+            )
 
     diff = n_good - n_bad
     m_value = diff.min()
@@ -218,6 +231,7 @@ def cost_configurations(
     vehicle_direction: FloatArray,  # pylint: disable=unused-argument (future proofing)
     *,
     return_individual_costs: bool,
+    nearby_searcher: NearbyConeSearcher | None = None,
 ) -> FloatArray:
     """
     Calculates a cost for each provided configuration
@@ -231,15 +245,10 @@ def cost_configurations(
     """
     points_xy = points[:, :2]
 
-    # print(len(configurations))
     if len(configurations) == 0:
         return np.zeros(0)
-    # if configurations.shape[1] < 3:
-    #     return np.zeros(configurations.shape[0])
 
     timer_no_print = True
-
-    not timer_no_print and print(cone_type)
 
     with Timer("angle_cost", timer_no_print):
         angle_cost = calc_angle_cost_for_configuration(
@@ -268,7 +277,7 @@ def cost_configurations(
 
     with Timer("cones_on_either_cost", timer_no_print):
         cones_on_either_cost = calc_cones_on_either_cost(
-            points_xy, configurations, cone_type
+            points_xy, configurations, cone_type, nearby_searcher=nearby_searcher
         )
 
     with Timer("wrong_direction_cost", timer_no_print):
@@ -276,13 +285,8 @@ def cost_configurations(
             points_xy, configurations, cone_type
         )
 
-    # TODO: Add a cost for angle between last cone in config and two closest cones not in config
-
-    not timer_no_print and print()
-
     factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
     factors = factors / factors.sum()
-    # print(configurations)
     final_costs = (
         np.column_stack(
             [
@@ -301,5 +305,4 @@ def cost_configurations(
     if return_individual_costs:
         return final_costs
 
-    return final_costs.sum(axis=-1)
     return final_costs.sum(axis=-1)

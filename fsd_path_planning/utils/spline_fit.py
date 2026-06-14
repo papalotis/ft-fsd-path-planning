@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description:
 
@@ -8,13 +7,16 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 from scipy.interpolate import splev, splprep
 
 from fsd_path_planning.utils.math_utils import trace_distance_to_next
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -24,10 +26,10 @@ class SplineEvaluator:
     """
 
     max_u: float
-    tck: Tuple[Any, Any, int]
+    tck: tuple[Any, Any, int]
     predict_every: float
 
-    def calculate_u_eval(self, max_u: Optional[float] = None) -> np.ndarray:
+    def calculate_u_eval(self, max_u: float | None = None) -> np.ndarray:
         """
         Calculate the u_eval values for the spline.
 
@@ -43,7 +45,7 @@ class SplineEvaluator:
             max_u = self.max_u
         return np.arange(0, max_u, self.predict_every)
 
-    def predict(self, der: int, max_u: Optional[float] = None) -> np.ndarray:
+    def predict(self, der: int, max_u: float | None = None) -> np.ndarray:
         """
         Predict the spline. If der is 0, the function returns the spline. If der is 1,
         the function returns the first derivative of the spline and so on.
@@ -68,7 +70,7 @@ class NullSplineEvaluator(SplineEvaluator):
     A dummy spline evaluator used for when an empty list is attempted to be fitted
     """
 
-    def predict(self, der: int, max_u: Optional[float] = None) -> np.ndarray:
+    def predict(self, der: int, max_u: float | None = None) -> np.ndarray:
         points = np.zeros((0, 2))
         return points
 
@@ -84,8 +86,8 @@ class SplineFitterFactory:
 
         Args:
             smoothing (float): The smoothing factor. 0 means no smoothing
-            predict_every (float): The approximate distance along the fitted trace to calculate a
-            point for
+            predict_every (float): The approximate distance along the fitted
+                trace to calculate a point for
             max_deg (int): The maximum degree of the fitted splines
         """
         self.smoothing = smoothing
@@ -118,16 +120,21 @@ class SplineFitterFactory:
                 trace.T, s=self.smoothing, k=k, u=u_fit, per=periodic
             )
         except ValueError:
-            with np.printoptions(threshold=100000):
-                print(self.smoothing, self.predict_every, self.max_deg, repr(trace))
-
+            logger.debug(
+                "Spline fitting failed: smoothing=%s, max_deg=%s, trace shape=%s",
+                self.smoothing,
+                self.max_deg,
+                trace.shape,
+            )
             raise
 
         max_u = float(u_fit[-1])
 
         return SplineEvaluator(max_u, tck, self.predict_every)
 
-    def fit_then_evaluate_trace_and_derivative(self, trace: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def fit_then_evaluate_trace_and_derivative(
+        self, trace: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Fit a provided trace, then evaluates it, and its derivative in `n_predict`
         evenly spaced positions

@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Place the car in the known accelearation map and relocalize it.
 """
 
 from __future__ import annotations
-
-from typing import List, Tuple
 
 import numpy as np
 
@@ -84,9 +81,10 @@ def random_subset_fit_error(points, subset_size):
     return coefficients, error
 
 
-def best_fit(points, subset_size, iterations):
+def best_fit(points: FloatArray, subset_size: int, iterations: int) -> FloatArray:
     """
-    Calls the random_subset_fit_error function many times and returns the coefficients with the smallest error.
+    Calls the random_subset_fit_error function many times and returns the coefficients
+    with the smallest error.
 
     Parameters:
     - points: A numpy array of shape (n, 2) where n is the number of points.
@@ -96,7 +94,7 @@ def best_fit(points, subset_size, iterations):
     Returns:
     - Coefficients of the linear fit with the smallest error.
     """
-    best_coefficients = None
+    best_coefficients = np.zeros(2)
     smallest_error = np.inf
 
     for _ in range(iterations):
@@ -120,14 +118,14 @@ def best_fit(points, subset_size, iterations):
 class AccelerationRelocalizer(Relocalizer):
     def do_relocalization_once(
         self,
-        cones: List[FloatArray],
+        cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
+    ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
         if self._original_vehicle_position is None:
             return
 
-        all_cones = np.row_stack(cones)
+        all_cones = np.vstack([c.reshape(-1, 2) for c in cones])
 
         if len(all_cones) < 3:
             return
@@ -155,16 +153,22 @@ class AccelerationRelocalizer(Relocalizer):
 
         angle_to_fix = np.arctan(slope) + vehicle_yaw
 
-        def transform_to_known_frame(position_2d, yaw):
+        def transform_to_known_frame(
+            position_2d: FloatArray, direction_yaw: float
+        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
             return (
-                rotate(position_2d - self._original_vehicle_position, -angle_to_fix),
-                yaw - angle_to_fix,
+                rotate(position_2d - self._original_vehicle_position, -angle_to_fix),  # type: ignore[return-value]
+                direction_yaw - angle_to_fix,  # type: ignore[return-value]
             )
 
-        def transform_to_base_frame(position_2d, yaw):
-            base_position = rotate(position_2d, angle_to_fix) + self._original_vehicle_position
-            base_yaw = yaw + angle_to_fix
-            return base_position, base_yaw
+        def transform_to_base_frame(
+            position_2d: FloatArray, direction_yaw: float
+        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
+            base_position = (
+                rotate(position_2d, angle_to_fix) + self._original_vehicle_position  # type: ignore[operator]
+            )
+            base_yaw = direction_yaw + angle_to_fix
+            return base_position, base_yaw  # type: ignore[return-value]
 
         return transform_to_known_frame, transform_to_base_frame
 
@@ -204,15 +208,7 @@ def create_acceleartion_path() -> FloatArray:
         ]
     )
 
-    return np.array([path_x_final, path_y_final]).T
+    return np.array([path_x_final, path_y_final], dtype=np.float64).T
 
 
 BASE_ACCELERATION_PATH = create_acceleartion_path()
-
-if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-
-    plt.scatter(*create_acceleartion_path().T, c=np.arange(len(create_acceleartion_path())))
-
-    plt.axis("equal")
-    plt.show()

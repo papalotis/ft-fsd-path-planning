@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Match cones from left and right trace to facilitate
 more stable path calculation
@@ -9,10 +8,9 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from typing import List, Literal, Tuple, cast
+from typing import Literal, cast
 
 import numpy as np
-from icecream import ic  # pylint: disable=unused-import  # noqa: F401
 
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_match_search_direction,
@@ -46,7 +44,9 @@ def cones_in_range_and_pov_mask(
     search_range_squared = search_range * search_range
 
     # # (M, 2), (N, 2) -> (M,N)
-    dist_from_cones_to_other_side_squared: FloatArray = my_cdist_sq_euclidean(other_side_cones, cones)
+    dist_from_cones_to_other_side_squared: FloatArray = my_cdist_sq_euclidean(
+        other_side_cones, cones
+    )
 
     # (M, N)
     dist_mask: BoolArray = dist_from_cones_to_other_side_squared < search_range_squared
@@ -60,9 +60,13 @@ def cones_in_range_and_pov_mask(
     ).copy()  # copy is needed in numba, otherwise a reshape error occurs
 
     # (M, N, 2), (M, N, 2) -> (M, N)
-    angles_to_car = vec_angle_between(search_directions_broadcasted, vec_from_cones_to_other_side)
+    angles_to_car = vec_angle_between(
+        search_directions_broadcasted, vec_from_cones_to_other_side
+    )
     # (M, N)
-    mask_angles = np.logical_and(-search_angle / 2 < angles_to_car, angles_to_car < search_angle / 2)
+    mask_angles = np.logical_and(
+        -search_angle / 2 < angles_to_car, angles_to_car < search_angle / 2
+    )
 
     visible_cones_mask = np.logical_and(dist_mask, mask_angles)
 
@@ -111,30 +115,45 @@ def find_boolean_mask_of_all_potential_matches(
             from_start_points_to_other_side,
             angles,
             start_point_direction_other_side_direction_angle_diff,
+            strict=False,
         )
     ):
         # (N, 2)
-        rotated_start_point_to_other_side = rotate(start_point_to_other_side_cones, -angle)
+        rotated_start_point_to_other_side = rotate(
+            start_point_to_other_side_cones, -angle
+        )
         # (N,)
 
         s = (rotated_start_point_to_other_side**2 / radii_square).sum(axis=1)
         return_value[i] = s < 1
 
-        angle_of_rotated_start_point_to_other_side = angle_from_2d_vector(rotated_start_point_to_other_side)
+        angle_of_rotated_start_point_to_other_side = angle_from_2d_vector(
+            rotated_start_point_to_other_side
+        )
 
-        mask_angle_is_over_threshold = np.abs(angle_of_rotated_start_point_to_other_side / 2) > max_search_angle
+        mask_angle_is_over_threshold = (
+            np.abs(angle_of_rotated_start_point_to_other_side / 2) > max_search_angle
+        )
 
-        mask_direction_diff_over_threshold = angle_diff_start_direction_other_direction < np.pi / 2
+        mask_direction_diff_over_threshold = (
+            angle_diff_start_direction_other_direction < np.pi / 2
+        )
 
         return_value[i, mask_angle_is_over_threshold] = False
         return_value[i, mask_direction_diff_over_threshold] = False
 
     for i, (mask_cone_to_candidates, distance_to_other_side) in enumerate(
-        zip(return_value, np.linalg.norm(from_start_points_to_other_side, axis=-1))
+        zip(
+            return_value,
+            np.linalg.norm(from_start_points_to_other_side, axis=-1),
+            strict=False,
+        )
     ):
         distance_to_other_side[~mask_cone_to_candidates] = np.inf
         idxs_candidates_sorted = np.argsort(distance_to_other_side)[:2]
-        mask_idx_candidate_is_valid = np.isfinite(distance_to_other_side[idxs_candidates_sorted])
+        mask_idx_candidate_is_valid = np.isfinite(
+            distance_to_other_side[idxs_candidates_sorted]
+        )
         idxs_candidates_sorted = idxs_candidates_sorted[mask_idx_candidate_is_valid]
 
         new_mask = np.zeros_like(mask_cone_to_candidates)
@@ -159,7 +178,9 @@ def select_best_match_candidate(
     if len(other_side_cones) == 0:
         return np.full(len(matchable_cones), -1, dtype=int)
 
-    matched_index_for_each_cone: IntArray = my_cdist_sq_euclidean(matchable_cones, other_side_cones).argmin(axis=1)
+    matched_index_for_each_cone: IntArray = my_cdist_sq_euclidean(
+        matchable_cones, other_side_cones
+    ).argmin(axis=1)
 
     if matches_should_be_monotonic:
         # constraint matches to be monotonic
@@ -187,7 +208,8 @@ def calculate_positions_of_virtual_cones(
     """
 
     return_value: FloatArray = (
-        cones[indices_of_unmatched_cones] + search_directions[indices_of_unmatched_cones] * min_track_width
+        cones[indices_of_unmatched_cones]
+        + search_directions[indices_of_unmatched_cones] * min_track_width
     )
     return return_value
 
@@ -196,7 +218,8 @@ def insert_virtual_cones_to_existing(
     other_side_cones: FloatArray,
     other_side_virtual_cones: FloatArray,
     car_position: FloatArray,
-) -> Tuple[FloatArray, List[FloatArray]]:
+    virtual_cone_angle_threshold: float | None = None,
+) -> tuple[FloatArray, list[FloatArray]]:
     """
     Combine the virtual with the real cones into a single array.
     """
@@ -209,17 +232,23 @@ def insert_virtual_cones_to_existing(
     existing_cones = existing_cones.copy()
     cones_to_insert = cones_to_insert.copy()
 
-    order_to_insert = my_cdist_sq_euclidean(cones_to_insert, existing_cones).min(axis=1).argsort()
+    order_to_insert = (
+        my_cdist_sq_euclidean(cones_to_insert, existing_cones).min(axis=1).argsort()
+    )
     cones_to_insert = cones_to_insert[order_to_insert]
 
-    history: List[FloatArray] = []
+    history: list[FloatArray] = []
 
     for cone_to_insert in cones_to_insert:
-        distance_to_existing_cones = np.linalg.norm(existing_cones - cone_to_insert, axis=1)
+        distance_to_existing_cones = np.linalg.norm(
+            existing_cones - cone_to_insert, axis=1
+        )
         indices_sorted_by_distances = distance_to_existing_cones.argsort()
 
         if len(indices_sorted_by_distances) == 1:
-            index_to_insert = calculate_insert_index_for_one_cone(car_position, existing_cones, cone_to_insert)
+            index_to_insert = calculate_insert_index_for_one_cone(
+                car_position, existing_cones, cone_to_insert
+            )
         else:
             closest_index, second_closest_index = indices_sorted_by_distances[:2]
 
@@ -227,12 +256,16 @@ def insert_virtual_cones_to_existing(
                 continue
 
             virtual_to_closest = existing_cones[closest_index] - cone_to_insert
-            virtual_to_second_closest = existing_cones[second_closest_index] - cone_to_insert
+            virtual_to_second_closest = (
+                existing_cones[second_closest_index] - cone_to_insert
+            )
             angle_between_virtual_cones_and_closest_two = vec_angle_between(
                 virtual_to_closest, virtual_to_second_closest
             )
 
-            cone_is_between_closest_two = cast(bool, angle_between_virtual_cones_and_closest_two > np.pi / 2)
+            cone_is_between_closest_two = cast(
+                bool, angle_between_virtual_cones_and_closest_two > np.pi / 2
+            )
 
             index_to_insert = calculate_insert_index_of_new_cone(
                 closest_index,
@@ -251,7 +284,9 @@ def insert_virtual_cones_to_existing(
 
     angles = trace_angles_between(existing_cones)
     # print(np.rad2deg(angles))
-    mask_low_angles = angles < np.deg2rad(85)
+    if virtual_cone_angle_threshold is None:
+        virtual_cone_angle_threshold = np.deg2rad(85)
+    mask_low_angles = angles < virtual_cone_angle_threshold
     mask_low_angles = np.concatenate([[False], mask_low_angles, [False]])
 
     if mask_low_angles.any():
@@ -309,7 +344,7 @@ def combine_and_sort_virtual_with_real(
     other_side_cone_type: SortableConeTypes,  # pylint : disable=unused-argument
     car_pos: FloatArray,
     car_dir: FloatArray,  # pylint: disable=unused-argument
-) -> Tuple[FloatArray, BoolArray, List[FloatArray]]:
+) -> tuple[FloatArray, BoolArray, list[FloatArray]]:
     """
     Combine the existing cones with the newly calculated cones into a single array.
     """
@@ -329,7 +364,9 @@ def combine_and_sort_virtual_with_real(
     )
 
     # cones than have a distance larger than epsilon to the existing cones are virtual
-    distance_of_final_cones_to_existing = my_cdist_sq_euclidean(sorted_combined_cones, other_side_cones)
+    distance_of_final_cones_to_existing = my_cdist_sq_euclidean(
+        sorted_combined_cones, other_side_cones
+    )
     epsilon = 1e-2
     virtual_mask: BoolArray = distance_of_final_cones_to_existing > epsilon**2
     mask_is_virtual: BoolArray = np.all(virtual_mask, axis=1)
@@ -345,7 +382,7 @@ def calculate_matches_for_side(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool,
-) -> Tuple[FloatArray, IntArray, FloatArray]:
+) -> tuple[FloatArray, IntArray, FloatArray]:
     """
     Find a match for each cone from one side to the other.
     """
@@ -378,7 +415,9 @@ def calculate_matches_for_side(
             matches_should_be_monotonic,
         )
     else:
-        matches_for_each_selectable_cone = np.zeros((len(matchable_cones),), dtype=np.int32) - 1
+        matches_for_each_selectable_cone = (
+            np.zeros((len(matchable_cones),), dtype=np.int32) - 1
+        )
         search_directions = np.zeros((0, 2))
 
     return matchable_cones, matches_for_each_selectable_cone, search_directions
@@ -395,7 +434,7 @@ def calculate_cones_for_other_side(
     car_pos: FloatArray,
     car_dir: FloatArray,
     matches_should_be_monotonic: bool,
-) -> Tuple[FloatArray, BoolArray]:
+) -> tuple[FloatArray, BoolArray]:
     """
     Calculate the virtual cones for the other side.
     """
@@ -447,7 +486,7 @@ def match_both_sides_with_virtual_cones(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool,
-) -> Tuple[IntArray, IntArray]:
+) -> tuple[IntArray, IntArray]:
     """
     After virtual cones have been placed for each side, rerun matching algorithm
     to get final matches.
@@ -486,9 +525,9 @@ def calculate_virtual_cones_for_both_sides(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool = True,
-) -> Tuple[
-    Tuple[FloatArray, BoolArray, IntArray],
-    Tuple[FloatArray, BoolArray, IntArray],
+) -> tuple[
+    tuple[FloatArray, BoolArray, IntArray],
+    tuple[FloatArray, BoolArray, IntArray],
 ]:
     """
     The main function of the module. It applies all the steps to return two results

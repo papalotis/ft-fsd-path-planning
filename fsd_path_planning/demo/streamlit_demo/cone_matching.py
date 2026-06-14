@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
@@ -24,16 +22,22 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
 
 
-def naive_search_directions(left_cones: FloatArray, right_cones: FloatArray) -> Tuple[FloatArray, FloatArray]:
+def naive_search_directions(
+    left_cones: FloatArray, right_cones: FloatArray
+) -> tuple[FloatArray, FloatArray]:
     if len(left_cones) > 0:
-        left_rotated = rotate(normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2)
-        left_rotated = np.row_stack((left_rotated, left_rotated[-1]))
+        left_rotated = rotate(
+            normalize_last_axis(np.diff(left_cones, axis=0)), -np.pi / 2
+        )
+        left_rotated = np.vstack((left_rotated, left_rotated[-1]))
     else:
         left_rotated = np.zeros((0, 2))
 
     if len(right_cones) > 0:
-        right_rotated = rotate(normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2)
-        right_rotated = np.row_stack((right_rotated, right_rotated[-1]))
+        right_rotated = rotate(
+            normalize_last_axis(np.diff(right_cones, axis=0)), np.pi / 2
+        )
+        right_rotated = np.vstack((right_rotated, right_rotated[-1]))
     else:
         right_rotated = np.zeros((0, 2))
 
@@ -44,7 +48,7 @@ def show_search_direction(
     left_cones: FloatArray,
     right_cones: FloatArray,
     use_naive_direction: bool,
-) -> Tuple[FloatArray, FloatArray]:
+) -> tuple[FloatArray, FloatArray]:
     if use_naive_direction:
         left_rotated, right_rotated = naive_search_directions(left_cones, right_cones)
     else:
@@ -53,14 +57,16 @@ def show_search_direction(
         else:
             left_rotated = np.zeros((0, 2))
         if len(right_cones) > 1:
-            right_rotated = calculate_match_search_direction(right_cones, ConeTypes.RIGHT)
+            right_rotated = calculate_match_search_direction(
+                right_cones, ConeTypes.RIGHT
+            )
         else:
             right_rotated = np.zeros((0, 2))
 
     left_search_direction_ends = left_cones + left_rotated
     right_search_direction_ends = right_cones + right_rotated
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -74,10 +80,14 @@ def show_search_direction(
         do_show=False,
     )
 
-    for left_start, left_end in zip(left_cones, left_search_direction_ends):
+    for left_start, left_end in zip(
+        left_cones, left_search_direction_ends, strict=False
+    ):
         plt.plot([left_start[0], left_end[0]], [left_start[1], left_end[1]], "b-")
 
-    for right_start, right_end in zip(right_cones, right_search_direction_ends):
+    for right_start, right_end in zip(
+        right_cones, right_search_direction_ends, strict=False
+    ):
         plt.plot([right_start[0], right_end[0]], [right_start[1], right_end[1]], "r-")
 
     title_clarification = "Naive" if use_naive_direction else "Adapted"
@@ -99,7 +109,7 @@ def _do_show_potential_matches(
     show_right: bool,
 ) -> None:
     if show_left:
-        for left_cone, left_mask_cone in zip(left_cones, left_mask):
+        for left_cone, left_mask_cone in zip(left_cones, left_mask, strict=False):
             right_potential_matches = right_cones[left_mask_cone]
             for right_cone in right_potential_matches:
                 dx, dy = right_cone - left_cone
@@ -115,7 +125,7 @@ def _do_show_potential_matches(
                 )
 
     if show_right:
-        for right_cone, right_mask_cone in zip(right_cones, right_mask):
+        for right_cone, right_mask_cone in zip(right_cones, right_mask, strict=False):
             left_potential_matches = left_cones[right_mask_cone]
             for left_cone in left_potential_matches:
                 dx, dy = left_cone - right_cone
@@ -139,9 +149,9 @@ def show_potential_matches(
     major_radius: float,
     minor_radius: float,
     max_search_angle: float,
-    focus_cone: Optional[Tuple[ConeTypes, int]],
+    focus_cone: tuple[ConeTypes, int] | None,
     side_to_show: str,
-) -> Tuple[FloatArray, FloatArray]:
+) -> tuple[BoolArray, BoolArray]:
     left_mask = find_boolean_mask_of_all_potential_matches(
         left_cones,
         left_directions,
@@ -162,7 +172,7 @@ def show_potential_matches(
         max_search_angle,
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -176,13 +186,18 @@ def show_potential_matches(
         do_show=False,
     )
 
-
     show_left = side_to_show in ["left", "both"]
     show_right = side_to_show in ["right", "both"]
-    _do_show_potential_matches(left_cones, right_cones, left_mask, right_mask, show_left, show_right)
+    _do_show_potential_matches(
+        left_cones, right_cones, left_mask, right_mask, show_left, show_right
+    )
 
     title_clarification = (
-        "for both sides" if show_left and show_right else "for left side" if show_left else "for right side"
+        "for both sides"
+        if show_left and show_right
+        else "for left side"
+        if show_left
+        else "for right side"
     )
     title = f"Potential Matches {title_clarification}"
     plt.title(title)
@@ -200,7 +215,7 @@ def show_best_match_candidate(
     right_directions: FloatArray,
     left_potential_matches_mask: BoolArray,
     right_potential_matches_mask: BoolArray,
-) -> Tuple[FloatArray, FloatArray]:
+) -> tuple[IntArray, IntArray]:
     matches_from_left_to_right = select_best_match_candidate(
         left_cones,
         left_directions,
@@ -228,7 +243,7 @@ def show_best_match_candidate(
         new_mask_right[np.arange(len(right_cones)), matches_from_right_to_left] = 1
         new_mask_right *= right_potential_matches_mask
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -242,7 +257,9 @@ def show_best_match_candidate(
         do_show=False,
     )
 
-    _do_show_potential_matches(left_cones, right_cones, new_mask_left, new_mask_right, True, True)
+    _do_show_potential_matches(
+        left_cones, right_cones, new_mask_left, new_mask_right, True, True
+    )
 
     title = "Best Match Candidate"
     plt.title(title)
@@ -261,7 +278,7 @@ def show_virtual_cones(
     left_to_right_matches: IntArray,
     right_to_left_matches: IntArray,
     min_track_width: float,
-) -> Tuple[FloatArray, FloatArray]:
+) -> tuple[FloatArray, FloatArray]:
     left_idx_no_match = np.where(left_to_right_matches == -1)[0]
     # the variable is correct, we use the left cones to calculate the virtual cones
     # of the right side
@@ -274,7 +291,7 @@ def show_virtual_cones(
         right_cones, right_idx_no_match, right_directions, min_track_width
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left_cones
     cones_by_type[ConeTypes.RIGHT] = right_cones
 
@@ -288,14 +305,20 @@ def show_virtual_cones(
         do_show=False,
     )
 
-    for left_cone, left_direction in zip(left_cones[left_idx_no_match], left_directions[left_idx_no_match]):
+    for left_cone, left_direction in zip(
+        left_cones[left_idx_no_match], left_directions[left_idx_no_match], strict=False
+    ):
         plt.plot(
             [left_cone[0], left_cone[0] + left_direction[0]],
             [left_cone[1], left_cone[1] + left_direction[1]],
             "-",
         )
 
-    for right_cone, right_direction in zip(right_cones[right_idx_no_match], right_directions[right_idx_no_match]):
+    for right_cone, right_direction in zip(
+        right_cones[right_idx_no_match],
+        right_directions[right_idx_no_match],
+        strict=False,
+    ):
         plt.plot(
             [right_cone[0], right_cone[0] + right_direction[0]],
             [right_cone[1], right_cone[1] + right_direction[1]],
@@ -333,7 +356,7 @@ def show_merging(
     right_cones_virtual: FloatArray,
     position: FloatArray,
     direction: FloatArray,
-) -> Tuple[FloatArray, FloatArray]:
+) -> tuple[FloatArray, FloatArray]:
     combined_left, left_is_virtual, left_history = combine_and_sort_virtual_with_real(
         left_cones,
         left_cones_virtual,
@@ -354,7 +377,7 @@ def show_merging(
         direction,
     )
 
-    cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
+    cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = combined_left
     cones_by_type[ConeTypes.RIGHT] = combined_right
 
@@ -383,7 +406,7 @@ def show_final_matching(
     major_radius: float,
     minor_radius: float,
     max_search_angle: float,
-) -> None:
+) -> tuple[IntArray, IntArray]:
     _, left_to_right_match, _ = calculate_matches_for_side(
         left_cones_with_virtual,
         ConeTypes.LEFT,
@@ -393,7 +416,9 @@ def show_final_matching(
         max_search_angle,
         matches_should_be_monotonic=False,
     )
-    left_is_match_mask = np.zeros((len(left_cones_with_virtual), len(right_cones_with_virtual)), dtype=np.bool_)
+    left_is_match_mask = np.zeros(
+        (len(left_cones_with_virtual), len(right_cones_with_virtual)), dtype=np.bool_
+    )
 
     left_has_match = left_to_right_match != -1
     idx_source = np.arange(len(left_cones_with_virtual))[left_has_match]
@@ -410,7 +435,9 @@ def show_final_matching(
         matches_should_be_monotonic=False,
     )
 
-    right_is_match_mask = np.zeros((len(right_cones_with_virtual), len(left_cones_with_virtual)), dtype=np.bool_)
+    right_is_match_mask = np.zeros(
+        (len(right_cones_with_virtual), len(left_cones_with_virtual)), dtype=np.bool_
+    )
     right_has_match = right_to_left_match != -1
     idx_source = np.arange(len(right_cones_with_virtual))[right_has_match]
     idx_target = right_to_left_match[right_has_match]
@@ -452,7 +479,7 @@ def run() -> None:
 
     The inputs for the cone matching algorithm are the sorted traces of the two track sides
     as well as the vehicle pose.
-    """
+    """  # noqa: E501
     )
 
     position, direction, cones_by_type = get_cones_for_configuration(
@@ -487,9 +514,11 @@ def run() -> None:
         Therefore, we use an adapted version of the above method. Instead of taking the
         vector from each cone to its next, we take the vector from the previous cone to the
         next cone. This way we can get a better search direction.
-        """
+        """  # noqa: E501
     )
-    use_naive_direction = st.checkbox("Use naive search direction algorithm", value=False)
+    use_naive_direction = st.checkbox(
+        "Use naive search direction algorithm", value=False
+    )
     left_search_directions, right_search_directions = show_search_direction(
         cones_by_type[ConeTypes.LEFT],
         cones_by_type[ConeTypes.RIGHT],
@@ -504,7 +533,7 @@ def run() -> None:
     cones that are in a specific range (inside an ellipse with a specific radius) and angle
     from the search direction. Furthermore, if the search directions of two cones that
     can be matched point in the same direction, then this match is discarded.
-    """
+    """  # noqa: E501
     )
     major_radius = st.slider("Major radius", 5.0, 10.0, 8.0, 0.2)
     minor_radius = st.slider("Minor radius", 3.0, 10.0, 4.0, 0.2)
@@ -516,7 +545,9 @@ def run() -> None:
     max_search_angle_deg = st.slider("Max search angle", 20, 80, 50, step=1)
     max_search_angle = np.deg2rad(max_search_angle_deg)
 
-    side_to_show = st.radio("Side to show", ["Both", "Left", "Right"], horizontal=True).lower()
+    side_to_show = st.radio(
+        "Side to show", ["Both", "Left", "Right"], horizontal=True
+    ).lower()
 
     left_mask, right_mask = show_potential_matches(
         cones_by_type[ConeTypes.LEFT],
@@ -572,13 +603,17 @@ def run() -> None:
     of the track
 
 
-        """
+        """  # noqa: E501
     )
 
-    n_without_match = (left_to_right_matches == -1).sum() + (right_to_left_matches == -1).sum()
+    n_without_match = (left_to_right_matches == -1).sum() + (
+        right_to_left_matches == -1
+    ).sum()
 
     if n_without_match == 0:
-        st.info("In this instance, all cones have a match, so no virtual cones will be computed")
+        st.info(
+            "In this instance, all cones have a match, so no virtual cones will be computed"  # noqa: E501
+        )
 
     minimum_track_width = st.slider("Minimum track width", 2.5, 6.0, 3.0, step=0.1)
 
@@ -617,7 +652,7 @@ def run() -> None:
         - If not add it before both of them or after both of them, depending on the
             configuration.
 
-        """
+        """  # noqa: E501
     )
 
     left_with_virtual, right_with_virtual = show_merging(
@@ -637,7 +672,7 @@ def run() -> None:
     (compute search directions, find potential match candidates, find final match), once
     again, on the combined left and right cones. Since we have now added the virtual cones,
     we expect that almost all cones will have a match.
-    """
+    """  # noqa: E501
     )
 
     left_to_right_matches, right_to_left_matches = show_final_matching(

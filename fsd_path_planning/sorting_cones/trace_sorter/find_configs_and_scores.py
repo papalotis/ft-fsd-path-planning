@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: This file provides the core algorithm for sorting a trace of cones into a
 plausible track
@@ -9,11 +8,12 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 import sys
-from typing import Optional, Tuple, cast
+from typing import cast
 
 import numpy as np
 
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
+    AdjacencyMatrixCache,
     create_adjacency_matrix,
 )
 from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
@@ -21,6 +21,9 @@ from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
 )
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     find_all_end_configurations,
+)
+from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
+    NearbyConeSearcher,
 )
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.utils import Timer
@@ -37,9 +40,11 @@ def calc_scores_and_end_configurations(
     vehicle_direction: FloatArray,
     max_dist: float = np.inf,
     max_length: int = sys.maxsize,
-    first_k_indices_must_be: Optional[IntArray] = None,
+    first_k_indices_must_be: IntArray | None = None,
     return_history: bool = False,
-) -> Tuple[FloatArray, IntArray, Optional[Tuple[IntArray, BoolArray]]]:
+    adjacency_cache: AdjacencyMatrixCache | None = None,
+    nearby_searcher: NearbyConeSearcher | None = None,
+) -> tuple[FloatArray, IntArray, tuple[IntArray, BoolArray] | None]:
     """
     Sorts a set of points such that the sum of the angles between the points is minimal.
     If a point is too far away, from any neighboring points, it is considered an outlier
@@ -71,6 +76,7 @@ def calc_scores_and_end_configurations(
             start_idx=start_idx,
             max_dist=max_dist,
             cone_type=cone_type,
+            cache=adjacency_cache,
         )
 
     target_length = min(reachable_nodes.shape[0], max_length)
@@ -91,8 +97,8 @@ def calc_scores_and_end_configurations(
             vehicle_position,
             vehicle_direction,
             car_size=2.1,
-            # this is only used for testing/debugging/visualization purposes and should be
-            # set to False in production
+            # this is only used for testing/debugging/visualization purposes
+            # and should be set to False in production
             store_all_end_configurations=return_history,
         )
 
@@ -104,6 +110,7 @@ def calc_scores_and_end_configurations(
             vehicle_position=vehicle_position,
             vehicle_direction=vehicle_direction,
             return_individual_costs=False,
+            nearby_searcher=nearby_searcher,
         )
     costs_sort_idx = np.argsort(costs)
     costs = cast(FloatArray, costs[costs_sort_idx])

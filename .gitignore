@@ -145,3 +145,7 @@ media/
 *.ipynb
 
 .venv*/
+
+coverage.json
+
+uv.lock

@@ -1,7 +1,7 @@
 from copy import deepcopy
-from typing import List
 
-import matplotlib.pyplot as plt
+import matplotlib.figure
+import matplotlib.patches
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
@@ -10,9 +10,8 @@ from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
 )
-from fsd_path_planning.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
-from fsd_path_planning.skidpad.skidpad_relocalizer import (
-    PowersetCirceFitResult,
+from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
+from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
     circle_fit_powerset,
 )
 from fsd_path_planning.types import FloatArray
@@ -20,8 +19,8 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 
 
 def show_powerset(
-    cones_by_type: List[FloatArray], position: FloatArray, direction: FloatArray
-) -> PowersetCirceFitResult:
+    cones_by_type: list[FloatArray], position: FloatArray, direction: FloatArray
+) -> None:
     all_cones = np.row_stack(cones_by_type)
     r = circle_fit_powerset(all_cones)
 
@@ -34,11 +33,13 @@ def show_powerset(
         do_show=False,
     )
 
-    for (cx, cy, cr), idxs in r:
-        circle = plt.Circle((cx, cy), cr, fill=False)
+    for (cx, cy, cr), _idxs in r:
+        circle = matplotlib.patches.Circle((cx, cy), cr, fill=False)
         ax.add_artist(circle)
 
-    st.pyplot(ax.figure)
+    fig = ax.figure
+    assert isinstance(fig, matplotlib.figure.Figure)
+    st.pyplot(fig)
 
 
 def show_path() -> None:
@@ -46,7 +47,9 @@ def show_path() -> None:
     idxs = np.arange(len(path))
 
     # 3d plot using plotly
-    fig = go.Figure(data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")])
+    fig = go.Figure(
+        data=[go.Scatter3d(x=path[:, 0], y=path[:, 1], z=idxs, mode="lines")]
+    )
 
     # make sure that the axis are equal
     # orthographic projection
@@ -63,7 +66,7 @@ def run() -> None:
 The Skidpad mission presents a completely different challenge than the other missions. Rather than facing an unknown environment, the Skidpad mission is always the same. However, the way the track needs to be driven is not obvious at first glance, not even for human drivers.
 
 The Skidpad mission requires therefore a completely different approach. Since the track is always the same, a precomputed path can be used to drive the track. The precomputed path can be seen below:
-""".strip()
+""".strip()  # noqa: E501
     )
     show_path()
 
@@ -78,7 +81,7 @@ The relocalization algorithm is split into the following parts:
 - Transformation calculation
 
 The Skidpad track looks like this:
-"""
+"""  # noqa: E501
     )
 
     position, direction, cones_by_type = get_cones_for_configuration(
@@ -92,18 +95,23 @@ The Skidpad track looks like this:
         max_value=20,
         value=n_cones_to_keep_default,
         step=1,
-        help="In order to simulate different detection ranges, only the n closest cones are kept for any given cone type.",
+        help="In order to simulate different detection ranges, only the n closest cones"
+        " are kept for any given cone type.",
     )
 
     copy_cones_by_type = deepcopy(cones_by_type)
 
     left_keep_idxs = np.linalg.norm(cones_by_type[ConeTypes.LEFT] - position, axis=1)
     left_keep_idxs = left_keep_idxs.argsort()[:n_cones_to_keep]
-    copy_cones_by_type[ConeTypes.LEFT] = copy_cones_by_type[ConeTypes.LEFT][left_keep_idxs]
+    copy_cones_by_type[ConeTypes.LEFT] = copy_cones_by_type[ConeTypes.LEFT][
+        left_keep_idxs
+    ]
 
     right_keep_idxs = np.linalg.norm(cones_by_type[ConeTypes.RIGHT] - position, axis=1)
     right_keep_idxs = right_keep_idxs.argsort()[:n_cones_to_keep]
-    copy_cones_by_type[ConeTypes.RIGHT] = copy_cones_by_type[ConeTypes.RIGHT][right_keep_idxs]
+    copy_cones_by_type[ConeTypes.RIGHT] = copy_cones_by_type[ConeTypes.RIGHT][
+        right_keep_idxs
+    ]
 
     visualize_configuration(
         position,
@@ -123,7 +131,7 @@ The first step is to fit circles to the cones. The algorithm uses the powerset o
 - The mean distance between cones that comprise the circle
 
 Below you can see the circles that were kept after the powerset circle fitting:
-"""
+"""  # noqa: E501
     )
 
     show_powerset(copy_cones_by_type, position, direction)

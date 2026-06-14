@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Cone sorting class.
 Description: Entry point for Pathing/ConeSorting
@@ -8,13 +7,14 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
-from typing import List, Tuple
 
 import numpy as np
 
+from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning.types import FloatArray, SortingResult
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 
@@ -22,9 +22,11 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 class ConeSortingInput:
     """Dataclass holding inputs."""
 
-    slam_cones: List[FloatArray] = field(default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes])
-    slam_position: FloatArray = field(default_factory=lambda: np.zeros((2)))
-    slam_direction: FloatArray = field(default_factory=lambda: np.zeros((2)))
+    cones_by_type: list[FloatArray] = field(
+        default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
+    )
+    vehicle_position: FloatArray = field(default_factory=lambda: np.zeros(2))
+    vehicle_direction: FloatArray = field(default_factory=lambda: np.zeros(2))
 
 
 @dataclass
@@ -40,7 +42,9 @@ class ConeSortingState:
     use_unknown_cones: bool
     position_global: FloatArray = field(default_factory=lambda: np.zeros(2))
     direction_global: FloatArray = field(default_factory=lambda: np.array([0, 1.0]))
-    cones_by_type_array: List[FloatArray] = field(default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes])
+    cones_by_type: list[FloatArray] = field(
+        default_factory=lambda: [np.zeros((0, 2)) for _ in ConeTypes]
+    )
 
 
 class ConeSorting:
@@ -48,45 +52,51 @@ class ConeSorting:
 
     def __init__(
         self,
-        max_n_neighbors: int,
-        max_dist: float,
-        max_dist_to_first: float,
-        max_length: int,
-        threshold_directional_angle: float,
-        threshold_absolute_angle: float,
-        use_unknown_cones: bool,
+        config: SortingConfig | None = None,
+        *,
+        # Legacy parameters (deprecated, use config instead)
+        max_n_neighbors: int | None = None,
+        max_dist: float | None = None,
+        max_dist_to_first: float | None = None,
+        max_length: int | None = None,
+        threshold_directional_angle: float | None = None,
+        threshold_absolute_angle: float | None = None,
+        use_unknown_cones: bool | None = None,
         experimental_performance_improvements: bool = False,
     ):
-        """
-        Init method.
+        if config is not None:
+            self.config = config
+        else:
+            # Legacy path: build config from individual parameters
+            legacy_params = {
+                "max_n_neighbors": max_n_neighbors,
+                "max_dist": max_dist,
+                "max_dist_to_first": max_dist_to_first,
+                "max_length": max_length,
+                "threshold_directional_angle": threshold_directional_angle,
+                "threshold_absolute_angle": threshold_absolute_angle,
+                "use_unknown_cones": use_unknown_cones,
+            }
+            provided = {k: v for k, v in legacy_params.items() if v is not None}
+            if provided:
+                warnings.warn(
+                    "Passing individual parameters to ConeSorting is deprecated. "
+                    "Use ConeSorting(config=SortingConfig(...)) instead.",
+                    DeprecationWarning,
+                    stacklevel=2,
+                )
+            self.config = SortingConfig(**provided)
 
-        Args:
-            max_n_neighbors, max_dist, max_dist_to_first: Arguments for TraceSorter.
-            max_length: Argument for TraceSorter. The maximum length of a
-                valid trace in the sorting algorithm.
-            max_length_backwards: Argument for TraceSorter. The maximum length of a
-                valid trace in the sorting algorithm for the backwards direction.
-            max_backwards_index: the maximum amount of cones that will be taken in the
-                backwards direction
-            threshold_directional_angle: The threshold for the directional angle that is
-                the minimum angle for consecutive cones to be connected in the direction
-                of the trace (clockwise for left cones, counterclockwise for right cones).
-            threshold_absolute_angle: The threshold for the absolute angle that is the
-                minimum angle for consecutive cones to be connected regardless of the
-                cone type.
-            use_unknown_cones: Whether to use unknown (as in no color info is known)
-            cones in the sorting algorithm.
-        """
         self.input = ConeSortingInput()
 
         self.state = ConeSortingState(
-            max_n_neighbors=max_n_neighbors,
-            max_dist=max_dist,
-            max_dist_to_first=max_dist_to_first,
-            max_length=max_length,
-            threshold_directional_angle=threshold_directional_angle,
-            threshold_absolute_angle=threshold_absolute_angle,
-            use_unknown_cones=use_unknown_cones,
+            max_n_neighbors=self.config.max_n_neighbors,
+            max_dist=self.config.max_dist,
+            max_dist_to_first=self.config.max_dist_to_first,
+            max_length=self.config.max_length,
+            threshold_directional_angle=self.config.threshold_directional_angle,
+            threshold_absolute_angle=self.config.threshold_absolute_angle,
+            use_unknown_cones=self.config.use_unknown_cones,
         )
 
         self.trace_sorter = TraceSorter(
@@ -100,37 +110,51 @@ class ConeSorting:
         )
 
     def set_new_input(self, slam_input: ConeSortingInput) -> None:
-        """Save inputs from other software nodes in variable."""
+        """Save inputs from other software nodes in variable.
+
+        .. deprecated::
+            Pass input directly to :meth:`run_cone_sorting` instead.
+        """
+        warnings.warn(
+            "set_new_input() is deprecated. Pass input directly to run_cone_sorting().",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         self.input = slam_input
 
     def transition_input_to_state(self) -> None:
         """Parse and save the inputs in the state variable."""
         self.state.position_global, self.state.direction_global = (
-            self.input.slam_position,
-            self.input.slam_direction,
+            self.input.vehicle_position,
+            self.input.vehicle_direction,
         )
 
-        self.state.cones_by_type_array = self.input.slam_cones.copy()
+        self.state.cones_by_type = self.input.cones_by_type.copy()
         if not self.state.use_unknown_cones:
-            self.state.cones_by_type_array[ConeTypes.UNKNOWN] = np.zeros((0, 2))
+            self.state.cones_by_type[ConeTypes.UNKNOWN] = np.zeros((0, 2))
 
     def run_cone_sorting(
         self,
-    ) -> Tuple[FloatArray, FloatArray]:
+        input: ConeSortingInput | None = None,
+    ) -> SortingResult:
         """
         Calculate the sorted cones.
 
+        Args:
+            input: The sorting input. If not provided, uses previously set input.
+
         Returns:
-            The sorted cones. The first array contains the sorted blue (left) cones and
-            the second array contains the sorted yellow (right) cones.
+            SortingResult with left_cones and right_cones arrays.
         """
+        if input is not None:
+            self.input = input
         # make transition from set inputs to usable state variables
         self.transition_input_to_state()
 
         left_cones, right_cones = self.trace_sorter.sort_left_right(
-            self.state.cones_by_type_array,
+            self.state.cones_by_type,
             self.state.position_global,
             self.state.direction_global,
         )
 
-        return left_cones, right_cones
+        return SortingResult(left_cones=left_cones, right_cones=right_cones)

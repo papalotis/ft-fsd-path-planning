@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: A module with common mathematical functions
 
@@ -8,9 +7,12 @@ Taken from ft-as-utils
 Project: fsd_path_planning
 """
 
+import os
 from typing import TypeVar, cast
 
 import numpy as np
+
+from fsd_path_planning.types import FloatArray
 
 try:
     from numba import jit
@@ -26,6 +28,18 @@ except ImportError:
 T = TypeVar("T")
 
 
+def _is_coverage_running() -> bool:
+    if os.getenv("COVERAGE_PROCESS_START"):
+        return True
+
+    try:
+        from coverage import Coverage
+    except ImportError:
+        return False
+
+    return Coverage.current() is not None
+
+
 def my_njit(func: T) -> T:
     """
     numba.njit is an untyped decorator. This wrapper helps type checkers keep the
@@ -38,6 +52,9 @@ def my_njit(func: T) -> T:
     Returns:
         T: The jitted function
     """
+    if _is_coverage_running():
+        return func
+
     jit_func: T = jit(
         nopython=True,
         cache=True,
@@ -78,7 +95,9 @@ def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def vec_angle_between(vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True) -> np.ndarray:
+def vec_angle_between(
+    vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True
+) -> np.ndarray:
     """
     Calculates the angle between the vectors of the last dimension
 
@@ -92,8 +111,10 @@ def vec_angle_between(vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool
         np.ndarray: A vector, such that each element i contains the angle between
         vectors vecs1[i] and vecs2[i]
     """
-    assert vecs1.shape[-1] == 2
-    assert vecs2.shape[-1] == 2
+    if vecs1.shape[-1] != 2:
+        raise ValueError("vecs1 must contain 2d vectors")
+    if vecs2.shape[-1] != 2:
+        raise ValueError("vecs2 must contain 2d vectors")
 
     cos_theta = vec_dot(vecs1, vecs2)
 
@@ -111,7 +132,7 @@ def vec_angle_between(vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool
 
 
 @my_njit
-def rotate(points: np.ndarray, theta: float) -> np.ndarray:
+def rotate(points: np.ndarray, theta: float | np.ndarray) -> np.ndarray:
     """
     Rotates the points in `points` by angle `theta` around the origin
 
@@ -161,7 +182,9 @@ def my_cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def calc_pairwise_distances(points: np.ndarray, dist_to_self: float = 0.0) -> np.ndarray:
+def calc_pairwise_distances(
+    points: np.ndarray, dist_to_self: float = 0.0
+) -> np.ndarray:
     """
     Given a set of points, creates a distance matrix from each point to every point
 
@@ -263,15 +286,16 @@ def trace_angles_between(trace: np.ndarray) -> np.ndarray:
 
 
 @my_njit
-def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
+def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     """
     Creates unit vectors for each value in the rad array
 
     Args:
-        rad (np.array): The angles (in radians) for which the vectors should be created
+        rad (float | FloatArray): The angles (in radians) for which the
+            vectors should be created
 
     Returns:
-        np.array: The created unit vectors
+        FloatArray: The created unit vectors
     """
     rad = np.asarray(rad)
     new_shape = rad.shape + (2,)
@@ -284,7 +308,7 @@ def unit_2d_vector_from_angle(rad: np.ndarray) -> np.ndarray:
 # Calculates the angle of each vector in `vecs`
 # TODO: Look into fixing return type when a single vector is provided (return float)
 @my_njit
-def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
+def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     """
     Calculates the angle of each vector in `vecs`. If `vecs` is just a single 2d vector
     then one angle is calculated and a scalar is returned
@@ -303,7 +327,8 @@ def angle_from_2d_vector(vecs: np.ndarray) -> np.ndarray:
     Returns:
         np.array: The angle of each vector in `vecs`
     """
-    assert vecs.shape[-1] == 2, "vecs must be a 2d vector"
+    if vecs.shape[-1] != 2:
+        raise ValueError("vecs must be a 2d vector")
 
     vecs_flat = vecs.reshape(-1, 2)
 
@@ -397,7 +422,9 @@ def calculate_radius_from_points(points: np.ndarray) -> np.ndarray:
     perimeter = np.sum(len_sides, axis=-1, keepdims=True)
     half_perimeter = perimeter / 2
     half_perimeter_minus_sides = half_perimeter - len_sides
-    area_sqr = np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
+    area_sqr = (
+        np.prod(half_perimeter_minus_sides, axis=-1, keepdims=True) * half_perimeter
+    )
     area = np.sqrt(area_sqr)
 
     radius = prod_of_sides / (area * 4)
@@ -461,7 +488,9 @@ def euler_angles_to_quaternion(euler_angles: np.ndarray) -> np.ndarray:
     quaternion_z = cos_roll * cos_pitch * sin_yaw - sin_roll * sin_pitch * cos_yaw
     quaternion_w = cos_roll * cos_pitch * cos_yaw + sin_roll * sin_pitch * sin_yaw
 
-    return_value = np.stack([quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1)
+    return_value = np.stack(
+        [quaternion_x, quaternion_y, quaternion_z, quaternion_w], axis=-1
+    )
     return return_value
 
 
@@ -580,7 +609,10 @@ def center_of_circle_from_3_points(
         - slope_1 * (point_2[0] + point_3[0])
     ) / (2 * (slope_2 - slope_1))
 
-    center_y = -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1 + (point_1[1] + point_2[1]) / 2
+    center_y = (
+        -(center_x - (point_1[0] + point_2[0]) / 2) / slope_1
+        + (point_1[1] + point_2[1]) / 2
+    )
 
     center = np.array([center_x, center_y])
     return center
@@ -589,10 +621,11 @@ def center_of_circle_from_3_points(
 @my_njit
 def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
     """
-    Fit a circle to a set of points. This function is adapted from the hyper_fit function
-    in the circle-fit package (https://pypi.org/project/circle-fit/). The function is
-    a njit version of the original function with some input validation removed. Furthermore,
-    the residuals are not calculated or returned.
+    Fit a circle to a set of points. This function is adapted from the
+    hyper_fit function in the circle-fit package
+    (https://pypi.org/project/circle-fit/). The function is
+    a njit version of the original function with some input validation
+    removed. Furthermore, the residuals are not calculated or returned.
 
     Args:
         coords: The coordinates of the points as an [N, 2] array.
@@ -646,6 +679,8 @@ def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
         x, y = x_new, y_new
 
     det = x * x - x * Mz + Cov_xy
+    if abs(det) < 1e-15:
+        det = 1e-15  # prevent division by zero for collinear points
     X_center = (Mxz * (Myy - x) - Myz * Mxy) / det / 2.0
     Y_center = (Myz * (Mxx - x) - Mxz * Mxy) / det / 2.0
 
@@ -673,7 +708,8 @@ if __name__ == "__main__":
 @my_njit
 def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """
-    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    Calculate the difference between two angles. The range of the difference
+    is [-pi, pi].
     The order of the angles *is* important.
 
     Args:

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-# -*- coding:utf-8 -*-
 """
 Description: Calculate the cost of configurations according to the cost of the distance
 between cones
 Project: fsd_path_planning
 """
+
 import numpy as np
 
 from fsd_path_planning.types import FloatArray, IntArray
