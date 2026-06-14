@@ -19,7 +19,10 @@ class TestAccelerationRelocalizationHelpers:
 
         assert subset.shape == (4, 2)
         assert len(np.unique(subset, axis=0)) == 4
-        assert all(any(np.array_equal(point, candidate) for candidate in points) for point in subset)
+        assert all(
+            any(np.array_equal(point, candidate) for candidate in points)
+            for point in subset
+        )
 
     def test_best_fit_recovers_line_coefficients(self):
         np.random.seed(0)
@@ -84,8 +87,12 @@ class TestAccelerationRelocalizer:
         original_position = np.array([7.5, -1.25])
         original_yaw = 0.3
 
-        known_position, known_yaw = transform_to_known_frame(original_position, original_yaw)
-        recovered_position, recovered_yaw = transform_to_base_frame(known_position, known_yaw)
+        known_position, known_yaw = transform_to_known_frame(
+            original_position, original_yaw
+        )
+        recovered_position, recovered_yaw = transform_to_base_frame(
+            known_position, known_yaw
+        )
 
         np.testing.assert_allclose(recovered_position, original_position, atol=1e-10)
         np.testing.assert_allclose(recovered_yaw, original_yaw, atol=1e-10)

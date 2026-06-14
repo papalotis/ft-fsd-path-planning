@@ -5809,5 +5809,5 @@ if __name__ == "__main__":
     # plot skidpad path in 3d where z axis is index
     # fig = plt.figure()
     # ax = fig.add_subplot(111, projection='3d')
-    # ax.plot(BASE_SKIDPAD_PATH[:, 0], BASE_SKIDPAD_PATH[:, 1], np.arange(len(BASE_SKIDPAD_PATH))/500)
+    # ax.plot(BASE_SKIDPAD_PATH[:, 0], BASE_SKIDPAD_PATH[:, 1], np.arange(len(BASE_SKIDPAD_PATH))/500)  # noqa: E501
     # plt.show()

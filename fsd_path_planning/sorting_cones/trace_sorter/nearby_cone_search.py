@@ -203,7 +203,7 @@ def calculate_visible_cones_for_one_cone(
         (
             value_good,
             value_bad,
-        ) = angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in_cache(
+        ) = angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in_cache(  # noqa: E501
             cone_to_cone_vecs,
             search_direction_key,
             cone_idx,

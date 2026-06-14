@@ -95,7 +95,8 @@ class ConeMatching:
             Pass input directly to :meth:`run_cone_matching` instead.
         """
         warnings.warn(
-            "set_new_input() is deprecated. Pass input directly to run_cone_matching().",
+            "set_new_input() is deprecated. "
+            "Pass input directly to run_cone_matching().",
             DeprecationWarning,
             stacklevel=2,
         )

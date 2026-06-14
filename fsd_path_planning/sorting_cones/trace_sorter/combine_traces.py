@@ -212,8 +212,8 @@ def calc_new_length_for_configs_for_same_cone_intersection(
 
         absolute_angle_diff = abs(abs(angle_left) - abs(angle_right))
 
-        len(left_config) == 3
-        len(right_config) == 3
+        assert len(left_config) == 3
+        assert len(right_config) == 3
 
         n_cones_diff = abs(len(left_config) - len(right_config))
 

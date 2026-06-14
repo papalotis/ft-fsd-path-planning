@@ -28,7 +28,7 @@ PowersetCirceFitResult = list[tuple[FloatArray, IntArray]]
 
 def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     out = []
-    idxs = range(len(points))
+    all_indices = range(len(points))
 
     max_powerset_size = 5
     max_actual_powerset_size = min(max_powerset_size, len(points))
@@ -36,7 +36,7 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     rng = np.random.RandomState(42)
 
     for i in range(3, max_actual_powerset_size + 1):
-        for idxs in combinations(idxs, i):
+        for idxs in combinations(all_indices, i):
             set_ = np.array(idxs)
             # get the points in the set
             points_of_set = points[set_]
@@ -97,7 +97,8 @@ def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> Float
 
     if best_distance > 0.5:
         raise ValueError(
-            "Could not find two clusters that have the same distance to the center of the skidpad"
+            "Could not find two clusters that have the same distance"
+            " to the center of the skidpad"
         )
 
     cluster_centers = best_centers
@@ -134,7 +135,8 @@ def calculate_transformation(
     right_reference_center = reference_centers[0]
     left_reference_center = reference_centers[1]
 
-    # translate the calculated centers so that the right center aligns with the right reference center
+    # translate the calculated centers so that the right center aligns with
+    # the right reference center
     translation = np.squeeze(right_reference_center - right_calculated_center)
 
     # calculate the angle between the two reference points

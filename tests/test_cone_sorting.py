@@ -119,7 +119,8 @@ class TestConeSorting:
         assert sorted_right.shape == (0, 2) or len(sorted_right) == 0
 
     def test_sorted_output_is_ordered(self, sorter):
-        """Sorted cones should form a plausible trace (consecutive distances reasonable)."""
+        """Sorted cones should form a plausible trace (consecutive distances
+        reasonable)."""
         n = 8
         left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
         right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])
@@ -146,7 +147,8 @@ class TestConeSorting:
             assert np.all(dists < 10.0)
 
     def test_experimental_caching_reuses_previous_results(self, sorter, monkeypatch):
-        """Experimental caching should skip the expensive trace search on repeat input."""
+        """Experimental caching should skip the expensive trace search on
+        repeat input."""
         n = 8
         left_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, 2.0)])
         right_cones = np.column_stack([np.arange(n, dtype=float) * 3, np.full(n, -2.0)])

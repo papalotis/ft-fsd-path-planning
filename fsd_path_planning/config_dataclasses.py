@@ -122,9 +122,7 @@ class SortingConfig:
         _validate_positive("max_dist", self.max_dist)
         _validate_positive("max_dist_to_first", self.max_dist_to_first)
         _validate_positive_int("max_length", self.max_length)
-        _validate_angle(
-            "threshold_directional_angle", self.threshold_directional_angle
-        )
+        _validate_angle("threshold_directional_angle", self.threshold_directional_angle)
         _validate_angle("threshold_absolute_angle", self.threshold_absolute_angle)
         _validate_non_negative("close_cone_threshold", self.close_cone_threshold)
         _validate_positive(
@@ -258,9 +256,7 @@ class PipelineConfig:
             "mpc_prediction_horizon" in path_data
             and "number_of_samples" not in path_data
         ):
-            path_data["number_of_samples"] = path_data.pop(
-                "mpc_prediction_horizon"
-            )
+            path_data["number_of_samples"] = path_data.pop("mpc_prediction_horizon")
 
         cost_weights = CostWeights(**data.get("sorting", {}).pop("cost_weights", {}))
         sorting = SortingConfig(**data.get("sorting", {}), cost_weights=cost_weights)

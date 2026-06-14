@@ -10,8 +10,8 @@ from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatchingInput,
 )
 from fsd_path_planning.cone_matching.match_directions import (
-    calculate_search_direction_for_one,
     calculate_match_search_direction,
+    calculate_search_direction_for_one,
 )
 from fsd_path_planning.config_dataclasses import MatchingConfig
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -32,7 +32,8 @@ class TestCalculateMatchSearchDirection:
         np.testing.assert_allclose(np.linalg.norm(direction), 1.0)
 
     def test_left_cones_direction_is_perpendicular(self):
-        # Cones arranged along x-axis → search direction should be perpendicular (~+y or -y)
+        # Cones arranged along x-axis → search direction should be
+        # perpendicular (~+y or -y)
         cones = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
         dirs = calculate_match_search_direction(cones, ConeTypes.LEFT)
         assert dirs.shape == (3, 2)

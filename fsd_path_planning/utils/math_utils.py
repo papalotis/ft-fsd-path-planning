@@ -291,7 +291,8 @@ def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     Creates unit vectors for each value in the rad array
 
     Args:
-        rad (float | FloatArray): The angles (in radians) for which the vectors should be created
+        rad (float | FloatArray): The angles (in radians) for which the
+            vectors should be created
 
     Returns:
         FloatArray: The created unit vectors
@@ -620,10 +621,11 @@ def center_of_circle_from_3_points(
 @my_njit
 def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
     """
-    Fit a circle to a set of points. This function is adapted from the hyper_fit function
-    in the circle-fit package (https://pypi.org/project/circle-fit/). The function is
-    a njit version of the original function with some input validation removed. Furthermore,
-    the residuals are not calculated or returned.
+    Fit a circle to a set of points. This function is adapted from the
+    hyper_fit function in the circle-fit package
+    (https://pypi.org/project/circle-fit/). The function is
+    a njit version of the original function with some input validation
+    removed. Furthermore, the residuals are not calculated or returned.
 
     Args:
         coords: The coordinates of the points as an [N, 2] array.
@@ -706,7 +708,8 @@ if __name__ == "__main__":
 @my_njit
 def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """
-    Calculate the difference between two angles. The range of the difference is [-pi, pi].
+    Calculate the difference between two angles. The range of the difference
+    is [-pi, pi].
     The order of the angles *is* important.
 
     Args:

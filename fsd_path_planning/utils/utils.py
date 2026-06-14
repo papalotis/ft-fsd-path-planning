@@ -24,8 +24,8 @@ class Timer:
 
         Args:
             name (str, optional): The name of the timer. Defaults to "".
-            noprint (bool, optional): If set to True print the time every time the context
-            manager is exited. Defaults to False.
+            noprint (bool, optional): If set to True print the time every time
+            the context manager is exited. Defaults to False.
         """
         self.name = name
         self.print = not noprint

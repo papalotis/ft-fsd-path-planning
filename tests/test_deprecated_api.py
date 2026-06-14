@@ -33,9 +33,7 @@ API_DEPRECATION_SNIPPETS = (
 
 def _make_sorting_input() -> ConeSortingInput:
     left: FloatArray = np.array([[0.0, 2.0], [3.0, 2.0], [6.0, 2.0]], dtype=float)
-    right: FloatArray = np.array(
-        [[0.0, -2.0], [3.0, -2.0], [6.0, -2.0]], dtype=float
-    )
+    right: FloatArray = np.array([[0.0, -2.0], [3.0, -2.0], [6.0, -2.0]], dtype=float)
     cones_by_type: list[FloatArray] = [np.zeros((0, 2), dtype=float) for _ in ConeTypes]
     cones_by_type[ConeTypes.LEFT] = left
     cones_by_type[ConeTypes.RIGHT] = right
@@ -48,9 +46,7 @@ def _make_sorting_input() -> ConeSortingInput:
 
 def _make_matching_input() -> ConeMatchingInput:
     left: FloatArray = np.array([[0.0, 1.5], [3.0, 1.5], [6.0, 1.5]], dtype=float)
-    right: FloatArray = np.array(
-        [[0.0, -1.5], [3.0, -1.5], [6.0, -1.5]], dtype=float
-    )
+    right: FloatArray = np.array([[0.0, -1.5], [3.0, -1.5], [6.0, -1.5]], dtype=float)
     sorted_cones: list[FloatArray] = [np.zeros((0, 2), dtype=float) for _ in ConeTypes]
     sorted_cones[ConeTypes.LEFT] = left
     sorted_cones[ConeTypes.RIGHT] = right

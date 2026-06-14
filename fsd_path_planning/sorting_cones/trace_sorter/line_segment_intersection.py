@@ -143,8 +143,8 @@ def lines_segments_intersect_indicator(
     epsilon: float = _DEFAULT_EPSILON,
 ) -> bool:
     """
-    Given the start- and endpoint of two 2d-line segments indicate if the two line segments
-    intersect.
+    Given the start- and endpoint of two 2d-line segments indicate if the
+    two line segments intersect.
 
     Args:
         segment_a_start: The start point of the first line segment.

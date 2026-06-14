@@ -97,8 +97,8 @@ def calc_scores_and_end_configurations(
             vehicle_position,
             vehicle_direction,
             car_size=2.1,
-            # this is only used for testing/debugging/visualization purposes and should be
-            # set to False in production
+            # this is only used for testing/debugging/visualization purposes
+            # and should be set to False in production
             store_all_end_configurations=return_history,
         )
 
