@@ -201,7 +201,7 @@ class SkidpadRelocalizer(Relocalizer):
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
     ) -> Tuple[RelocalizationCallable, RelocalizationCallable] | None:
-        cones_array = np.row_stack(cones)
+        cones_array = np.vstack(cones)
         cones_array_xy = cones_array[:, :2]
 
         # only keep 20 closest cones

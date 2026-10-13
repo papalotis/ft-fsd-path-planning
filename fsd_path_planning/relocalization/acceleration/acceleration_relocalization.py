@@ -127,7 +127,7 @@ class AccelerationRelocalizer(Relocalizer):
         if self._original_vehicle_position is None:
             return
 
-        all_cones = np.row_stack(cones)
+        all_cones = np.vstack(cones)
 
         if len(all_cones) < 3:
             return
