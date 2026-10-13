@@ -393,7 +393,7 @@ demo you can choose whether to use the color information or not.
     use_color_info = st.checkbox("Use color information", help="Use color information for sorting", value=True)
     if not use_color_info:
         new_cones_by_type = [np.zeros((0, 2)) for _ in ConeTypes]
-        new_cones_by_type[ConeTypes.UNKNOWN] = np.row_stack(cones_by_type)
+        new_cones_by_type[ConeTypes.UNKNOWN] = np.vstack(cones_by_type)
         np.random.default_rng(0).shuffle(new_cones_by_type[ConeTypes.UNKNOWN], axis=0)
         cones_by_type = new_cones_by_type
 

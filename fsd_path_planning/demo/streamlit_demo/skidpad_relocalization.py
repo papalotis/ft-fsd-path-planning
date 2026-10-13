@@ -22,7 +22,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 def show_powerset(
     cones_by_type: List[FloatArray], position: FloatArray, direction: FloatArray
 ) -> PowersetCirceFitResult:
-    all_cones = np.row_stack(cones_by_type)
+    all_cones = np.vstack(cones_by_type)
     r = circle_fit_powerset(all_cones)
 
     ax = visualize_configuration(
