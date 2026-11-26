@@ -58,3 +58,24 @@ def my_njit(func: T) -> T:
     )(func)
 
     return jit_func
+
+
+def njit_exact(func: T) -> T:
+    """Like `my_njit`, but with IEEE floating point (no ``fastmath``).
+
+    For kernels that replace NumPy code whose results must stay bit for bit
+    the same: ``fastmath`` lets the compiler reorder and fuse arithmetic,
+    which changes the last bits, and a comparison against a threshold can
+    then come out the other way.
+    """
+    if _is_coverage_running():
+        return func
+
+    jit_func: T = jit(
+        nopython=True,
+        cache=True,
+        nogil=True,
+        fastmath=False,
+    )(func)
+
+    return jit_func

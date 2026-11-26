@@ -12,6 +12,7 @@ from typing import Literal, cast
 
 import numpy as np
 
+from fsd_path_planning._numba import njit_exact
 from fsd_path_planning.common_types import (
     BoolArray,
     FloatArray,
@@ -21,7 +22,11 @@ from fsd_path_planning.common_types import (
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_match_search_direction,
 )
-from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
+from fsd_path_planning.geometry.angles import (
+    _angles_of_2d_vectors,
+    angle_from_2d_vector,
+    vec_angle_between,
+)
 from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
 from fsd_path_planning.geometry.traces import trace_angles_between
 from fsd_path_planning.geometry.transforms import rotate
@@ -46,8 +51,6 @@ def find_boolean_mask_of_all_potential_matches(
     if len(start_points) == 0 or len(other_side_cones) == 0:
         return return_value
 
-    # return mask_all
-
     # (2,)
     radii_square = np.array([major_radius, minor_radius]) ** 2
 
@@ -60,61 +63,61 @@ def find_boolean_mask_of_all_potential_matches(
         directions[:, None], other_side_directions
     )
 
-    for i, (
-        start_point_to_other_side_cones,
-        angle,
-        angle_diff_start_direction_other_direction,
-    ) in enumerate(
-        zip(
-            from_start_points_to_other_side,
-            angles,
-            start_point_direction_other_side_direction_angle_diff,
-            strict=False,
-        )
-    ):
-        # (N, 2)
-        rotated_start_point_to_other_side = rotate(
-            start_point_to_other_side_cones, -angle
-        )
-        # (N,)
+    return_value = _candidates_inside_search_area(
+        np.ascontiguousarray(from_start_points_to_other_side),
+        np.ascontiguousarray(angles),
+        np.ascontiguousarray(start_point_direction_other_side_direction_angle_diff),
+        radii_square[0],
+        radii_square[1],
+        max_search_angle,
+    )
 
-        s = (rotated_start_point_to_other_side**2 / radii_square).sum(axis=1)
-        return_value[i] = s < 1
+    # keep at most the two closest candidates of each cone
+    distance_to_other_side = np.linalg.norm(from_start_points_to_other_side, axis=-1)
+    distance_to_other_side[~return_value] = np.inf
+    idxs_candidates_sorted = np.argsort(distance_to_other_side, axis=1)[:, :2]
+    candidate_is_valid = np.isfinite(
+        np.take_along_axis(distance_to_other_side, idxs_candidates_sorted, axis=1)
+    )
+    rows = np.broadcast_to(
+        np.arange(len(start_points))[:, None], idxs_candidates_sorted.shape
+    )
+    closest = np.zeros_like(return_value)
+    closest[rows[candidate_is_valid], idxs_candidates_sorted[candidate_is_valid]] = True
+    return closest
 
-        angle_of_rotated_start_point_to_other_side = angle_from_2d_vector(
-            rotated_start_point_to_other_side
-        )
 
-        mask_angle_is_over_threshold = (
-            np.abs(angle_of_rotated_start_point_to_other_side / 2) > max_search_angle
-        )
+@njit_exact
+def _candidates_inside_search_area(
+    from_start_points_to_other_side: FloatArray,
+    angles: FloatArray,
+    direction_angle_diff: FloatArray,
+    major_radius_square: float,
+    minor_radius_square: float,
+    max_search_angle: float,
+) -> BoolArray:
+    """(M, N) mask: which cones of the other side lie in each cone's search area.
 
-        mask_direction_diff_over_threshold = (
-            angle_diff_start_direction_other_direction < np.pi / 2
-        )
-
-        return_value[i, mask_angle_is_over_threshold] = False
-        return_value[i, mask_direction_diff_over_threshold] = False
-
-    for i, (mask_cone_to_candidates, distance_to_other_side) in enumerate(
-        zip(
-            return_value,
-            np.linalg.norm(from_start_points_to_other_side, axis=-1),
-            strict=False,
-        )
-    ):
-        distance_to_other_side[~mask_cone_to_candidates] = np.inf
-        idxs_candidates_sorted = np.argsort(distance_to_other_side)[:2]
-        mask_idx_candidate_is_valid = np.isfinite(
-            distance_to_other_side[idxs_candidates_sorted]
-        )
-        idxs_candidates_sorted = idxs_candidates_sorted[mask_idx_candidate_is_valid]
-
-        new_mask = np.zeros_like(mask_cone_to_candidates)
-        new_mask[idxs_candidates_sorted] = True
-        return_value[i] = new_mask
-
-    return return_value
+    The search area of a cone is an ellipse along its search direction, cut to
+    `max_search_angle` either side of it; a candidate must also face roughly
+    the opposite way. Compiled without fastmath so that it gives the same
+    mask, bit for bit, as the NumPy loop it replaces.
+    """
+    n_start, n_other = direction_angle_diff.shape
+    out = np.zeros((n_start, n_other), dtype=np.bool_)
+    for i in range(n_start):
+        # (N, 2), in the frame of the search direction
+        rotated = rotate(from_start_points_to_other_side[i], -angles[i])
+        angle_of_rotated = _angles_of_2d_vectors(rotated)
+        for j in range(n_other):
+            inside_ellipse = (
+                rotated[j, 0] ** 2 / major_radius_square
+                + rotated[j, 1] ** 2 / minor_radius_square
+            ) < 1
+            within_angle = not (np.abs(angle_of_rotated[j] / 2) > max_search_angle)
+            faces_away = not (direction_angle_diff[i, j] < np.pi / 2)
+            out[i, j] = inside_ellipse and within_angle and faces_away
+    return out
 
 
 def select_best_match_candidate(
