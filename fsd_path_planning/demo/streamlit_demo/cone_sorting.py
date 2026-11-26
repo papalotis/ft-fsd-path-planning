@@ -25,7 +25,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
     cost_configurations,
 )
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
-    NoPathError,
     find_all_end_configurations,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -160,33 +159,27 @@ def show_graph_search(
             all_end_configs[cone_type] = np.zeros((0, target_length), dtype=int)
             continue
         with Timer():
-            try:
-                end_configurations, _inner = find_all_end_configurations(
-                    cones_flat,
-                    cone_type,
-                    int(first_k[0]),
-                    adjacency_matrix,
-                    target_length,
-                    threshold_directional_angle,
-                    threshold_absolute_angle,
-                    first_k,
-                    car_position,
-                    car_direction,
-                    car_size=2.5,
-                    store_all_end_configurations=True,
-                )
-                if _inner is None:
-                    all_configurations = np.zeros((0, target_length), dtype=int)
-                    configuration_is_end = np.zeros((0,), dtype=bool)
-                else:
-                    all_configurations, configuration_is_end = _inner
-            except NoPathError:
-                end_configurations = np.zeros((0, target_length), dtype=int)
-                all_configurations = np.zeros((0, target_length), dtype=int)
-                configuration_is_end = np.zeros((0,), dtype=bool)
-                st.warning(
-                    f"No path found for {cone_type.name.replace('_', ' ').title()}"
-                )
+            end_configurations, _inner = find_all_end_configurations(
+                cones_flat,
+                cone_type,
+                int(first_k[0]),
+                adjacency_matrix,
+                target_length,
+                threshold_directional_angle,
+                threshold_absolute_angle,
+                first_k,
+                car_position,
+                car_direction,
+                car_size=2.5,
+                store_all_end_configurations=True,
+            )
+        if _inner is None:
+            all_configurations = np.zeros((0, target_length), dtype=int)
+            configuration_is_end = np.zeros((0,), dtype=bool)
+        else:
+            all_configurations, configuration_is_end = _inner
+        if len(end_configurations) == 0:
+            st.warning(f"No path found for {cone_type.name.replace('_', ' ').title()}")
 
         all_end_configs[cone_type] = end_configurations
 

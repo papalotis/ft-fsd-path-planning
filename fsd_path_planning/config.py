@@ -12,9 +12,11 @@ from typing import Any
 from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath as CalculatePath,
 )
+from fsd_path_planning.calculate_path.skidpad_calculate_path import (
+    SkidpadCalculatePath as SkidpadCalculatePath,
+)
 
 # for reexport
-from fsd_path_planning.calculate_path.skidpad_calculate_path import SkidpadCalculatePath
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching as ConeMatching,
 )
@@ -23,6 +25,7 @@ from fsd_path_planning.config_dataclasses import (
     SortingConfig,
     default_config,
 )
+from fsd_path_planning.missions import mission_spec
 from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting
 from fsd_path_planning.utils.mission_types import MissionTypes
 
@@ -78,19 +81,8 @@ def create_default_pathing(mission: MissionTypes) -> CalculatePath:
     Returns:
         The created path calculation instance
     """
-    cfg = default_config(mission)
-
-    possible_path_calculation_classes: dict[MissionTypes, type[CalculatePath]] = {
-        MissionTypes.skidpad: SkidpadCalculatePath,
-    }
-
-    path_calculation_class = possible_path_calculation_classes.get(
-        mission, CalculatePath
-    )
-
-    path_calculation = path_calculation_class(config=cfg.path)
-
-    return path_calculation
+    spec = mission_spec(mission)
+    return spec.path_calculation(config=spec.default_config().path)
 
 
 def create_default_sorting(

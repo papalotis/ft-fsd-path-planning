@@ -12,7 +12,7 @@ from typing import Any
 
 import numpy as np
 
-from fsd_path_planning.common_types import FloatArray, IntArray
+from fsd_path_planning.common_types import FloatArray, IntArray, TraceOutcome
 from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
 from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
@@ -24,7 +24,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
 from fsd_path_planning.sorting_cones.trace_sorter.combine_traces import (
     calc_final_configs_for_left_and_right,
 )
-from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import (
     calc_scores_and_end_configurations,
 )
@@ -90,6 +89,15 @@ def cone_arrays_are_similar(
     return bool(distances_all_close and color_match.all())
 
 
+def _final_outcome(search_outcome: TraceOutcome, n_sorted: int) -> TraceOutcome:
+    """A side's outcome once both sides have been combined."""
+    if n_sorted > 0:
+        return TraceOutcome.FOUND
+    if search_outcome is TraceOutcome.FOUND:
+        return TraceOutcome.DROPPED_WHEN_COMBINED
+    return search_outcome
+
+
 @dataclass
 class ConeSortingCacheEntry:
     """
@@ -101,6 +109,8 @@ class ConeSortingCacheEntry:
     right_starting_cones: FloatArray | None
     left_result: tuple[Any, ...]
     right_result: tuple[Any, ...]
+    left_outcome: TraceOutcome = TraceOutcome.FOUND
+    right_outcome: TraceOutcome = TraceOutcome.FOUND
 
 
 class TraceSorter:
@@ -164,29 +174,35 @@ class TraceSorter:
         car_pos: FloatArray,
         car_dir: FloatArray,
     ) -> tuple[FloatArray, FloatArray]:
+        left, right, _, _ = self.sort_left_right_with_outcomes(
+            cones_by_type, car_pos, car_dir
+        )
+        return left, right
+
+    def sort_left_right_with_outcomes(
+        self,
+        cones_by_type: list[FloatArray],
+        car_pos: FloatArray,
+        car_dir: FloatArray,
+    ) -> tuple[FloatArray, FloatArray, TraceOutcome, TraceOutcome]:
+        """The sorted left and right cones, and how each side's search ended."""
         cones_flat = flatten_cones_by_type_array(cones_by_type)
 
-        (
-            left_scores,
-            left_configs,
-            left_first_cones,
-        ) = left_result = self.calc_configurations_with_score_for_one_side(
+        left_result, left_search_outcome = self._search_one_side(
             cones_flat,
             ConeTypes.LEFT,
             car_pos,
             car_dir,
         )
+        left_scores, left_configs, left_first_cones = left_result
 
-        (
-            right_scores,
-            right_configs,
-            right_first_cones,
-        ) = right_result = self.calc_configurations_with_score_for_one_side(
+        right_result, right_search_outcome = self._search_one_side(
             cones_flat,
             ConeTypes.RIGHT,
             car_pos,
             car_dir,
         )
+        right_scores, right_configs, right_first_cones = right_result
 
         self.cached_results = ConeSortingCacheEntry(
             input_cones=cones_flat,
@@ -194,6 +210,8 @@ class TraceSorter:
             right_starting_cones=right_first_cones,
             left_result=left_result,
             right_result=right_result,
+            left_outcome=left_search_outcome,
+            right_outcome=right_search_outcome,
         )
 
         (left_config, right_config) = calc_final_configs_for_left_and_right(
@@ -215,7 +233,12 @@ class TraceSorter:
         left_sorted = cones_flat[left_config]
         right_sorted = cones_flat[right_config]
 
-        return left_sorted[:, :2], right_sorted[:, :2]
+        return (
+            left_sorted[:, :2],
+            right_sorted[:, :2],
+            _final_outcome(left_search_outcome, len(left_sorted)),
+            _final_outcome(right_search_outcome, len(right_sorted)),
+        )
 
     def input_is_very_similar_to_previous_input(
         self,
@@ -269,14 +292,28 @@ class TraceSorter:
             car_pos: The position of the car.
             car_dir: The direction towards which the car is facing.
         Returns:
-            np.ndarray: The sorted trace, `len(return_value) <= len(trace)`
+            The scores and the candidate traces, and the starting cones; all
+            three None when no trace was found.
         """
+        result, _ = self._search_one_side(cones, cone_type, car_pos, car_dir)
+        return result
+
+    def _search_one_side(
+        self,
+        cones: FloatArray,
+        cone_type: ConeTypes,
+        car_pos: FloatArray,
+        car_dir: FloatArray,
+    ) -> tuple[
+        tuple[FloatArray | None, IntArray | None, FloatArray | None], TraceOutcome
+    ]:
+        """The candidate traces for one side, and how the search ended."""
         assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
 
         no_result = None, None, None
 
         if len(cones) < 3:
-            return no_result
+            return no_result, TraceOutcome.TOO_FEW_CONES
 
         first_k = self.select_first_k_starting_cones(
             car_pos,
@@ -292,7 +329,7 @@ class TraceSorter:
             first_k_indices_must_be = None
 
         if start_idx is None and first_k_indices_must_be is None:
-            return no_result
+            return no_result, TraceOutcome.NO_START_CONE
 
         assert first_k is not None
         assert start_idx is not None
@@ -304,34 +341,33 @@ class TraceSorter:
         ):
             cr = self.cached_results
             assert cr is not None
-            return cr.left_result if cone_type == ConeTypes.LEFT else cr.right_result
+            if cone_type == ConeTypes.LEFT:
+                return cr.left_result, cr.left_outcome
+            return cr.right_result, cr.right_outcome
 
         n_neighbors = min(self.max_n_neighbors, len(cones) - 1)
-        try:
-            result = calc_scores_and_end_configurations(
-                cones,
-                cone_type,
-                n_neighbors,
-                start_idx,
-                self.threshold_directional_angle,
-                self.threshold_absolute_angle,
-                car_pos,
-                car_dir,
-                self.max_dist,
-                self.max_length,
-                first_k_indices_must_be,
-                adjacency_cache=self.adjacency_cache,
-                nearby_searcher=self.nearby_searcher,
-                config=self.config,
-            )
+        result = calc_scores_and_end_configurations(
+            cones,
+            cone_type,
+            n_neighbors,
+            start_idx,
+            self.threshold_directional_angle,
+            self.threshold_absolute_angle,
+            car_pos,
+            car_dir,
+            self.max_dist,
+            self.max_length,
+            first_k_indices_must_be,
+            adjacency_cache=self.adjacency_cache,
+            nearby_searcher=self.nearby_searcher,
+            config=self.config,
+        )
 
-        # if no configurations can be found, then return nothing
-        except NoPathError:
-            return no_result
+        _, end_configurations, _ = result
+        if len(end_configurations) == 0:
+            return no_result, TraceOutcome.NO_VALID_TRACE
 
-        return_value = (*result[:2], starting_cones)
-
-        return return_value
+        return (*result[:2], starting_cones), TraceOutcome.FOUND
 
     def select_starting_cone(
         self,

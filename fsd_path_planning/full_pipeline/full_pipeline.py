@@ -11,6 +11,7 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Literal, overload
 
 import numpy as np
@@ -19,28 +20,31 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,
     PathCalculationInput,
 )
-from fsd_path_planning.calculate_path.skidpad_calculate_path import (
-    SkidpadCalculatePath,
+from fsd_path_planning.common_types import (
+    ConeInput,
+    FloatArray,
+    IntArray,
+    MatchingResult,
+    PathResult,
+    SortingResult,
 )
-from fsd_path_planning.common_types import ConeInput, FloatArray, IntArray
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching,
     ConeMatchingInput,
 )
-from fsd_path_planning.config_dataclasses import PipelineConfig, default_config
+from fsd_path_planning.config_dataclasses import PipelineConfig
 from fsd_path_planning.geometry.angles import (
     angle_from_2d_vector,
     unit_2d_vector_from_angle,
 )
-from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
-    AccelerationRelocalizer,
+from fsd_path_planning.missions import MISSIONS, mission_spec
+from fsd_path_planning.relocalization.relocalization_base_class import (
+    RelocalizationInput,
+    RelocalizationResult,
+    Relocalizer,
 )
-from fsd_path_planning.relocalization.relocalization_base_class import Relocalizer
 from fsd_path_planning.relocalization.relocalization_information import (
     RelocalizationInformation,
-)
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
-    SkidpadRelocalizer,
 )
 from fsd_path_planning.sorting_cones.core_cone_sorting import (
     ConeSorting,
@@ -54,15 +58,33 @@ from fsd_path_planning.utils.input_validation import (
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
 
+# Views of the mission registry, kept for code that imports them from here.
 MissionToPathCalculation: dict[MissionTypes, type[CalculatePath]] = {
-    MissionTypes.skidpad: SkidpadCalculatePath,
+    mission: spec.path_calculation
+    for mission, spec in MISSIONS.items()
+    if spec.path_calculation is not CalculatePath
 }
 
 MissionToRelocalizer: dict[MissionTypes, type[Relocalizer]] = {
-    MissionTypes.acceleration: AccelerationRelocalizer,
-    MissionTypes.ebs_test: AccelerationRelocalizer,
-    MissionTypes.skidpad: SkidpadRelocalizer,
+    mission: spec.relocalizer_class
+    for mission, spec in MISSIONS.items()
+    if spec.relocalizer_class is not None
 }
+
+
+@dataclass(frozen=True)
+class StageResults:
+    """What each stage returned for the last frame.
+
+    A stage that did not run on that frame is None: the relocalizer for
+    missions without one, sorting and matching for missions that follow a
+    known map.
+    """
+
+    relocalization: RelocalizationResult | None
+    sorting: SortingResult | None
+    matching: MatchingResult | None
+    path: PathResult
 
 
 class PathPlanner:
@@ -94,16 +116,17 @@ class PathPlanner:
             pathing: Override the default :class:`CalculatePath` instance.
         """
         self.mission = mission
+        spec = mission_spec(mission)
 
         if config is None:
-            config = default_config(mission)
+            config = spec.default_config()
         self.config = config
 
-        self.relocalizer: Relocalizer | None = None
-        relocalizer_class = MissionToRelocalizer.get(mission)
-
-        if relocalizer_class is not None:
-            self.relocalizer = relocalizer_class()
+        self.relocalizer: Relocalizer | None = (
+            spec.make_relocalizer(self.config)
+            if spec.make_relocalizer is not None
+            else None
+        )
 
         # Built from self.config, so that a config passed in actually reaches
         # the stages. It used to be stored and then ignored in favour of the
@@ -113,9 +136,11 @@ class PathPlanner:
             experimental_performance_improvements=experimental_performance_improvements,
         )
         self.cone_matching = cone_matching or ConeMatching(config=self.config.matching)
-        path_calculation_class = MissionToPathCalculation.get(mission, CalculatePath)
-        self.pathing = pathing or path_calculation_class(config=self.config.path)
+        self.pathing = pathing or spec.path_calculation(config=self.config.path)
         self.global_path: FloatArray | None = None
+        self.last_stage_results: StageResults | None = None
+        """What each stage returned for the most recent frame; None before
+        the first."""
 
         self.experimental_performance_improvements = (
             experimental_performance_improvements
@@ -129,24 +154,14 @@ class PathPlanner:
         cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> tuple[
-        FloatArray,
-        FloatArray,
-        FloatArray,
-        FloatArray,
-        FloatArray,
-        FloatArray,
-        IntArray,
-        IntArray,
-    ]:
-        """Run the relocalization path (skidpad/acceleration)."""
-        if self.relocalizer is None:
-            raise ValueError("Relocalizer is not set for this mission")
-        self.relocalizer.attempt_relocalization_calculation(
-            cones, vehicle_position, vehicle_direction
+    ) -> tuple[FloatArray, FloatArray, RelocalizationResult]:
+        """Relocalize, and move the pose into the known map frame once done."""
+        assert self.relocalizer is not None
+        result = self.relocalizer.run(
+            RelocalizationInput(cones, vehicle_position, vehicle_direction)
         )
 
-        if self.relocalizer.is_relocalized:
+        if result.is_relocalized:
             vehicle_yaw = angle_from_2d_vector(vehicle_direction)
             (
                 vehicle_position,
@@ -157,60 +172,29 @@ class PathPlanner:
             vehicle_direction = unit_2d_vector_from_angle(vehicle_yaw)
             self.global_path = self.relocalizer.get_known_global_path()
 
-        sorted_left, sorted_right = np.zeros((2, 0, 2), dtype=float)
-        left_cones_with_virtual, right_cones_with_virtual = np.zeros(
-            (2, 0, 2), dtype=float
-        )
-        left_to_right_match, right_to_left_match = np.zeros((2, 0), dtype=int)
-
-        return (
-            vehicle_position,
-            vehicle_direction,
-            sorted_left,
-            sorted_right,
-            left_cones_with_virtual,
-            right_cones_with_virtual,
-            left_to_right_match,
-            right_to_left_match,
-        )
+        return vehicle_position, vehicle_direction, result
 
     def _run_sorting_and_matching(
         self,
         cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-    ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray]:
+    ) -> tuple[SortingResult, MatchingResult]:
         """Run the standard sorting → matching pipeline."""
-        cone_sorting_input = ConeSortingInput(
-            cones, vehicle_position, vehicle_direction
+        sorting_result = self.cone_sorting.run(
+            ConeSortingInput(cones, vehicle_position, vehicle_direction)
         )
-        sorting_result = self.cone_sorting.run_cone_sorting(cone_sorting_input)
-        sorted_left = sorting_result.left_cones
-        sorted_right = sorting_result.right_cones
 
         matched_cones_input: list[FloatArray] = [
             np.zeros((0, 2), dtype=float) for _ in ConeTypes
         ]
-        matched_cones_input[ConeTypes.LEFT] = sorted_left
-        matched_cones_input[ConeTypes.RIGHT] = sorted_right
+        matched_cones_input[ConeTypes.LEFT] = sorting_result.left_cones
+        matched_cones_input[ConeTypes.RIGHT] = sorting_result.right_cones
 
-        cone_matching_input = ConeMatchingInput(
-            matched_cones_input, vehicle_position, vehicle_direction
+        matching_result = self.cone_matching.run(
+            ConeMatchingInput(matched_cones_input, vehicle_position, vehicle_direction)
         )
-        matching_result = self.cone_matching.run_cone_matching(cone_matching_input)
-        left_cones_with_virtual = matching_result.left_cones_with_virtual
-        right_cones_with_virtual = matching_result.right_cones_with_virtual
-        left_to_right_match = matching_result.left_to_right_matches
-        right_to_left_match = matching_result.right_to_left_matches
-
-        return (
-            sorted_left,
-            sorted_right,
-            left_cones_with_virtual,
-            right_cones_with_virtual,
-            left_to_right_match,
-            right_to_left_match,
-        )
+        return sorting_result, matching_result
 
     @overload
     def calculate_path_in_global_frame(
@@ -313,56 +297,67 @@ class PathPlanner:
         vehicle_position = validate_vehicle_position(vehicle_position)
         vehicle_direction = convert_direction_to_array(vehicle_direction)
 
+        relocalization_result: RelocalizationResult | None = None
+        sorting_result: SortingResult | None = None
+        matching_result: MatchingResult | None = None
+
         if self.relocalizer is not None:
-            (
-                vehicle_position,
-                vehicle_direction,
-                sorted_left,
-                sorted_right,
-                left_cones_with_virtual,
-                right_cones_with_virtual,
-                left_to_right_match,
-                right_to_left_match,
-            ) = self._run_relocalization(cones, vehicle_position, vehicle_direction)
+            vehicle_position, vehicle_direction, relocalization_result = (
+                self._run_relocalization(cones, vehicle_position, vehicle_direction)
+            )
+            # missions on a known map follow it and do not sort cones
+            left_with_virtual, right_with_virtual = np.zeros((2, 0, 2), dtype=float)
+            left_to_right_match, right_to_left_match = np.zeros((2, 0), dtype=int)
         else:
-            (
-                sorted_left,
-                sorted_right,
-                left_cones_with_virtual,
-                right_cones_with_virtual,
-                left_to_right_match,
-                right_to_left_match,
-            ) = self._run_sorting_and_matching(
+            sorting_result, matching_result = self._run_sorting_and_matching(
                 cones, vehicle_position, vehicle_direction
             )
+            (
+                left_with_virtual,
+                right_with_virtual,
+                left_to_right_match,
+                right_to_left_match,
+            ) = matching_result
 
-        # run path calculation
-        path_calculation_input = PathCalculationInput(
-            left_cones_with_virtual,
-            right_cones_with_virtual,
-            left_to_right_match,
-            right_to_left_match,
-            vehicle_position,
-            vehicle_direction,
-            self.global_path,
+        path_result = self.pathing.run(
+            PathCalculationInput(
+                left_with_virtual,
+                right_with_virtual,
+                left_to_right_match,
+                right_to_left_match,
+                vehicle_position,
+                vehicle_direction,
+                self.global_path,
+            )
         )
-        path_result = self.pathing.run_path_calculation(path_calculation_input)
         final_path = path_result.final_path
 
-        if self.relocalizer is not None and self.relocalizer.is_relocalized:
+        if relocalization_result is not None and relocalization_result.is_relocalized:
+            assert self.relocalizer is not None
             final_path = final_path.copy()
-            path_xy = final_path[:, 1:3]
-            path_xy, _ = self.relocalizer.transform_to_original_frame(path_xy, 0.0)
-            final_path = final_path.copy()
+            path_xy, _ = self.relocalizer.transform_to_original_frame(
+                final_path[:, 1:3], 0.0
+            )
             final_path[:, 1:3] = path_xy
 
+        self.last_stage_results = StageResults(
+            relocalization=relocalization_result,
+            sorting=sorting_result,
+            matching=matching_result,
+            path=path_result,
+        )
+
         if return_intermediate_results:
+            empty = np.zeros((0, 2), dtype=float)
+            sorted_left, sorted_right = (
+                sorting_result if sorting_result is not None else (empty, empty)
+            )
             return (
                 final_path,
                 sorted_left,
                 sorted_right,
-                left_cones_with_virtual,
-                right_cones_with_virtual,
+                left_with_virtual,
+                right_with_virtual,
                 left_to_right_match,
                 right_to_left_match,
             )

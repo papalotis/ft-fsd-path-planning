@@ -12,8 +12,12 @@ from fsd_path_planning.common_types import FloatArray, IntArray
 
 
 class NoPathError(RuntimeError):
-    """
-    A special exception thrown when no path can be found (i.e. no configuration)
+    """No valid trace could be found.
+
+    No longer raised: finding no trace is an expected outcome, reported as an
+    empty set of configurations and, on the sorting result, as
+    TraceOutcome.NO_VALID_TRACE. Kept so that code which catches it still
+    imports.
     """
 
 

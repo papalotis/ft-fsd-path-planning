@@ -484,3 +484,7 @@ class CalculatePath:
             final_path=path_parameterization,
             centerline_basis=center_along_match_connection,
         )
+
+    def run(self, stage_input: PathCalculationInput) -> PathResult:
+        """Calculate the path for `stage_input`; the `Stage` entry point."""
+        return self.run_path_calculation(stage_input)

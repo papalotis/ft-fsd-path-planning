@@ -152,3 +152,7 @@ class ConeMatching:
             left_to_right_matches=left_to_right_match,
             right_to_left_matches=right_to_left_match,
         )
+
+    def run(self, stage_input: ConeMatchingInput) -> MatchingResult:
+        """Match the sorted cones in `stage_input`; the `Stage` entry point."""
+        return self.run_cone_matching(stage_input)

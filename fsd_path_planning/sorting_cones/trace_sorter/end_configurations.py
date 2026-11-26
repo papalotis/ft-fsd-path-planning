@@ -13,7 +13,6 @@ from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, 
 from fsd_path_planning.geometry.angles import angle_difference, vec_angle_between
 from fsd_path_planning.geometry.segments import lines_segments_intersect_indicator
 from fsd_path_planning.geometry.shapes import points_inside_ellipse
-from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.utils.arrays import my_in1d
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -521,12 +520,11 @@ def find_all_end_configurations(
         adjacency_matrix: The adjacency matrix indicating which nodes are
         connected to which
         target_length: The length of the path that the search is searching for
-    Raises:
-        NoPathError: If no path has been found
     Returns:
-        A 2d array of configurations (indices) that define a path
+        A 2d array of configurations (indices) that define a path. It has no
+        rows when no valid trace exists, which is an expected outcome, not an
+        error.
     """
-    # print(locals())
     neighbors_flat, borders = adjacency_matrix_to_borders_and_targets(adjacency_matrix)
 
     points_xy = points[:, :2]
@@ -594,8 +592,5 @@ def find_all_end_configurations(
     is_duplicate = are_equal_mask.all(axis=-1).sum(axis=0) > 1
 
     end_configurations = end_configurations[~is_duplicate]
-
-    if len(end_configurations) == 0:
-        raise NoPathError("Could not create a valid trace using the provided points")
 
     return end_configurations, all_configurations_and_is_end_configuration_indicator

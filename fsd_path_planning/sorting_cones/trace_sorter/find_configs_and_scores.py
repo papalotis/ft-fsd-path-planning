@@ -109,6 +109,10 @@ def calc_scores_and_end_configurations(
         store_all_end_configurations=return_history,
     )
 
+    if len(all_end_configurations) == 0:
+        # no valid trace: nothing to score
+        return (np.zeros(0), all_end_configurations, history)
+
     costs = cost_configurations(
         points=trace,
         configurations=all_end_configurations,

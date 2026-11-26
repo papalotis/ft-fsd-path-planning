@@ -4,6 +4,12 @@ Configuration dataclasses for the path planning pipeline.
 
 Each module accepts its config dataclass directly. The config is the single
 source of truth — no parameter duplication.
+
+Configs are frozen: a stage reads its config once, when it is built, so a
+change made afterwards would silently not apply. Make a changed copy with
+dataclasses.replace instead::
+
+    config = replace(PathConfig(), smoothing=0.5)
 """
 
 from __future__ import annotations
@@ -64,7 +70,7 @@ def _validate_angle(name: str, value: object) -> float:
     return float_value
 
 
-@dataclass
+@dataclass(frozen=True)
 class CostWeights:
     """Weights for the cone sorting cost function."""
 
@@ -89,7 +95,7 @@ class CostWeights:
             _ensure_real(name, getattr(self, name))
 
 
-@dataclass
+@dataclass(frozen=True)
 class SortingConfig:
     """Configuration for cone sorting."""
 
@@ -142,7 +148,7 @@ class SortingConfig:
         _validate_angle("cones_on_side_search_angle", self.cones_on_side_search_angle)
 
 
-@dataclass
+@dataclass(frozen=True)
 class MatchingConfig:
     """Configuration for cone matching."""
 
@@ -171,7 +177,7 @@ class MatchingConfig:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class PathConfig:
     """Configuration for path calculation."""
 
@@ -232,26 +238,73 @@ class PathConfig:
     def mpc_path_length(self) -> float:
         return self.path_length
 
-    @mpc_path_length.setter
-    def mpc_path_length(self, value: float) -> None:
-        self.path_length = value
-
     @property
     def mpc_prediction_horizon(self) -> int:
         return self.number_of_samples
 
-    @mpc_prediction_horizon.setter
-    def mpc_prediction_horizon(self, value: int) -> None:
-        self.number_of_samples = value
+
+@dataclass(frozen=True)
+class SkidpadConfig:
+    """Configuration for skidpad relocalization."""
+
+    # expected circle radius (meters, FSG rules)
+    circle_radius: float = 7.625
+    circle_radius_tolerance: float = 1.0
+
+    # expected distance between circle centers (meters)
+    center_distance: float = 18.25
+    center_distance_tolerance: float = 0.5
+
+    # circle centres closer than this, directly or through a chain of others,
+    # are estimates of the same centre (meters)
+    center_cluster_distance: float = 3.0
+
+    # fewer plausible circles than this and no relocalization is attempted
+    min_candidate_circles: int = 3
+
+    # mean cone distance from fitted circle
+    mean_cone_distance: float = 2.4
+    mean_cone_distance_tolerance: float = 1.5
+
+    # maximum residual for circle fit acceptance
+    max_residual: float = 0.4
+
+    # maximum number of closest cones to use for relocalization
+    max_cones_for_relocalization: int = 20
+
+    # maximum powerset size for circle fitting. 3 reproduces the behaviour of
+    # the released algorithm; see circle_fit_powerset for why.
+    max_powerset_size: int = 3
+
+    def __post_init__(self) -> None:
+        _validate_positive("circle_radius", self.circle_radius)
+        _validate_non_negative("circle_radius_tolerance", self.circle_radius_tolerance)
+        _validate_positive("center_distance", self.center_distance)
+        _validate_non_negative(
+            "center_distance_tolerance", self.center_distance_tolerance
+        )
+        _validate_positive("center_cluster_distance", self.center_cluster_distance)
+        _validate_positive_int("min_candidate_circles", self.min_candidate_circles)
+        _validate_positive("mean_cone_distance", self.mean_cone_distance)
+        _validate_non_negative(
+            "mean_cone_distance_tolerance", self.mean_cone_distance_tolerance
+        )
+        _validate_non_negative("max_residual", self.max_residual)
+        _validate_positive_int(
+            "max_cones_for_relocalization", self.max_cones_for_relocalization
+        )
+        _validate_min_int("max_powerset_size", self.max_powerset_size, 3)
 
 
-@dataclass
+@dataclass(frozen=True)
 class PipelineConfig:
     """Top-level configuration for the full path planning pipeline."""
 
     sorting: SortingConfig = field(default_factory=SortingConfig)
     matching: MatchingConfig = field(default_factory=MatchingConfig)
     path: PathConfig = field(default_factory=PathConfig)
+    # used only by the skidpad mission
+    skidpad: SkidpadConfig = field(default_factory=SkidpadConfig)
 
     def to_json(self) -> str:
         """Serialize configuration to JSON string."""
@@ -275,64 +328,18 @@ class PipelineConfig:
         sorting = SortingConfig(**data.get("sorting", {}), cost_weights=cost_weights)
         matching = MatchingConfig(**data.get("matching", {}))
         path = PathConfig(**path_data)
+        # absent from JSON written before skidpad settings were part of the
+        # pipeline config
+        skidpad = SkidpadConfig(**data.get("skidpad", {}))
 
-        return cls(sorting=sorting, matching=matching, path=path)
-
-
-@dataclass
-class SkidpadConfig:
-    """Configuration for skidpad relocalization. Separate from PipelineConfig."""
-
-    # expected circle radius (meters, FSG rules)
-    circle_radius: float = 7.625
-    circle_radius_tolerance: float = 1.0
-
-    # expected distance between circle centers (meters)
-    center_distance: float = 18.25
-    center_distance_tolerance: float = 0.5
-
-    # DBSCAN clustering for circle center detection
-    dbscan_eps: float = 3.0
-    dbscan_min_samples: int = 1
-
-    # mean cone distance from fitted circle
-    mean_cone_distance: float = 2.4
-    mean_cone_distance_tolerance: float = 1.5
-
-    # maximum residual for circle fit acceptance
-    max_residual: float = 0.4
-
-    # maximum number of closest cones to use for relocalization
-    max_cones_for_relocalization: int = 20
-
-    # maximum powerset size for circle fitting. 3 reproduces the behaviour of
-    # the released algorithm; see circle_fit_powerset for why.
-    max_powerset_size: int = 3
-
-    def __post_init__(self) -> None:
-        _validate_positive("circle_radius", self.circle_radius)
-        _validate_non_negative("circle_radius_tolerance", self.circle_radius_tolerance)
-        _validate_positive("center_distance", self.center_distance)
-        _validate_non_negative(
-            "center_distance_tolerance", self.center_distance_tolerance
-        )
-        _validate_positive("dbscan_eps", self.dbscan_eps)
-        _validate_positive_int("dbscan_min_samples", self.dbscan_min_samples)
-        _validate_positive("mean_cone_distance", self.mean_cone_distance)
-        _validate_non_negative(
-            "mean_cone_distance_tolerance", self.mean_cone_distance_tolerance
-        )
-        _validate_non_negative("max_residual", self.max_residual)
-        _validate_positive_int(
-            "max_cones_for_relocalization", self.max_cones_for_relocalization
-        )
-        _validate_min_int("max_powerset_size", self.max_powerset_size, 3)
+        return cls(sorting=sorting, matching=matching, path=path, skidpad=skidpad)
 
 
-def default_config(mission: MissionTypes) -> PipelineConfig:  # noqa: ARG001
-    """Return a PipelineConfig with per-mission defaults.
+def default_config(mission: MissionTypes) -> PipelineConfig:
+    """Return a PipelineConfig with the defaults for `mission`.
 
-    Every mission currently uses the same values; the argument is kept so that
-    mission-specific defaults have an obvious home.
+    The defaults live in the mission registry, `fsd_path_planning.missions`.
     """
-    return PipelineConfig()
+    from fsd_path_planning.missions import mission_spec
+
+    return mission_spec(mission).default_config()

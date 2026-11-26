@@ -153,10 +153,21 @@ class ConeSorting:
         # make transition from set inputs to usable state variables
         self.transition_input_to_state()
 
-        left_cones, right_cones = self.trace_sorter.sort_left_right(
-            self.state.cones_by_type,
-            self.state.position_global,
-            self.state.direction_global,
+        left_cones, right_cones, left_outcome, right_outcome = (
+            self.trace_sorter.sort_left_right_with_outcomes(
+                self.state.cones_by_type,
+                self.state.position_global,
+                self.state.direction_global,
+            )
         )
 
-        return SortingResult(left_cones=left_cones, right_cones=right_cones)
+        return SortingResult(
+            left_cones=left_cones,
+            right_cones=right_cones,
+            left_outcome=left_outcome,
+            right_outcome=right_outcome,
+        )
+
+    def run(self, stage_input: ConeSortingInput) -> SortingResult:
+        """Sort the cones in `stage_input`; the `Stage` entry point."""
+        return self.run_cone_sorting(stage_input)

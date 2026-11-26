@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
-from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     adjacency_matrix_to_borders_and_targets,
     angle_difference,
@@ -76,7 +74,7 @@ class TestFindAllEndConfigurations:
         assert len(all_configurations) == len(is_end)
         assert np.any(is_end)
 
-    def test_raises_when_no_valid_path_can_be_built(self):
+    def test_returns_no_rows_when_no_valid_path_can_be_built(self):
         points = np.array(
             [
                 [0.0, 1.0, ConeTypes.LEFT],
@@ -93,21 +91,21 @@ class TestFindAllEndConfigurations:
             dtype=np.int32,
         )
 
-        with pytest.raises(NoPathError):
-            find_all_end_configurations(
-                points=points,
-                cone_type=ConeTypes.LEFT,
-                start_idx=0,
-                adjacency_matrix=adjacency_matrix,
-                target_length=3,
-                threshold_directional_angle=np.deg2rad(80),
-                threshold_absolute_angle=np.deg2rad(100),
-                first_k_indices_must_be=np.zeros(0, dtype=np.int32),
-                car_position=np.array([0.0, 0.0]),
-                car_direction=np.array([1.0, 0.0]),
-                car_size=1.0,
-                store_all_end_configurations=False,
-            )
+        end_configurations, _ = find_all_end_configurations(
+            points=points,
+            cone_type=ConeTypes.LEFT,
+            start_idx=0,
+            adjacency_matrix=adjacency_matrix,
+            target_length=3,
+            threshold_directional_angle=np.deg2rad(80),
+            threshold_absolute_angle=np.deg2rad(100),
+            first_k_indices_must_be=np.zeros(0, dtype=np.int32),
+            car_position=np.array([0.0, 0.0]),
+            car_direction=np.array([1.0, 0.0]),
+            car_size=1.0,
+            store_all_end_configurations=False,
+        )
+        assert end_configurations.shape[0] == 0
 
     def test_filters_configurations_by_required_prefix(self):
         points = np.array(
