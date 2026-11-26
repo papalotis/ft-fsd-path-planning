@@ -17,7 +17,7 @@ somewhere else. The report therefore gives four numbers:
 
 | Metric | Meaning |
 | --- | --- |
-| `lateral` | How far apart the two curves are over the arc length they share. This is the one that says whether the car would drive a different line, and the one the run is gated on. |
+| `lateral` | The cross-track distance: how far a point on one path lies from the nearest point on the other, measured on smooth curves through the samples and over the stretch both paths cover. It is blind to samples sliding along the same curve. This is the one that says whether the car would drive a different line, and the one the run is gated on. |
 | `length` | How much longer or shorter the planned path became. The far end of the horizon is a sampling artefact, so it has a looser tolerance of its own. |
 | `curvature` | The largest difference in curvature at matched positions. |
 | `samples moved` | How far the sample points slid along the curve. Large here with a small `lateral` means the same trajectory, resampled. |
@@ -61,3 +61,11 @@ Notes:
 - The JIT is warmed up on a throwaway planner before each run, but Numba still
   compiles new type specialisations lazily, so an occasional multi-second frame
   in the `max` column is compilation, not the algorithm.
+
+Frames on which the sorter of a trackdrive or autocross run found no cones at
+all are reported on a separate `not gated` line. On those frames the planner
+only replays and extends the path it planned earlier, so any earlier
+difference is extrapolated as the car keeps moving; they say nothing about how
+well the code plans a track. In the bundled data they are the last frames of
+the FSS log, where the car drives off the end of the mapped track. Skidpad and
+acceleration never run the sorter, so all of their frames are gated.

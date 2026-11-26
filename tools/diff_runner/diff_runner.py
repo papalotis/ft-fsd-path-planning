@@ -150,6 +150,20 @@ def percentile(values: np.ndarray, q: float) -> float:
     return float(np.percentile(values, q)) if values.size else float("nan")
 
 
+# Missions that plan from sorted cones. The others follow a stored reference
+# path and never run the sorter, so an empty sort result means nothing there.
+SORTING_MISSIONS = frozenset({"trackdrive", "autocross"})
+
+
+def planner_was_blind(store, spec: RunSpec, frame: int) -> bool:
+    """Whether the base ref's sorter returned no cones on either side."""
+    if spec.mission not in SORTING_MISSIONS:
+        return False
+    left = store[f"{spec.key}|{frame}|sorted_left"]
+    right = store[f"{spec.key}|{frame}|sorted_right"]
+    return len(left) == 0 and len(right) == 0
+
+
 def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
     """Collect, for one run, what changed and by how much."""
     n_frames = int(base[f"{spec.key}|meta|n_frames"])
@@ -157,8 +171,10 @@ def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
         stage: {"differing": 0, "first": None, "raw": 0.0} for stage in stage_names
     }
     deviation = PathDeviation.zero()
+    blind_deviation = PathDeviation.zero()
     worst_frame = None
     frames_beyond_noise = 0
+    blind_frames = 0
 
     for frame in range(n_frames):
         for stage in stage_names:
@@ -180,6 +196,14 @@ def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
         path_name = f"{spec.key}|{frame}|path"
         if path_name in head:
             frame_deviation = path_deviation(base[path_name], head[path_name])
+            if planner_was_blind(base, spec, frame):
+                # The sorter found no cones, so the planner only replays and
+                # extends the path it planned earlier. Small differences from
+                # before are extrapolated here; the frame says nothing about how
+                # well the code plans a track, so it is reported, not gated.
+                blind_frames += 1
+                blind_deviation = blind_deviation.combine(frame_deviation)
+                continue
             if frame_deviation.lateral > deviation.lateral:
                 worst_frame = frame
             if frame_deviation.lateral > 1e-9:
@@ -192,6 +216,8 @@ def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
         "deviation": deviation,
         "worst_frame": worst_frame,
         "frames_beyond_noise": frames_beyond_noise,
+        "blind_frames": blind_frames,
+        "blind_deviation": blind_deviation,
         "base_ms": base[f"{spec.key}|meta|durations_ms"],
         "head_ms": head[f"{spec.key}|meta|durations_ms"],
         "base_reloc": int(base[f"{spec.key}|meta|relocalized_at"]),
@@ -254,6 +280,13 @@ def report(
                 f" {run['frames_beyond_noise']}/{n_frames} frames moved"
                 f" (worst frame {run['worst_frame']})"
             )
+            if run["blind_frames"]:
+                blind = run["blind_deviation"]
+                print(
+                    f"  not gated    {run['blind_frames']} frames where the sorter"
+                    f" found no cones and the planner replayed an older path:"
+                    f" lateral up to {blind.lateral * 1000:.3f} mm"
+                )
             for stage, entry in run["stages"].items():
                 print(
                     f"  {stage:<20} {entry['differing']:>5}/{n_frames} frames differ"

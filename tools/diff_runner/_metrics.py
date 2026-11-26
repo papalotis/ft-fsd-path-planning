@@ -6,9 +6,10 @@ The path is a curve sampled at a fixed number of points, so a change that moves
 the samples a little along the same curve looks as large as one that steers the
 car somewhere else. These metrics separate the two:
 
-- ``lateral``: how far the two curves are apart, in metres, measured over the
-  arc length they share. This is the one that says whether the car would drive
-  somewhere else.
+- ``lateral``: the cross-track distance between the two curves, in metres: how
+  far a point on one lies from the nearest point on the other, over the stretch
+  both cover. This is the one that says whether the car would drive somewhere
+  else, and it is blind to samples sliding along the same curve.
 - ``length``: how much longer or shorter the planned path became.
 - ``curvature``: the largest difference in curvature at matched positions along
   the path, in 1/m.
@@ -21,9 +22,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.interpolate import splev, splprep
 
-# Positions along the shared arc length at which the two curves are compared.
+# Positions along the shared arc length at which curvature is compared.
 RESAMPLE_POINTS = 200
+# Points on the smooth curve through each path's samples, for the cross-track
+# distance: about 5 cm apart over a 20 m path.
+DENSE_POINTS = 400
 
 
 @dataclass(frozen=True)
@@ -77,6 +82,66 @@ def resample(xy: np.ndarray, values: np.ndarray, at: np.ndarray) -> np.ndarray:
     return np.column_stack([np.interp(at, s, column) for column in values.T])
 
 
+def densify(xy: np.ndarray, n_points: int = DENSE_POINTS) -> np.ndarray:
+    """A dense sampling of the smooth curve through the given points.
+
+    The planner's output is itself sampled from a cubic spline, so a cubic
+    through its samples recovers the curve it came from far better than
+    straight lines between samples half a metre apart, which on a tight corner
+    are off by several millimetres on their own.
+    """
+    keep = np.concatenate([[True], np.linalg.norm(np.diff(xy, axis=0), axis=1) > 1e-9])
+    xy = xy[keep]
+    if len(xy) < 2:
+        return xy
+    s = arc_length(xy)
+    degree = min(3, len(xy) - 1)
+    try:
+        tck, _ = splprep(xy.T, u=s, s=0, k=degree)
+    except (ValueError, TypeError):
+        return xy
+    return np.array(splev(np.linspace(0.0, s[-1], n_points), tck)).T
+
+
+def project(points: np.ndarray, curve: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Distance from each point to a polyline, and whether it projects inside it.
+
+    A point whose nearest location on the curve is one of its two ends, beyond
+    which the curve does not continue, is outside the stretch the two curves
+    share; its distance says how much longer one path is, not how far apart
+    they are, so it is flagged rather than counted as sideways movement.
+    """
+    start, end = curve[:-1], curve[1:]
+    segment = end - start
+    squared = np.maximum((segment**2).sum(axis=1), 1e-18)
+    relative = points[:, None, :] - start[None, :, :]
+    t = (relative * segment[None]).sum(axis=-1) / squared[None]
+    clamped = np.clip(t, 0.0, 1.0)
+    nearest = start[None] + clamped[..., None] * segment[None]
+    distance = np.linalg.norm(points[:, None, :] - nearest, axis=-1)
+
+    best = distance.argmin(axis=1)
+    rows = np.arange(len(points))
+    best_t = t[rows, best]
+    overhang = ((best == 0) & (best_t < 0.0)) | (
+        (best == len(segment) - 1) & (best_t > 1.0)
+    )
+    return distance[rows, best], ~overhang
+
+
+def cross_track(base_xy: np.ndarray, head_xy: np.ndarray) -> float:
+    """Largest sideways distance between two curves, over the stretch they share."""
+    base_dense, head_dense = densify(base_xy), densify(head_xy)
+    if len(base_dense) < 2 or len(head_dense) < 2:
+        return float("inf")
+    worst = 0.0
+    for points, curve in ((head_dense, base_dense), (base_dense, head_dense)):
+        distance, inside = project(points, curve)
+        if inside.any():
+            worst = max(worst, float(distance[inside].max()))
+    return worst
+
+
 def path_deviation(base: np.ndarray, head: np.ndarray) -> PathDeviation:
     """Compare two parameterized paths, each (N, 4) of theta, x, y, curvature."""
     if base.ndim != 2 or head.ndim != 2 or base.shape[1] < 3 or head.shape[1] < 3:
@@ -87,20 +152,19 @@ def path_deviation(base: np.ndarray, head: np.ndarray) -> PathDeviation:
             if np.array_equal(base, head)
             else (PathDeviation.incomparable())
         )
+    if base.shape == head.shape and np.array_equal(base, head):
+        return PathDeviation.zero()
 
     base_xy, head_xy = base[:, 1:3], head[:, 1:3]
     base_s, head_s = arc_length(base_xy), arc_length(head_xy)
 
-    shared = min(base_s[-1], head_s[-1])
-    at = np.linspace(0.0, shared, RESAMPLE_POINTS)
-
-    lateral = float(
-        np.linalg.norm(
-            resample(base_xy, base_xy, at) - resample(head_xy, head_xy, at), axis=1
-        ).max()
-    )
+    lateral = cross_track(base_xy, head_xy)
     length = abs(float(base_s[-1] - head_s[-1]))
 
+    # Curvature is compared at the same distance along each path, over the
+    # stretch both cover.
+    shared = min(base_s[-1], head_s[-1])
+    at = np.linspace(0.0, shared, RESAMPLE_POINTS)
     curvature = 0.0
     if base.shape[1] > 3 and head.shape[1] > 3:
         curvature = float(
