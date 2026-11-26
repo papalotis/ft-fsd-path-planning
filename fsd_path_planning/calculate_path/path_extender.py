@@ -74,13 +74,15 @@ def extend_path(
 
     radius_to_use = min(max(radius, min_extension_radius), max_extension_radius)
 
-    if radius_to_use < circular_arc_threshold:
-        relevant_centered = relevant_path - center
-        three_points = relevant_centered[[0, len(relevant_centered) // 2, -1]]
+    relevant_centered = relevant_path - center
+    three_points = relevant_centered[[0, len(relevant_centered) // 2, -1]]
+    homogeneous = np.column_stack((np.ones(3), three_points))
+    orientation_sign = np.sign(np.linalg.det(homogeneous))
 
-        homogeneous = np.column_stack((np.ones(3), three_points))
-        orientation_sign = np.sign(np.linalg.det(homogeneous))
-
+    # On an exactly straight tail the circle fit is degenerate and the turning
+    # direction is zero: an "arc" would repeat the last point over and over,
+    # and the spline refit of the extended path would fail. Extend straight.
+    if radius_to_use < circular_arc_threshold and orientation_sign != 0:
         start_angle = float(angle_from_2d_vector(three_points[0]))
         end_angle = start_angle + orientation_sign * np.pi
         new_angles = np.linspace(start_angle, end_angle)
