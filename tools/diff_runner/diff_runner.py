@@ -28,9 +28,19 @@ from pathlib import Path
 
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from _metrics import PathDeviation, path_deviation  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COLLECT_SCRIPT = Path(__file__).resolve().parent / "_collect.py"
 WORKING_TREE = "WORKTREE"
+# How far the planned trajectory may move before a run counts as a regression.
+# A centimetre is well inside the noise of cone detection and vehicle state.
+DEFAULT_TOLERANCE = 0.01
+# The far end of the horizon is a sampling artefact, so the length of the
+# planned path is held to a looser bound than its position.
+DEFAULT_LENGTH_TOLERANCE = 0.5
 
 # (dataset file, mission name). Missions follow the demo's filename convention.
 DATASETS = (
@@ -140,63 +150,117 @@ def percentile(values: np.ndarray, q: float) -> float:
     return float(np.percentile(values, q)) if values.size else float("nan")
 
 
-def report(base_file: Path, head_file: Path, specs: list[RunSpec]) -> bool:
+def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
+    """Collect, for one run, what changed and by how much."""
+    n_frames = int(base[f"{spec.key}|meta|n_frames"])
+    stages: dict[str, dict] = {
+        stage: {"differing": 0, "first": None, "raw": 0.0} for stage in stage_names
+    }
+    deviation = PathDeviation.zero()
+    worst_frame = None
+    frames_beyond_noise = 0
+
+    for frame in range(n_frames):
+        for stage in stage_names:
+            name = f"{spec.key}|{frame}|{stage}"
+            entry = stages[stage]
+            if name not in head:
+                entry["differing"] += 1
+                entry["raw"] = float("inf")
+                entry["first"] = frame if entry["first"] is None else entry["first"]
+                continue
+            raw = compare_arrays(base[name], head[name])
+            if raw is None:
+                continue
+            entry["differing"] += 1
+            entry["raw"] = max(entry["raw"], raw)
+            if entry["first"] is None:
+                entry["first"] = frame
+
+        path_name = f"{spec.key}|{frame}|path"
+        if path_name in head:
+            frame_deviation = path_deviation(base[path_name], head[path_name])
+            if frame_deviation.lateral > deviation.lateral:
+                worst_frame = frame
+            if frame_deviation.lateral > 1e-9:
+                frames_beyond_noise += 1
+            deviation = deviation.combine(frame_deviation)
+
+    return {
+        "n_frames": n_frames,
+        "stages": {k: v for k, v in stages.items() if v["differing"]},
+        "deviation": deviation,
+        "worst_frame": worst_frame,
+        "frames_beyond_noise": frames_beyond_noise,
+        "base_ms": base[f"{spec.key}|meta|durations_ms"],
+        "head_ms": head[f"{spec.key}|meta|durations_ms"],
+        "base_reloc": int(base[f"{spec.key}|meta|relocalized_at"]),
+        "head_reloc": int(head[f"{spec.key}|meta|relocalized_at"]),
+    }
+
+
+def report(
+    base_file: Path,
+    head_file: Path,
+    specs: list[RunSpec],
+    tolerance: float,
+    length_tolerance: float,
+) -> bool:
     base = np.load(base_file, allow_pickle=False)
     head = np.load(head_file, allow_pickle=False)
 
     from _collect import STAGE_NAMES  # noqa: PLC0415  (same directory)
 
-    all_match = True
+    within_tolerance = True
     for spec in specs:
-        n_frames = int(base[f"{spec.key}|meta|n_frames"])
-        rows = []
-        for stage in STAGE_NAMES:
-            n_differing = 0
-            first_diff = None
-            worst = 0.0
-            for frame in range(n_frames):
-                name = f"{spec.key}|{frame}|{stage}"
-                if name not in head:
-                    n_differing += 1
-                    first_diff = frame if first_diff is None else first_diff
-                    worst = float("inf")
-                    continue
-                diff = compare_arrays(base[name], head[name])
-                if diff is not None:
-                    n_differing += 1
-                    worst = max(worst, diff)
-                    if first_diff is None:
-                        first_diff = frame
-            if n_differing:
-                all_match = False
-                rows.append((stage, n_differing, worst, first_diff))
+        run = summarize_run(base, head, spec, STAGE_NAMES)
+        deviation = run["deviation"]
+        n_frames = run["n_frames"]
 
-        base_ms = base[f"{spec.key}|meta|durations_ms"]
-        head_ms = head[f"{spec.key}|meta|durations_ms"]
-        base_reloc = int(base[f"{spec.key}|meta|relocalized_at"])
-        head_reloc = int(head[f"{spec.key}|meta|relocalized_at"])
+        if not run["stages"] and run["base_reloc"] == run["head_reloc"]:
+            status = "IDENTICAL"
+        elif deviation.within(tolerance, length_tolerance):
+            status = "WITHIN TOLERANCE"
+        else:
+            status = "BEYOND TOLERANCE"
+            within_tolerance = False
 
-        status = "IDENTICAL" if not rows else "DIFFERS"
         print(f"\n{spec.key}  ({n_frames} frames)  {status}")
         print(
-            f"  time p50 {percentile(base_ms, 50):6.2f} ->"
-            f" {percentile(head_ms, 50):6.2f} ms"
-            f"   p95 {percentile(base_ms, 95):6.2f} ->"
-            f" {percentile(head_ms, 95):6.2f} ms"
-            f"   max {base_ms.max():7.2f} -> {head_ms.max():7.2f} ms"
+            f"  time p50 {percentile(run['base_ms'], 50):6.2f} ->"
+            f" {percentile(run['head_ms'], 50):6.2f} ms"
+            f"   p95 {percentile(run['base_ms'], 95):6.2f} ->"
+            f" {percentile(run['head_ms'], 95):6.2f} ms"
+            f"   max {run['base_ms'].max():7.2f} -> {run['head_ms'].max():7.2f} ms"
         )
-        if base_reloc != head_reloc:
-            all_match = False
-            print(f"  relocalization frame {base_reloc} -> {head_reloc}  DIFFERS")
-        elif base_reloc >= 0:
-            print(f"  relocalization frame {base_reloc}")
-        for stage, n_differing, worst, first_diff in rows:
+        if run["base_reloc"] != run["head_reloc"]:
+            within_tolerance = False
             print(
-                f"  {stage:<20} {n_differing:>5}/{n_frames} frames differ"
-                f"   max abs {worst:.6g}   first frame {first_diff}"
+                f"  relocalization frame {run['base_reloc']} ->"
+                f" {run['head_reloc']}  DIFFERS"
             )
+        elif run["base_reloc"] >= 0:
+            print(f"  relocalization frame {run['base_reloc']}")
 
-    return all_match
+        if run["stages"]:
+            print(
+                f"  trajectory   lateral {deviation.lateral * 1000:9.3f} mm"
+                f"   length {deviation.length * 1000:9.3f} mm"
+                f"   curvature {deviation.curvature:.3e} 1/m"
+            )
+            print(
+                f"               samples moved along the path by up to"
+                f" {deviation.sample_shift * 1000:.3f} mm;"
+                f" {run['frames_beyond_noise']}/{n_frames} frames moved"
+                f" (worst frame {run['worst_frame']})"
+            )
+            for stage, entry in run["stages"].items():
+                print(
+                    f"  {stage:<20} {entry['differing']:>5}/{n_frames} frames differ"
+                    f"   max abs {entry['raw']:.6g}   first frame {entry['first']}"
+                )
+
+    return within_tolerance
 
 
 def main() -> int:
@@ -224,6 +288,29 @@ def main() -> int:
     )
     parser.add_argument(
         "--keep", default=None, help="directory to keep the collected .npz files in"
+    )
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=DEFAULT_TOLERANCE,
+        help=(
+            "how far the planned trajectory may move, in metres, before the run"
+            f" is called a regression (default {DEFAULT_TOLERANCE})"
+        ),
+    )
+    parser.add_argument(
+        "--length-tolerance",
+        type=float,
+        default=DEFAULT_LENGTH_TOLERANCE,
+        help=(
+            "how much longer or shorter the planned path may become, in metres"
+            f" (default {DEFAULT_LENGTH_TOLERANCE})"
+        ),
+    )
+    parser.add_argument(
+        "--exact",
+        action="store_true",
+        help="require byte-for-byte equality, as before tolerances were allowed",
     )
     args = parser.parse_args()
 
@@ -257,14 +344,18 @@ def main() -> int:
             collect(args.base, base_root, datasets_dir, specs, base_npz)
             collect(args.head, head_root, datasets_dir, specs, head_npz)
 
-            sys.path.insert(0, str(COLLECT_SCRIPT.parent))
-            identical = report(base_npz, head_npz, specs)
+            tolerance = 0.0 if args.exact else args.tolerance
+            length_tolerance = 0.0 if args.exact else args.length_tolerance
+            identical = report(base_npz, head_npz, specs, tolerance, length_tolerance)
         finally:
             for tree in created:
                 if tree != REPO_ROOT:
                     remove_worktree(tree)
 
-    print("\n" + ("No differences." if identical else "Output differs."))
+    if identical:
+        print("\nWithin tolerance." if not args.exact else "\nNo differences.")
+    else:
+        print("\nOutput differs beyond tolerance.")
     return 0 if identical else 1
 
 
