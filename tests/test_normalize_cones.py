@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner, normalize_cones
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning.common_types import FloatArray
 
 
 def per_type_cones() -> list[FloatArray]:

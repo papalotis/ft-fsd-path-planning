@@ -5,12 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.sorting_cones.trace_sorter import (
     adjacency_matrix,
     nearby_cone_search,
 )
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 

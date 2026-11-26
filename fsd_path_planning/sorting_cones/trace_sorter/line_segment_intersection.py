@@ -8,7 +8,7 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray
+from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import my_njit
 
 

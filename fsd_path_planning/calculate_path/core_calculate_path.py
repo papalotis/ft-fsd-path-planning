@@ -39,8 +39,8 @@ from fsd_path_planning.calculate_path.path_extender import (
     remove_path_not_in_prediction_horizon as _remove_not_in_horizon,
 )
 from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
+from fsd_path_planning.common_types import FloatArray, IntArray, PathResult
 from fsd_path_planning.config_dataclasses import PathConfig
-from fsd_path_planning.types import FloatArray, IntArray, PathResult
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,

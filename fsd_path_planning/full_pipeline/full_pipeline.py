@@ -22,6 +22,7 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
 from fsd_path_planning.calculate_path.skidpad_calculate_path import (
     SkidpadCalculatePath,
 )
+from fsd_path_planning.common_types import ConeInput, FloatArray, IntArray
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching,
     ConeMatchingInput,
@@ -41,7 +42,6 @@ from fsd_path_planning.sorting_cones.core_cone_sorting import (
     ConeSorting,
     ConeSortingInput,
 )
-from fsd_path_planning.types import ConeInput, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.input_validation import (
     convert_direction_to_array,

@@ -12,9 +12,9 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from fsd_path_planning.common_types import FloatArray, SortingResult
 from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
-from fsd_path_planning.types import FloatArray, SortingResult
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.input_validation import normalize_cones
 

@@ -13,11 +13,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from fsd_path_planning.common_types import FloatArray, IntArray, MatchingResult
 from fsd_path_planning.cone_matching.functional_cone_matching import (
     calculate_virtual_cones_for_both_sides,
 )
 from fsd_path_planning.config_dataclasses import MatchingConfig
-from fsd_path_planning.types import FloatArray, IntArray, MatchingResult
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 MatchedCones = tuple[FloatArray, FloatArray, IntArray, IntArray]

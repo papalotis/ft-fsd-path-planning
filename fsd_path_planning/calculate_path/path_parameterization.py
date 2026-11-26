@@ -13,7 +13,7 @@ from typing import cast
 import numpy as np
 from scipy.ndimage import uniform_filter1d
 
-from fsd_path_planning.types import FloatArray, IntArray
+from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import (
     Numeric,
     angle_from_2d_vector,

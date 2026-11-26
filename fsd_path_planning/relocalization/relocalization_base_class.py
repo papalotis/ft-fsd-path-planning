@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 
 from typing_extensions import Protocol
 
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning.common_types import FloatArray
 
 
 class RelocalizationCallable(Protocol):

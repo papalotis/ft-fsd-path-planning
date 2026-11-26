@@ -27,8 +27,8 @@ from collections.abc import Callable, Iterator
 
 import numpy as np
 
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.full_pipeline.full_pipeline import PathPlanner
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_difference,

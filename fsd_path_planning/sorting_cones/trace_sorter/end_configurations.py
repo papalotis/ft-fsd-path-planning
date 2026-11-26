@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import numpy as np
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
 from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
     lines_segments_intersect_indicator,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     my_in1d,

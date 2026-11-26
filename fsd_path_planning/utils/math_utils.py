@@ -12,7 +12,7 @@ from typing import TypeVar, cast
 
 import numpy as np
 
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning.common_types import FloatArray
 
 try:
     from numba import jit

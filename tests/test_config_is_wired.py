@@ -13,6 +13,7 @@ import numpy as np
 import pytest
 
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.config_dataclasses import (
     CostWeights,
     MatchingConfig,
@@ -26,7 +27,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
 from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     neighbor_bool_mask_can_be_added_to_attempt,
 )
-from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 
 POSITION = np.array([0.0, 0.0])

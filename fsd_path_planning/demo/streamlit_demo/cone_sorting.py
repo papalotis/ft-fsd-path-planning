@@ -7,6 +7,7 @@ import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.demo.streamlit_demo.common import (
     CONE_TYPE_TO_COLOR,
     create_animation,
@@ -27,7 +28,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
     NoPathError,
     find_all_end_configurations,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.utils import Timer
 

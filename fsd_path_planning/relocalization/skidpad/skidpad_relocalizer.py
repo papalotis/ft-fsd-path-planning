@@ -12,12 +12,12 @@ from scipy.sparse import coo_matrix
 from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
+from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
 )
 from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
-from fsd_path_planning.types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     calc_pairwise_distances,

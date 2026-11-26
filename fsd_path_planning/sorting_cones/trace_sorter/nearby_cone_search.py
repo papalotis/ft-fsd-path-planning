@@ -14,10 +14,10 @@ from sys import maxsize
 
 import numpy as np
 
+from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_search_direction_for_one,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     my_cdist_sq_euclidean,

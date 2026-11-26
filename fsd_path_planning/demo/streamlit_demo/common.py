@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 import streamlit as st
 from matplotlib.axes._axes import Axes
 
-from fsd_path_planning.types import FloatArray
+from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 

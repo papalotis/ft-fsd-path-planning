@@ -12,6 +12,12 @@ from typing import cast
 
 import numpy as np
 
+from fsd_path_planning.common_types import (
+    BoolArray,
+    FloatArray,
+    IntArray,
+    SortableConeTypes,
+)
 from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     AdjacencyMatrixCache,
@@ -26,7 +32,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
 )
-from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.utils import Timer
 
 

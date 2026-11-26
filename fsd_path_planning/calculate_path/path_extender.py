@@ -6,7 +6,7 @@ from typing import cast
 
 import numpy as np
 
-from fsd_path_planning.types import BoolArray, FloatArray
+from fsd_path_planning.common_types import BoolArray, FloatArray
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     circle_fit,

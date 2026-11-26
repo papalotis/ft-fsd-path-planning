@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fsd_path_planning.types import FloatArray, IntArray
+from fsd_path_planning.common_types import FloatArray, IntArray
 
 
 def side_score(matches: IntArray) -> tuple:
