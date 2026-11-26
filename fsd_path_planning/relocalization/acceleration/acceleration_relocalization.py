@@ -14,19 +14,25 @@ from fsd_path_planning.relocalization.relocalization_base_class import (
 from fsd_path_planning.types import FloatArray
 from fsd_path_planning.utils.math_utils import rotate
 
+DEFAULT_RANDOM_SEED = 42
 
-def select_random_subset(points, subset_size):
+
+def select_random_subset(points, subset_size, rng: np.random.Generator | None = None):
     """
     Randomly selects a subset of points from the given set of points.
 
     Parameters:
     - points: A numpy array of shape (n, 2) where n is the number of points.
     - subset_size: The number of points to select.
+    - rng: The generator to draw from. A fresh seeded one is used when omitted,
+      so that a call without a generator is still reproducible.
 
     Returns:
     - A subset of the given points.
     """
-    indices = np.random.choice(points.shape[0], subset_size, replace=False)
+    if rng is None:
+        rng = np.random.default_rng(DEFAULT_RANDOM_SEED)
+    indices = rng.choice(points.shape[0], subset_size, replace=False)
     return points[indices]
 
 
@@ -64,24 +70,32 @@ def calculate_error(points, coefficients):
     return error
 
 
-def random_subset_fit_error(points, subset_size):
+def random_subset_fit_error(
+    points, subset_size, rng: np.random.Generator | None = None
+):
     """
     Selects a random subset of points, performs a linear fit, and calculates the error.
 
     Parameters:
     - points: A numpy array of shape (n, 2) where n is the number of points.
     - subset_size: The number of points to select for the subset.
+    - rng: The generator to draw the subset from.
 
     Returns:
     - The sum of squared errors for the linear fit on the selected subset of points.
     """
-    subset = select_random_subset(points, subset_size)
+    subset = select_random_subset(points, subset_size, rng)
     coefficients = linear_fit(subset)
     error = calculate_error(subset, coefficients)
     return coefficients, error
 
 
-def best_fit(points: FloatArray, subset_size: int, iterations: int) -> FloatArray:
+def best_fit(
+    points: FloatArray,
+    subset_size: int,
+    iterations: int,
+    rng: np.random.Generator | None = None,
+) -> FloatArray:
     """
     Calls the random_subset_fit_error function many times and returns the coefficients
     with the smallest error.
@@ -90,15 +104,20 @@ def best_fit(points: FloatArray, subset_size: int, iterations: int) -> FloatArra
     - points: A numpy array of shape (n, 2) where n is the number of points.
     - subset_size: The number of points to select for each subset.
     - iterations: The number of iterations to perform.
+    - rng: The generator to draw the subsets from. A fresh seeded one is used
+      when omitted.
 
     Returns:
     - Coefficients of the linear fit with the smallest error.
     """
+    if rng is None:
+        rng = np.random.default_rng(DEFAULT_RANDOM_SEED)
+
     best_coefficients = np.zeros(2)
     smallest_error = np.inf
 
     for _ in range(iterations):
-        coefficients, error = random_subset_fit_error(points, subset_size)
+        coefficients, error = random_subset_fit_error(points, subset_size, rng)
         if error < smallest_error:
             smallest_error = error
             best_coefficients = coefficients
@@ -116,6 +135,18 @@ def best_fit(points: FloatArray, subset_size: int, iterations: int) -> FloatArra
 
 
 class AccelerationRelocalizer(Relocalizer):
+    def __init__(self, random_seed: int = DEFAULT_RANDOM_SEED) -> None:
+        """
+        Args:
+            random_seed: Seed for the generator that draws the subsets of the
+                line fit. The relocalizer owns its generator so that a run can
+                be replayed; drawing from the global NumPy generator made the
+                relocalization result depend on whatever else had used it.
+        """
+        super().__init__()
+        self.random_seed = random_seed
+        self._rng = np.random.default_rng(random_seed)
+
     def do_relocalization_once(
         self,
         cones: list[FloatArray],
@@ -147,7 +178,9 @@ class AccelerationRelocalizer(Relocalizer):
         if len(cones_expected_left) < 4:
             return
 
-        coeffs = best_fit(cones_expected_left, subset_size=3, iterations=100)
+        coeffs = best_fit(
+            cones_expected_left, subset_size=3, iterations=100, rng=self._rng
+        )
 
         slope = coeffs[0]
 
