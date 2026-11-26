@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
+from typing import Literal
 
 import numpy as np
 
@@ -318,6 +319,29 @@ class PipelineConfig:
     # used only by the skidpad mission
     skidpad: SkidpadConfig = field(default_factory=SkidpadConfig)
 
+    # error policy; see fsd_path_planning.health. "recover" runs the fallbacks
+    # and logs each error, "raise" lets errors propagate. The environment
+    # variable FSD_PATH_PLANNING_STRICT=1 selects "raise" regardless.
+    on_error: Literal["recover", "raise"] = "recover"
+    # bounds on recovery, off when None: past either, the planner returns an
+    # empty path with status NO_VALID_PATH instead of a stale one
+    max_consecutive_recoveries: int | None = None
+    max_distance_without_good_path: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.on_error not in ("recover", "raise"):
+            raise ValueError(
+                f'on_error must be "recover" or "raise", got {self.on_error!r}'
+            )
+        if self.max_consecutive_recoveries is not None:
+            _validate_min_int(
+                "max_consecutive_recoveries", self.max_consecutive_recoveries, 0
+            )
+        if self.max_distance_without_good_path is not None:
+            _validate_positive(
+                "max_distance_without_good_path", self.max_distance_without_good_path
+            )
+
     def to_json(self) -> str:
         """Serialize configuration to JSON string."""
         return json.dumps(asdict(self), indent=2)
@@ -344,7 +368,19 @@ class PipelineConfig:
         # pipeline config
         skidpad = SkidpadConfig(**data.get("skidpad", {}))
 
-        return cls(sorting=sorting, matching=matching, path=path, skidpad=skidpad)
+        policy = {
+            key: data[key]
+            for key in (
+                "on_error",
+                "max_consecutive_recoveries",
+                "max_distance_without_good_path",
+            )
+            if key in data
+        }
+
+        return cls(
+            sorting=sorting, matching=matching, path=path, skidpad=skidpad, **policy
+        )
 
 
 def default_config(mission: MissionTypes) -> PipelineConfig:

@@ -37,6 +37,13 @@ from fsd_path_planning.geometry.angles import (
     angle_from_2d_vector,
     unit_2d_vector_from_angle,
 )
+from fsd_path_planning.health import (
+    ErrorPolicy,
+    HealthTracker,
+    PathStatus,
+    PlannerHealth,
+    RecoveryHandler,
+)
 from fsd_path_planning.missions import MISSIONS, mission_spec
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationInput,
@@ -73,18 +80,49 @@ MissionToRelocalizer: dict[MissionTypes, type[Relocalizer]] = {
 
 
 @dataclass(frozen=True)
-class StageResults:
-    """What each stage returned for the last frame.
+class PlannerResult:
+    """Everything the planner produced for one frame."""
 
-    A stage that did not run on that frame is None: the relocalizer for
-    missions without one, sorting and matching for missions that follow a
-    known map.
-    """
-
+    path: FloatArray
+    """(N, 4) waypoints in the global frame: spline parameter, x, y,
+    curvature. Empty, (0, 4), when health.status is NO_VALID_PATH."""
+    health: PlannerHealth
+    """The planner's health after this frame."""
     relocalization: RelocalizationResult | None
+    """None for missions without a relocalizer."""
     sorting: SortingResult | None
+    """None for missions that follow a known map."""
     matching: MatchingResult | None
-    path: PathResult
+    """None for missions that follow a known map."""
+    path_result: PathResult
+    """What the path stage returned, in the frame it planned in."""
+
+    def as_tuple(
+        self,
+    ) -> tuple[
+        FloatArray, FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray
+    ]:
+        """The 7-tuple that calculate_path_in_global_frame returns with
+        return_intermediate_results=True."""
+        empty_cones = np.zeros((0, 2), dtype=float)
+        empty_matches = np.zeros(0, dtype=int)
+        sorted_left, sorted_right = (
+            self.sorting if self.sorting is not None else (empty_cones, empty_cones)
+        )
+        if self.matching is not None:
+            left_virtual, right_virtual, left_to_right, right_to_left = self.matching
+        else:
+            left_virtual, right_virtual = empty_cones, empty_cones
+            left_to_right, right_to_left = empty_matches, empty_matches
+        return (
+            self.path,
+            sorted_left,
+            sorted_right,
+            left_virtual,
+            right_virtual,
+            left_to_right,
+            right_to_left,
+        )
 
 
 class PathPlanner:
@@ -138,9 +176,18 @@ class PathPlanner:
         self.cone_matching = cone_matching or ConeMatching(config=self.config.matching)
         self.pathing = pathing or spec.path_calculation(config=self.config.path)
         self.global_path: FloatArray | None = None
-        self.last_stage_results: StageResults | None = None
-        """What each stage returned for the most recent frame; None before
-        the first."""
+        self.last_result: PlannerResult | None = None
+        """Everything the planner produced for the most recent frame; None
+        before the first."""
+
+        # One handler for the whole planner, so that a recovery in any stage
+        # reaches the health record.
+        self._recovery = RecoveryHandler(self.config.on_error)
+        self.pathing.recovery = self._recovery
+        self._health = HealthTracker(
+            max_consecutive_recoveries=self.config.max_consecutive_recoveries,
+            max_distance_without_good_path=self.config.max_distance_without_good_path,
+        )
 
         self.experimental_performance_improvements = (
             experimental_performance_improvements
@@ -148,6 +195,29 @@ class PathPlanner:
 
     def set_global_path(self, global_path):
         self.global_path = global_path
+
+    @property
+    def error_policy(self) -> ErrorPolicy:
+        """The error policy in effect: the config's, unless the environment
+        variable FSD_PATH_PLANNING_STRICT=1 asks for "raise"."""
+        return self._recovery.policy
+
+    @property
+    def health(self) -> PlannerHealth:
+        """The planner's health after its most recent frame; see
+        `fsd_path_planning.health`."""
+        if self._health.health is None:
+            return PlannerHealth(
+                frames=0,
+                status=PathStatus.OK,
+                recoveries_total=0,
+                recoveries_by_kind={},
+                consecutive_recoveries=0,
+                frames_since_good_path=0,
+                distance_since_good_path=0.0,
+                last_recovery=None,
+            )
+        return self._health.health
 
     def _run_relocalization(
         self,
@@ -293,9 +363,29 @@ class PathPlanner:
                 *vehicle_position* has the wrong shape or non-finite values; or if
                 *vehicle_direction* is a zero vector or contains non-finite values.
         """
+        result = self.plan(cones, vehicle_position, vehicle_direction)
+        if return_intermediate_results:
+            return result.as_tuple()
+        return result.path
+
+    def plan(
+        self,
+        cones: ConeInput,
+        vehicle_position: FloatArray,
+        vehicle_direction: FloatArray | float,
+    ) -> PlannerResult:
+        """Plan one frame, and return everything the planner produced for it.
+
+        Takes the same arguments as `calculate_path_in_global_frame`, which
+        returns parts of this result. The result is also kept as
+        `last_result`.
+        """
         cones = normalize_cones(cones)
         vehicle_position = validate_vehicle_position(vehicle_position)
         vehicle_direction = convert_direction_to_array(vehicle_direction)
+        global_frame_position = vehicle_position
+
+        self._recovery.start_frame(self._health.frames)
 
         relocalization_result: RelocalizationResult | None = None
         sorting_result: SortingResult | None = None
@@ -340,29 +430,23 @@ class PathPlanner:
             )
             final_path[:, 1:3] = path_xy
 
-        self.last_stage_results = StageResults(
+        health = self._health.update(
+            global_frame_position,
+            self._recovery.recoveries_this_frame,
+            degraded=path_result.outcome.is_degraded,
+        )
+        if health.status is PathStatus.NO_VALID_PATH:
+            final_path = np.zeros((0, 4), dtype=float)
+
+        self.last_result = PlannerResult(
+            path=final_path,
+            health=health,
             relocalization=relocalization_result,
             sorting=sorting_result,
             matching=matching_result,
-            path=path_result,
+            path_result=path_result,
         )
-
-        if return_intermediate_results:
-            empty = np.zeros((0, 2), dtype=float)
-            sorted_left, sorted_right = (
-                sorting_result if sorting_result is not None else (empty, empty)
-            )
-            return (
-                final_path,
-                sorted_left,
-                sorted_right,
-                left_with_virtual,
-                right_with_virtual,
-                left_to_right_match,
-                right_to_left_match,
-            )
-
-        return final_path
+        return self.last_result
 
     @property
     def relocalization_info(self) -> RelocalizationInformation | None:

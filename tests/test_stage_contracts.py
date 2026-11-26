@@ -238,7 +238,7 @@ class TestNoTraceIsAResult:
     def test_the_pipeline_records_the_outcome(self) -> None:
         planner = PathPlanner(MissionTypes.trackdrive)
         planner.calculate_path_in_global_frame(no_cones(), POSITION, DIRECTION)
-        results = planner.last_stage_results
+        results = planner.last_result
         assert results is not None
         assert results.relocalization is None
         assert results.sorting is not None
@@ -262,10 +262,10 @@ class TestNotRelocalizedIsAResult:
             planner.calculate_path_in_global_frame(
                 cones[i], positions[i], directions[i]
             )
-            assert planner.last_stage_results is not None
-            relocalization = planner.last_stage_results.relocalization
+            assert planner.last_result is not None
+            relocalization = planner.last_result.relocalization
             assert relocalization is not None
-            assert planner.last_stage_results.sorting is None
+            assert planner.last_result.sorting is None
             outcomes.append(relocalization.outcome)
 
         assert outcomes.count(RelocalizationOutcome.RELOCALIZED) == 1

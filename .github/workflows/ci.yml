@@ -54,6 +54,8 @@ jobs:
       # Disable Numba JIT so the suite runs fast and is measurable by coverage.
       # JIT-specific behaviour is validated separately with the `jit` marker.
       NUMBA_DISABLE_JIT: "1"
+      # Errors propagate instead of being recovered from, so bugs surface.
+      FSD_PATH_PLANNING_STRICT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -79,6 +81,8 @@ jobs:
   tests-lowest:
     name: Tests (lowest dependency versions)
     runs-on: ubuntu-latest
+    env:
+      FSD_PATH_PLANNING_STRICT: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -97,6 +101,8 @@ jobs:
   regression:
     name: Regression (Python 3.12)
     runs-on: ubuntu-latest
+    env:
+      FSD_PATH_PLANNING_STRICT: "1"
     if: >-
       github.event_name == 'pull_request'
       || github.ref == 'refs/heads/main'
@@ -125,6 +131,8 @@ jobs:
   differential:
     name: Differential against golden-v1
     runs-on: ubuntu-latest
+    env:
+      FSD_PATH_PLANNING_STRICT: "1"
     if: >-
       github.event_name == 'pull_request'
       || startsWith(github.ref, 'refs/heads/refactor/')

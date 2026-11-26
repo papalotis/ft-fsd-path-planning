@@ -62,7 +62,6 @@ Python 3.10 is the minimum supported version. It stays the minimum until ROS 2 H
 
 - Every stage — `ConeSorting`, `ConeMatching`, `CalculatePath` and the relocalizers — has a `run(stage_input)` method that takes an input dataclass and returns a frozen result dataclass (the `Stage` protocol in `fsd_path_planning.stages`). The named methods (`run_cone_sorting()` and so on) still work.
 - Expected outcomes are part of the result, not exceptions. `SortingResult.left_outcome` and `right_outcome` say whether each side's trace was found, and if not, why (`TraceOutcome`). `RelocalizationResult.outcome` says whether the car is relocalized yet (`RelocalizationOutcome`).
-- `PathPlanner.last_stage_results` holds what each stage returned for the most recent frame.
 - Mission-specific setup lives in one registry, `fsd_path_planning.missions`. `MissionToRelocalizer` still works and has the same contents.
 
 #### Tooling

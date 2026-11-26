@@ -47,11 +47,17 @@ from fsd_path_planning.calculate_path.strategies import (
     PathFitStrategy,
     SplineThroughBasis,
 )
-from fsd_path_planning.common_types import FloatArray, IntArray, PathResult
+from fsd_path_planning.common_types import (
+    FloatArray,
+    IntArray,
+    PathOutcome,
+    PathResult,
+)
 from fsd_path_planning.config_dataclasses import PathConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector
 from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitter
 from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.health import RecoveryHandler
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 logger = logging.getLogger(__name__)
@@ -125,6 +131,11 @@ class CalculatePath:
         self.fit_strategy: PathFitStrategy = (
             fit_strategy if fit_strategy is not None else SplineThroughBasis()
         )
+        self.recovery = RecoveryHandler()
+        """Applies the error policy at the fallbacks. PathPlanner replaces it
+        with its own, so that recoveries reach the planner's health record."""
+        self._basis_outcome = PathOutcome.FRESH
+        self._replaced_too_far = False
         if config is not None:
             self.config = config
         else:
@@ -173,9 +184,9 @@ class CalculatePath:
                 self.calculate_initial_path(), None, None, False
             )
         ]
-        self.mpc_paths = []
-        self.path_is_trivial_list = []
-        self.path_updates = []
+        self._mpc_paths: list[FloatArray] = []
+        self._path_is_trivial_list: list[bool] = []
+        self._path_updates: list[FloatArray] = []
 
     @property
     def spline_fitter_factory(self) -> SplineFitter:
@@ -268,6 +279,7 @@ class CalculatePath:
         for strategy in self.basis_strategies:
             basis = strategy.basis(self, self.input)
             if basis is not None:
+                self._basis_outcome = getattr(strategy, "outcome", PathOutcome.FRESH)
                 return basis
         raise RuntimeError("no path basis strategy applies to this frame")
 
@@ -283,6 +295,7 @@ class CalculatePath:
         ).min()
         if min_distance_to_path > self.scalars.maximal_distance_for_valid_path:
             path_update = self.previous_paths[-1][:, 1:3]
+            self._replaced_too_far = True
         return path_update
 
     def refit_path_for_mpc_with_safety_factor(
@@ -448,9 +461,38 @@ class CalculatePath:
         """
         Store the calculated paths, in case they are need in the next calculation.
         """
-        self.path_updates = self.path_updates[-10:] + [path_update]
-        self.mpc_paths = self.mpc_paths[-10:] + [path_with_length_for_mpc]
-        self.path_is_trivial_list = self.path_is_trivial_list[-10:] + [path_is_trivial]
+        self._path_updates = self._path_updates[-10:] + [path_update]
+        self._mpc_paths = self._mpc_paths[-10:] + [path_with_length_for_mpc]
+        self._path_is_trivial_list = self._path_is_trivial_list[-10:] + [
+            path_is_trivial
+        ]
+
+    def _warn_history(self, name: str) -> None:
+        warnings.warn(
+            f"CalculatePath.{name} is deprecated and will be removed in 0.7.0;"
+            " the planner never reads it. previous_paths holds the paths it"
+            " uses.",
+            FsdPathPlanningDeprecationWarning,
+            stacklevel=3,
+        )
+
+    @property
+    def path_updates(self) -> list[FloatArray]:
+        """Deprecated: the last path updates. Nothing reads them."""
+        self._warn_history("path_updates")
+        return self._path_updates
+
+    @property
+    def mpc_paths(self) -> list[FloatArray]:
+        """Deprecated: the last parameterized paths; see previous_paths."""
+        self._warn_history("mpc_paths")
+        return self._mpc_paths
+
+    @property
+    def path_is_trivial_list(self) -> list[bool]:
+        """Deprecated: always False. Nothing reads it."""
+        self._warn_history("path_is_trivial_list")
+        return self._path_is_trivial_list
 
     def run_path_calculation(
         self, input: PathCalculationInput | None = None
@@ -463,6 +505,7 @@ class CalculatePath:
         """
         if input is not None:
             self.input = input
+        self._replaced_too_far = False
         center_along_match_connection = self.select_path_basis()
 
         path_update_too_far_away = self.fit_matches_as_spline(
@@ -475,9 +518,10 @@ class CalculatePath:
 
         try:
             path_parameterization = self.do_all_mpc_parameter_calculations(path_update)
-        except ValueError:
+        except ValueError as error:
             # there is a bug with the path extrapolation which leads to the spline
             # fit failing, in this case we just use the previous path
+            self.recovery.recover("path", "parameterization_failed", error)
             path_parameterization = self.do_all_mpc_parameter_calculations(
                 self.previous_paths[-1][:, 1:3]
             )
@@ -485,9 +529,15 @@ class CalculatePath:
         self.store_paths(path_update, path_parameterization, False)
         self.previous_paths = self.previous_paths[-10:] + [path_parameterization]
 
+        if self._replaced_too_far:
+            outcome = PathOutcome.TOO_FAR_FROM_CAR
+        else:
+            outcome = self._basis_outcome
+
         return PathResult(
             final_path=path_parameterization,
             centerline_basis=center_along_match_connection,
+            outcome=outcome,
         )
 
     def run(self, stage_input: PathCalculationInput) -> PathResult:

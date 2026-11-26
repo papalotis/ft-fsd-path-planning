@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, Protocol
 
 import numpy as np
 
-from fsd_path_planning.common_types import FloatArray
+from fsd_path_planning.common_types import FloatArray, PathOutcome
 from fsd_path_planning.geometry.traces import trace_distance_to_next
 
 if TYPE_CHECKING:
@@ -44,7 +44,11 @@ if TYPE_CHECKING:
 
 
 class PathBasisStrategy(Protocol):
-    """Chooses the points a new path is built through."""
+    """Chooses the points a new path is built through.
+
+    A strategy may set a class attribute `outcome` (a PathOutcome) to say what
+    a path built from its basis is; without one it counts as FRESH.
+    """
 
     def basis(
         self, calculator: CalculatePath, stage_input: PathCalculationInput
@@ -69,6 +73,8 @@ class PathFitStrategy(Protocol):
 class KnownMapWindow:
     """The part of the known global path within reach of the car."""
 
+    outcome = PathOutcome.FRESH
+
     def basis(
         self, calculator: CalculatePath, stage_input: PathCalculationInput
     ) -> FloatArray | None:
@@ -91,6 +97,8 @@ class KnownMapWindow:
 class KeepPrevious:
     """With fewer than three cones on each side, keep the previous path."""
 
+    outcome = PathOutcome.TOO_FEW_CONES
+
     def basis(
         self, calculator: CalculatePath, stage_input: PathCalculationInput
     ) -> FloatArray | None:
@@ -104,6 +112,8 @@ class KeepPrevious:
 
 class MatchCenterline:
     """Midpoints between the cones of the better side and their matches."""
+
+    outcome = PathOutcome.FRESH
 
     def basis(
         self, calculator: CalculatePath, stage_input: PathCalculationInput
@@ -135,7 +145,8 @@ class SplineThroughBasis:
     ) -> FloatArray:
         try:
             return calculator.spline_fitter.fit(basis).predict(der=0)
-        except ValueError:
+        except ValueError as error:
+            calculator.recovery.recover("path", "spline_fit_failed", error)
             return calculator.spline_fitter.fit(
                 calculator.previous_paths[-1][:, 1:3]
             ).predict(der=0)

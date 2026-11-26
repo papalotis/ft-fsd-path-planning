@@ -95,11 +95,28 @@ class MatchingResult(_TupleCompatible):
     )
 
 
+class PathOutcome(Enum):
+    """What the path of a frame was built from."""
+
+    FRESH = "fresh"
+    """This frame's matched cones, or the known map."""
+    TOO_FEW_CONES = "too_few_cones"
+    """Fewer than three cones on each side: the previous path was kept."""
+    TOO_FAR_FROM_CAR = "too_far_from_car"
+    """The new path was too far from the car to trust, so the previous one
+    was used; usually the sign of a bad sorting."""
+
+    @property
+    def is_degraded(self) -> bool:
+        return self is not PathOutcome.FRESH
+
+
 @dataclass(frozen=True)
 class PathResult(_TupleCompatible):
     """Result of path calculation."""
 
     final_path: FloatArray  # (N, 4): spline_parameter, x, y, curvature
     centerline_basis: FloatArray  # (M, 2): the centerline points used as basis
+    outcome: PathOutcome = PathOutcome.FRESH
 
     _tuple_fields: ClassVar[tuple[str, ...]] = ("final_path", "centerline_basis")

@@ -321,12 +321,28 @@ def test_experimental_performance_improvements_are_close_and_faster_abba(
             ),
         )
 
-    avg_a = (a_first + a_second) / 2
-    avg_b = (b_first + b_second) / 2
-    assert avg_b < avg_a, (
-        "Expected experimental performance improvements to be faster on average "
-        f"in ABBA order, got A=({a_first:.4f}, {a_second:.4f}) and "
-        f"B=({b_first:.4f}, {b_second:.4f})"
+    # Timing on a shared machine is noisy: one slow run used to fail this
+    # test. Two more interleaved rounds, and the fastest run of each mode is
+    # compared, which noise can only slow down, not speed up.
+    times_a = [a_first, a_second]
+    times_b = [b_first, b_second]
+    for round_ in range(2):
+        order = (False, True) if round_ % 2 else (True, False)
+        for experimental in order:
+            elapsed, _, _ = _run_pipeline_and_time(
+                positions,
+                directions,
+                cones,
+                experimental_performance_improvements=experimental,
+                capture_indices=set(),
+            )
+            (times_b if experimental else times_a).append(elapsed)
+
+    assert min(times_b) < min(times_a), (
+        "Expected experimental performance improvements to be faster: fastest"
+        f" run A={min(times_a):.4f}s, B={min(times_b):.4f}s"
+        f" (A runs {[round(t, 4) for t in times_a]},"
+        f" B runs {[round(t, 4) for t in times_b]})"
     )
 
     for planner in (planner_b_first, planner_b_second):

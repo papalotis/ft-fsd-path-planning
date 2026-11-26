@@ -162,3 +162,17 @@ class TestRenamed:
         calculator = CalculatePath()
         with pytest.warns(FsdPathPlanningDeprecationWarning, match="spline_fitter"):
             assert calculator.spline_fitter_factory is calculator.spline_fitter
+
+
+class TestPathHistoryLists:
+    @pytest.mark.parametrize(
+        "name", ["path_updates", "mpc_paths", "path_is_trivial_list"]
+    )
+    def test_still_readable_with_a_warning(self, name) -> None:
+        from fsd_path_planning.calculate_path.core_calculate_path import (
+            CalculatePath,
+        )
+
+        calculator = CalculatePath()
+        with pytest.warns(FsdPathPlanningDeprecationWarning, match=name):
+            assert getattr(calculator, name) == []
