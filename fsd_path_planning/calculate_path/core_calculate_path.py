@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import warnings
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -39,6 +40,12 @@ from fsd_path_planning.calculate_path.path_extender import (
     remove_path_not_in_prediction_horizon as _remove_not_in_horizon,
 )
 from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
+from fsd_path_planning.calculate_path.strategies import (
+    DEFAULT_BASIS_STRATEGIES,
+    PathBasisStrategy,
+    PathFitStrategy,
+    SplineThroughBasis,
+)
 from fsd_path_planning.common_types import FloatArray, IntArray, PathResult
 from fsd_path_planning.config_dataclasses import PathConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector
@@ -95,7 +102,28 @@ class CalculatePath:
         max_deg: int | None = None,
         mpc_path_length: float | None = None,
         mpc_prediction_horizon: int | None = None,
+        basis_strategies: Sequence[PathBasisStrategy] | None = None,
+        fit_strategy: PathFitStrategy | None = None,
     ):
+        """
+        Args:
+            config: The path calculation settings.
+            basis_strategies: How the points the path is built through are
+                chosen, tried in order until one applies; see
+                `calculate_path.strategies`. Defaults to the known map, then
+                the previous path when there are too few cones, then the
+                centreline of the matched cones.
+            fit_strategy: How the path is fitted through those points. Defaults
+                to a smoothing spline.
+        """
+        self.basis_strategies: tuple[PathBasisStrategy, ...] = (
+            tuple(basis_strategies)
+            if basis_strategies is not None
+            else DEFAULT_BASIS_STRATEGIES
+        )
+        self.fit_strategy: PathFitStrategy = (
+            fit_strategy if fit_strategy is not None else SplineThroughBasis()
+        )
         if config is not None:
             self.config = config
         else:
@@ -219,20 +247,17 @@ class CalculatePath:
     def fit_matches_as_spline(
         self, center_along_match_connection: FloatArray
     ) -> FloatArray:
-        """
-        Fit the calculated basis path as a spline. If the computation fails, use the
-        path calculated in the previous step
-        """
-        try:
-            path_update = self.spline_fitter_factory.fit(
-                center_along_match_connection
-            ).predict(der=0)
-        except ValueError:
-            path_update = self.spline_fitter_factory.fit(
-                self.previous_paths[-1][:, 1:3]
-            ).predict(der=0)
+        """Fit the path update through the basis, with the fit strategy."""
+        return self.fit_strategy.fit(self, self.input, center_along_match_connection)
 
-        return path_update
+    def select_path_basis(self) -> FloatArray:
+        """The points the path is built through: from the first basis strategy
+        that applies to this frame."""
+        for strategy in self.basis_strategies:
+            basis = strategy.basis(self, self.input)
+            if basis is not None:
+                return basis
+        raise RuntimeError("no path basis strategy applies to this frame")
 
     def overwrite_path_if_it_is_too_far_away(
         self, path_update: FloatArray
@@ -426,39 +451,7 @@ class CalculatePath:
         """
         if input is not None:
             self.input = input
-        if self.input.global_path is not None:
-            distance = np.linalg.norm(
-                self.input.vehicle_position - self.input.global_path, axis=1
-            )
-
-            idx_closest_point_to_path = distance.argmin()
-
-            roll_value = -idx_closest_point_to_path + len(self.input.global_path) // 3
-
-            path_rolled = np.roll(self.input.global_path, roll_value, axis=0)
-            distance_rolled = np.roll(distance, roll_value)
-            mask_distance = distance_rolled < 30
-            path_rolled = path_rolled[mask_distance]
-            center_along_match_connection = path_rolled
-
-        elif len(self.input.left_cones) < 3 and len(self.input.right_cones) < 3:
-            if len(self.previous_paths) > 0:
-                # extract x, y from previously calculated path
-                center_along_match_connection = self.previous_paths[-1][:, 1:3]
-            else:
-                center_along_match_connection = self.calculate_trivial_path()
-        elif self.input.global_path is None:
-            (
-                side_to_use,
-                matches_to_other_side,
-                other_side_cones,
-            ) = self.select_side_to_use()
-
-            match_on_other_side = other_side_cones[matches_to_other_side]
-
-            center_along_match_connection = self.calculate_centerline_points_of_matches(
-                side_to_use, matches_to_other_side, match_on_other_side
-            )
+        center_along_match_connection = self.select_path_basis()
 
         path_update_too_far_away = self.fit_matches_as_spline(
             center_along_match_connection

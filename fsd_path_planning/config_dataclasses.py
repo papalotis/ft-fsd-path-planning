@@ -205,6 +205,15 @@ class PathConfig:
     initial_path_angle: float = field(default_factory=lambda: float(np.pi / 50))
     initial_path_points: int = 40
 
+    # missions on a known map (acceleration, skidpad)
+    # radius around the car within which the known path is the basis (meters)
+    known_map_window_radius: float = 30.0
+    # skidpad: how far along the known path from the previous position the
+    # car's position is searched for (meters)
+    known_map_search_distance: float = 20.0
+    # skidpad: how much of the known path ahead of the car is used (meters)
+    known_map_length_ahead: float = 25.0
+
     def __post_init__(self) -> None:
         _validate_non_negative("smoothing", self.smoothing)
         _validate_positive("predict_every", self.predict_every)
@@ -233,6 +242,9 @@ class PathConfig:
         _validate_positive("initial_path_radius", self.initial_path_radius)
         _validate_angle("initial_path_angle", self.initial_path_angle)
         _validate_positive_int("initial_path_points", self.initial_path_points)
+        _validate_positive("known_map_window_radius", self.known_map_window_radius)
+        _validate_positive("known_map_search_distance", self.known_map_search_distance)
+        _validate_positive("known_map_length_ahead", self.known_map_length_ahead)
 
     @property
     def mpc_path_length(self) -> float:
