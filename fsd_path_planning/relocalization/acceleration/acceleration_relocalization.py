@@ -8,7 +8,7 @@ from __future__ import annotations
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.geometry.transforms import SE2Transform, rotate
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
@@ -186,24 +186,10 @@ class AccelerationRelocalizer(Relocalizer):
 
         angle_to_fix = np.arctan(slope) + vehicle_yaw
 
-        def transform_to_known_frame(
-            position_2d: FloatArray, direction_yaw: float
-        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
-            return (
-                rotate(position_2d - self._original_vehicle_position, -angle_to_fix),  # type: ignore[return-value]
-                direction_yaw - angle_to_fix,  # type: ignore[return-value]
-            )
-
-        def transform_to_base_frame(
-            position_2d: FloatArray, direction_yaw: float
-        ) -> tuple[FloatArray, float]:  # type: ignore[misc]
-            base_position = (
-                rotate(position_2d, angle_to_fix) + self._original_vehicle_position  # type: ignore[operator]
-            )
-            base_yaw = direction_yaw + angle_to_fix
-            return base_position, base_yaw  # type: ignore[return-value]
-
-        return transform_to_known_frame, transform_to_base_frame
+        to_known_frame = SE2Transform(
+            angle=-angle_to_fix, shift=-self._original_vehicle_position
+        )
+        return to_known_frame, to_known_frame.inverse()
 
     def get_known_global_path(self) -> FloatArray:
         return BASE_ACCELERATION_PATH

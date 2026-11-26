@@ -17,7 +17,7 @@ from fsd_path_planning.config_dataclasses import SkidpadConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector
 from fsd_path_planning.geometry.distances import calc_pairwise_distances
 from fsd_path_planning.geometry.shapes import circle_fit
-from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.geometry.transforms import SE2Transform, rotate
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
@@ -204,41 +204,16 @@ def calculate_transformation(
     # calculate the rotation
     rotation = np.squeeze(reference_angle - calculated_angle)
 
-    def transform_pose(
-        position_2d: FloatArray, direction_yaw: float
-    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
-        # handle position
-        position_translated = position_2d + translation
-        # translate to reference right center
-        position_translated_centered = position_translated - right_reference_center
-        # rotate by rotation
-        position_rotated = rotate(position_translated_centered, rotation)
-        # translate back
-        position_rotated = position_rotated + right_reference_center
-
-        # handle yaw
-        yaw_rotated = direction_yaw + rotation
-
-        return position_rotated, yaw_rotated  # type: ignore[return-value]
-
-    def transform_back_to_original(
-        position_2d: FloatArray, direction_yaw: float
-    ) -> tuple[FloatArray, float]:  # type: ignore[misc]
-        # handle position
-        position_translated = position_2d - translation
-        # translate to skidpad right center
-        position_translated_centered = position_translated - right_calculated_center
-        # rotate by negative rotation
-        position_rotated = rotate(position_translated_centered, -rotation)
-        # translate back
-        position_rotated = position_rotated + right_calculated_center
-
-        # handle yaw
-        yaw_rotated = direction_yaw - rotation
-
-        return position_rotated, yaw_rotated  # type: ignore[return-value]
-
-    return transform_pose, transform_back_to_original
+    # Two explicit transforms rather than one and its inverse(): the way back
+    # pivots about the detected centre, as it always has, which keeps the
+    # results bit for bit the same.
+    to_skidpad_frame = SE2Transform(
+        angle=rotation, shift=translation, pivot=right_reference_center
+    )
+    to_original_frame = SE2Transform(
+        angle=-rotation, shift=-translation, pivot=right_calculated_center
+    )
+    return to_skidpad_frame, to_original_frame
 
 
 def calculate_reference_centers_for_skidpad_path(
