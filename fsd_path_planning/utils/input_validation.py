@@ -49,6 +49,59 @@ def validate_vehicle_position(vehicle_position: FloatArray) -> FloatArray:
     return position
 
 
+def _split_flat_cone_array(cones: FloatArray) -> list[FloatArray]:
+    """Split an (N, 3) array of [x, y, cone_type] rows into one array per type."""
+    if not np.isfinite(cones).all():
+        raise ValueError("cones must contain only finite values")
+
+    type_column = cones[:, 2]
+    if not np.all(type_column == np.round(type_column)):
+        raise ValueError(
+            "the third column of a flat cone array must hold whole ConeTypes"
+            " values, got non-integer entries"
+        )
+
+    type_indices = type_column.astype(int)
+    known_types = {int(cone_type) for cone_type in ConeTypes}
+    unknown = sorted(set(type_indices.tolist()) - known_types)
+    if unknown:
+        raise ValueError(
+            "the third column of a flat cone array must hold ConeTypes values"
+            f" ({min(known_types)}-{max(known_types)}), got {unknown}"
+        )
+
+    return [
+        np.ascontiguousarray(cones[type_indices == int(cone_type), :2], dtype=float)
+        for cone_type in ConeTypes
+    ]
+
+
+def normalize_cones(cones: Any) -> list[FloatArray]:
+    """Bring either accepted cone format into one list of (N, 2) arrays.
+
+    Two inputs are accepted:
+
+    - a sequence of one (N, 2) array per cone type, ordered by
+      :class:`~fsd_path_planning.utils.cone_types.ConeTypes`, which is returned
+      validated and converted to float;
+    - a single (N, 3) array whose rows are ``[x, y, cone_type]``, which is split
+      into that per-type list. Within a type the input order is kept, but the
+      cones are regrouped by type, so a caller that relied on the row order of a
+      flat array may see different tie-breaking in sorting.
+
+    Raises:
+        TypeError: if the values are not numeric.
+        ValueError: on the wrong shape, non-finite values, or a type column that
+            does not hold whole ConeTypes values.
+    """
+    if isinstance(cones, np.ndarray) and cones.ndim == 2 and cones.shape[1] == 3:
+        if not np.issubdtype(cones.dtype, np.number):
+            raise TypeError("cones must contain numeric values")
+        return _split_flat_cone_array(cones.astype(float, copy=False))
+
+    return validate_and_normalize_cones(cones)
+
+
 def validate_and_normalize_cones(cones: list[FloatArray]) -> list[FloatArray]:
     if len(cones) != len(ConeTypes):
         raise ValueError(

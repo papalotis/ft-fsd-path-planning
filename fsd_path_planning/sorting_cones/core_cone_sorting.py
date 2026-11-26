@@ -16,6 +16,7 @@ from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import TraceSorter
 from fsd_path_planning.types import FloatArray, SortingResult
 from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.input_validation import normalize_cones
 
 
 @dataclass
@@ -129,7 +130,7 @@ class ConeSorting:
             self.input.vehicle_direction,
         )
 
-        self.state.cones_by_type = self.input.cones_by_type.copy()
+        self.state.cones_by_type = normalize_cones(self.input.cones_by_type)
         if not self.state.use_unknown_cones:
             self.state.cones_by_type[ConeTypes.UNKNOWN] = np.zeros((0, 2))
 

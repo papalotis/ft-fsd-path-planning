@@ -245,11 +245,32 @@ message instead of failing later in the geometry code.
 
 The most important input rules are:
 
-- `global_cones` must contain exactly 5 arrays ordered by `ConeTypes`.
-- Every cone array must be numeric, finite, and shaped `(N, 2)`.
+- `global_cones` must be either of the two accepted formats below.
 - `car_position` must be numeric, finite, and shaped `(2,)`.
 - `car_direction` must be either a finite scalar angle or a finite non-zero vector
   shaped `(2,)`.
+
+### Cone input formats
+
+Cones can be passed in either of two ways:
+
+1. Exactly 5 arrays ordered by `ConeTypes`, each numeric, finite and shaped
+   `(N, 2)`. Use `np.zeros((0, 2))` for a cone type you have none of.
+2. A single numeric, finite `(N, 3)` array whose rows are `[x, y, cone_type]`,
+   where `cone_type` is a whole number from the `ConeTypes` enum.
+
+The second form is converted to the first on entry. You can call the conversion
+yourself:
+
+```python
+from fsd_path_planning import normalize_cones
+
+cones_by_type = normalize_cones(cones_as_nx3_array)
+```
+
+Within a cone type the input order is kept, but a flat array is regrouped by
+type, so the planner sees the cones in a different order than they were given.
+That can change which of two equally good sorted traces wins.
 
 Take a look at this notebook for a more detailed example: [simple_application.ipynb](fsd_path_planning/demo/simple_application.ipynb)
 

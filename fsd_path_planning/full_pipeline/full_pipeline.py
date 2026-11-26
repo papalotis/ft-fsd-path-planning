@@ -43,11 +43,11 @@ from fsd_path_planning.sorting_cones.core_cone_sorting import (
     ConeSorting,
     ConeSortingInput,
 )
-from fsd_path_planning.types import FloatArray, IntArray
+from fsd_path_planning.types import ConeInput, FloatArray, IntArray
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.input_validation import (
     convert_direction_to_array,
-    validate_and_normalize_cones,
+    normalize_cones,
     validate_vehicle_position,
 )
 from fsd_path_planning.utils.math_utils import (
@@ -217,7 +217,7 @@ class PathPlanner:
     @overload
     def calculate_path_in_global_frame(
         self,
-        cones: list[FloatArray],
+        cones: ConeInput,
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray | float,
         return_intermediate_results: Literal[False] = ...,
@@ -226,7 +226,7 @@ class PathPlanner:
     @overload
     def calculate_path_in_global_frame(
         self,
-        cones: list[FloatArray],
+        cones: ConeInput,
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray | float,
         return_intermediate_results: Literal[True],
@@ -242,7 +242,7 @@ class PathPlanner:
 
     def calculate_path_in_global_frame(
         self,
-        cones: list[FloatArray],
+        cones: ConeInput,
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray | float,
         return_intermediate_results: bool = False,
@@ -261,7 +261,9 @@ class PathPlanner:
         """Calculate the planned path in the global frame.
 
         Args:
-            cones: A sequence of **exactly 5** arrays, one per cone type ordered
+            cones: The cones in the global frame, in either accepted format.
+
+                A sequence of **exactly 5** arrays, one per cone type ordered
                 by :class:`~fsd_path_planning.utils.cone_types.ConeTypes`::
 
                     index 0 - UNKNOWN
@@ -272,6 +274,11 @@ class PathPlanner:
 
                 Each array must be numeric, finite, and shaped ``(N, 2)`` where
                 *N* may be zero.  Pass ``np.zeros((0, 2))`` for absent cone types.
+
+                Or a single numeric, finite ``(N, 3)`` array whose rows are
+                ``[x, y, cone_type]``, with the cone type as a whole number from
+                the same enum. It is split into the per-type form on entry; see
+                :func:`~fsd_path_planning.normalize_cones`.
             vehicle_position: Current vehicle position in the global frame.
                 Must be a finite numeric array with shape ``(2,)`` — ``[x, y]``.
             vehicle_direction: Current vehicle heading in the global frame.
@@ -298,12 +305,13 @@ class PathPlanner:
         Raises:
             TypeError: If any element of *cones* contains non-numeric values, or
                 if *vehicle_position* or *vehicle_direction* are non-numeric.
-            ValueError: If *cones* does not contain exactly 5 arrays; if any cone
-                array has the wrong shape or contains non-finite values; if
+            ValueError: If *cones* is neither 5 arrays nor an (N, 3) array; if a
+                cone array has the wrong shape, holds non-finite values or an
+                unknown cone type; if
                 *vehicle_position* has the wrong shape or non-finite values; or if
                 *vehicle_direction* is a zero vector or contains non-finite values.
         """
-        cones = validate_and_normalize_cones(cones)
+        cones = normalize_cones(cones)
         vehicle_position = validate_vehicle_position(vehicle_position)
         vehicle_direction = convert_direction_to_array(vehicle_direction)
 

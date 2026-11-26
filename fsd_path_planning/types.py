@@ -6,7 +6,7 @@ Project: fsd_path_planning
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, fields
 from typing import Any, Literal, TypeAlias
 
@@ -25,6 +25,11 @@ SortableConeTypes: TypeAlias = Literal[
     ConeTypes.RIGHT,
     ConeTypes.YELLOW,
 ]
+
+# Either accepted way of passing cones in: one (N, 2) array per cone type, or a
+# single (N, 3) array of [x, y, cone_type] rows. normalize_cones turns the
+# second into the first.
+ConeInput: TypeAlias = "Sequence[FloatArray] | FloatArray"
 
 
 @dataclass

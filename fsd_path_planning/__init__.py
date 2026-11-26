@@ -9,11 +9,13 @@ from fsd_path_planning.relocalization.relocalization_information import (
     RelocalizationInformation,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
+from fsd_path_planning.utils.input_validation import normalize_cones
 from fsd_path_planning.utils.mission_types import MissionTypes
 
 __all__ = [
     "ConeTypes",
     "MissionTypes",
+    "normalize_cones",
     "PathPlanner",
     "RelocalizationInformation",
 ]
