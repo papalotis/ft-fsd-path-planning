@@ -8,7 +8,9 @@ from __future__ import annotations
 from itertools import combinations
 
 import numpy as np
-from sklearn.cluster import DBSCAN
+from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import connected_components
+from scipy.spatial import cKDTree
 
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
@@ -76,10 +78,40 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     return out
 
 
+# Circle centres closer than this, directly or through a chain of others, are
+# taken to be estimates of the same centre, in metres.
+CENTER_CLUSTER_DISTANCE = 3.0
+
+
+def cluster_within_distance(points: FloatArray, distance: float) -> IntArray:
+    """Label points that are linked by a chain of neighbours within `distance`.
+
+    This is what DBSCAN with ``min_samples=1`` computes: every point is a core
+    point, so a cluster is a connected component of the graph that joins points
+    at most `distance` apart. Clusters are numbered in the order of their first
+    point, as DBSCAN numbers them, so the result is the same as the
+    scikit-learn call this replaces.
+    """
+    n_points = len(points)
+    if n_points == 0:
+        return np.zeros(0, dtype=np.intp)
+
+    pairs = cKDTree(points).query_pairs(r=distance, output_type="ndarray")
+    graph = coo_matrix(
+        (np.ones(len(pairs)), (pairs[:, 0], pairs[:, 1])), shape=(n_points, n_points)
+    )
+    _, labels = connected_components(graph, directed=False)
+
+    _, first_member = np.unique(labels, return_index=True)
+    rank = np.empty(len(first_member), dtype=np.intp)
+    rank[np.argsort(first_member)] = np.arange(len(first_member))
+    return rank[labels]
+
+
 def calculate_circle_centers(potential_circles: PowersetCirceFitResult) -> FloatArray:
     potential_centers = np.array([circle[:2] for circle, _ in potential_circles])
 
-    labels = DBSCAN(eps=3, min_samples=1).fit(potential_centers).labels_
+    labels = cluster_within_distance(potential_centers, CENTER_CLUSTER_DISTANCE)
 
     unique_labels = np.unique(labels)
     assert len(unique_labels) > 1

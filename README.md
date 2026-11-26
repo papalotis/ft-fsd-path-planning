@@ -28,6 +28,8 @@ This release focuses on code quality, modularity, and developer experience, with
 - **Acceleration relocalization is reproducible.** It draws from its own seeded random generator instead of NumPy's global one.
 - **No state is shared between planners.** The remaining process-wide caches are gone, so two planners in one process, or in two threads, cannot hand results to each other.
 - **The skidpad reference path is stored as a 6 kB spline** instead of a 234 kB Python literal. The path moves by at most 0.45 mm.
+- **scikit-learn is no longer a dependency.** It was used for one DBSCAN call in the skidpad relocalization, which is now the equivalent single-linkage clustering in SciPy, with identical results.
+- **`warmup()` compiles everything before the car moves.** See [Warm-up](#warm-up).
 - Smaller fixes: `Timer.get_std_time()` returned the mean; `Timer.report_mean_time()` raised; a fallback in the path calculation passed the wrong columns; the nearby-cone cache ignored the search geometry.
 
 Removed from internal modules: `adjacency_matrix.calculate_distance_matrix`, `adjacency_matrix.find_k_closest_in_point_cloud`, `nearby_cone_search.NEARBY_CONE_SEARCH_CACHE` and `nearby_cone_search.clear_nearby_cone_search_cache`. `MatchingConfig` now defaults to non-monotonic matching, which is what `PathPlanner` has always used; code that builds a `ConeMatching` directly from a default `MatchingConfig` gets non-monotonic matches unless it sets `matches_should_be_monotonic=True`.
