@@ -4,6 +4,8 @@ Description: This File calculates the costs for the different path versions
 Project: fsd_path_planning
 """
 
+from collections.abc import Callable
+
 import numpy as np
 
 from fsd_path_planning.common_types import (
@@ -252,32 +254,53 @@ def cost_configurations(
     if len(configurations) == 0:
         return np.zeros(0)
 
-    angle_cost = calc_angle_cost_for_configuration(points_xy, configurations, cone_type)
+    n_configurations = len(configurations)
 
-    residual_distance_cost = calc_distance_cost(
-        points_xy, configurations, config.residual_distance_threshold
+    def term(weight: float, compute: Callable[[], FloatArray]) -> FloatArray:
+        # A term weighted zero contributes nothing, so it is not computed. Its
+        # column stays in the result so that return_individual_costs keeps the
+        # same seven columns in the same order.
+        if weight == 0:
+            return np.zeros(n_configurations)
+        return compute()
+
+    angle_cost = term(
+        weights.angle,
+        lambda: calc_angle_cost_for_configuration(points_xy, configurations, cone_type),
     )
-
-    number_of_cones_cost = calc_number_of_cones_cost(configurations)
-
-    initial_direction_cost = calc_initial_direction_cost(
-        points_xy, configurations, vehicle_direction
+    residual_distance_cost = term(
+        weights.residual_distance,
+        lambda: calc_distance_cost(
+            points_xy, configurations, config.residual_distance_threshold
+        ),
     )
-    # initial_direction_cost = np.zeros(configurations.shape[0])
-
-    change_of_direction_cost = calc_change_of_direction_cost(points_xy, configurations)
-
-    cones_on_either_cost = calc_cones_on_either_cost(
-        points_xy,
-        configurations,
-        cone_type,
-        nearby_searcher=nearby_searcher,
-        search_distance=config.cones_on_side_search_distance,
-        search_angle=config.cones_on_side_search_angle,
+    number_of_cones_cost = term(
+        weights.n_cones, lambda: calc_number_of_cones_cost(configurations)
     )
-
-    wrong_direction_cost = calc_wrong_direction_cost(
-        points_xy, configurations, cone_type
+    initial_direction_cost = term(
+        weights.initial_direction,
+        lambda: calc_initial_direction_cost(
+            points_xy, configurations, vehicle_direction
+        ),
+    )
+    change_of_direction_cost = term(
+        weights.direction_change,
+        lambda: calc_change_of_direction_cost(points_xy, configurations),
+    )
+    cones_on_either_cost = term(
+        weights.cones_on_side,
+        lambda: calc_cones_on_either_cost(
+            points_xy,
+            configurations,
+            cone_type,
+            nearby_searcher=nearby_searcher,
+            search_distance=config.cones_on_side_search_distance,
+            search_angle=config.cones_on_side_search_angle,
+        ),
+    )
+    wrong_direction_cost = term(
+        weights.wrong_direction,
+        lambda: calc_wrong_direction_cost(points_xy, configurations, cone_type),
     )
 
     factors: FloatArray = np.array(
