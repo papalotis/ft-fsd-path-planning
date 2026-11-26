@@ -12,6 +12,7 @@ from typing import Any
 
 import numpy as np
 
+from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     AdjacencyMatrixCache,
 )
@@ -120,6 +121,7 @@ class TraceSorter:
         threshold_directional_angle: float,
         threshold_absolute_angle: float,
         experimental_caching: bool = False,
+        config: SortingConfig | None = None,
     ):
         """
         Constructor for TraceSorter class
@@ -137,6 +139,23 @@ class TraceSorter:
         self.max_length = max_length
         self.threshold_directional_angle = threshold_directional_angle
         self.threshold_absolute_angle = threshold_absolute_angle
+
+        # Everything the search needs beyond the scalars above - the cost
+        # weights, the car size, the search geometry - comes from the config.
+        # Built from the scalars when the caller passes none, so that the two
+        # can never disagree.
+        self.config = (
+            config
+            if config is not None
+            else SortingConfig(
+                max_n_neighbors=max_n_neighbors,
+                max_dist=max_dist,
+                max_dist_to_first=max_dist_to_first,
+                max_length=max_length,
+                threshold_directional_angle=threshold_directional_angle,
+                threshold_absolute_angle=threshold_absolute_angle,
+            )
+        )
 
         self.cached_results: ConeSortingCacheEntry | None = None
         self.experimental_caching = experimental_caching
@@ -310,6 +329,7 @@ class TraceSorter:
                 first_k_indices_must_be,
                 adjacency_cache=self.adjacency_cache,
                 nearby_searcher=self.nearby_searcher,
+                config=self.config,
             )
 
         # if no configurations can be found, then return nothing

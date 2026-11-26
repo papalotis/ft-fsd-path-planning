@@ -6,6 +6,7 @@ Project: fsd_path_planning
 
 import numpy as np
 
+from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
 from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
     calc_distance_cost,
@@ -192,6 +193,8 @@ def calc_cones_on_either_cost(
     configurations: IntArray,
     cone_type: SortableConeTypes,
     nearby_searcher: NearbyConeSearcher | None = None,
+    search_distance: float = 6.0,
+    search_angle: float = np.pi / 1.5,
 ) -> FloatArray:
     with Timer("calc_cones_on_either_cost", noprint=True) as _:
         # Without a searcher from the caller the counts are computed uncached,
@@ -203,8 +206,8 @@ def calc_cones_on_either_cost(
             points,
             configurations,
             cone_type,
-            6.0,
-            np.pi / 1.5,
+            search_distance,
+            search_angle,
         )
 
     diff = n_good - n_bad
@@ -224,6 +227,7 @@ def cost_configurations(
     *,
     return_individual_costs: bool,
     nearby_searcher: NearbyConeSearcher | None = None,
+    config: SortingConfig | None = None,
 ) -> FloatArray:
     """
     Calculates a cost for each provided configuration
@@ -235,6 +239,10 @@ def cost_configurations(
     Returns:
         A cost for each configuration
     """
+    if config is None:
+        config = SortingConfig()
+    weights = config.cost_weights
+
     points_xy = points[:, :2]
 
     if len(configurations) == 0:
@@ -248,9 +256,8 @@ def cost_configurations(
         )
 
     with Timer("residual_distance_cost", timer_no_print):
-        threshold_distance = 3  # maximum allowed distance between cones is 5 meters
         residual_distance_cost = calc_distance_cost(
-            points_xy, configurations, threshold_distance
+            points_xy, configurations, config.residual_distance_threshold
         )
 
     with Timer("number_of_cones_cost", timer_no_print):
@@ -269,7 +276,12 @@ def cost_configurations(
 
     with Timer("cones_on_either_cost", timer_no_print):
         cones_on_either_cost = calc_cones_on_either_cost(
-            points_xy, configurations, cone_type, nearby_searcher=nearby_searcher
+            points_xy,
+            configurations,
+            cone_type,
+            nearby_searcher=nearby_searcher,
+            search_distance=config.cones_on_side_search_distance,
+            search_angle=config.cones_on_side_search_angle,
         )
 
     with Timer("wrong_direction_cost", timer_no_print):
@@ -277,7 +289,17 @@ def cost_configurations(
             points_xy, configurations, cone_type
         )
 
-    factors: FloatArray = np.array([1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0])
+    factors: FloatArray = np.array(
+        [
+            weights.angle,
+            weights.residual_distance,
+            weights.n_cones,
+            weights.initial_direction,
+            weights.direction_change,
+            weights.cones_on_side,
+            weights.wrong_direction,
+        ]
+    )
     factors = factors / factors.sum()
     final_costs = (
         np.column_stack(

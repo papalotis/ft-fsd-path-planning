@@ -117,6 +117,13 @@ class SortingConfig:
     # vehicle size used for between-cone skip detection (meters)
     car_size: float = 2.1
 
+    # how far and how wide to look for cones on either side of a candidate
+    # trace, for the cost that penalises cones on the wrong side
+    cones_on_side_search_distance: float = 6.0
+    cones_on_side_search_angle: float = field(
+        default_factory=lambda: float(np.pi / 1.5)
+    )
+
     def __post_init__(self) -> None:
         _validate_positive_int("max_n_neighbors", self.max_n_neighbors)
         _validate_positive("max_dist", self.max_dist)
@@ -129,6 +136,10 @@ class SortingConfig:
             "residual_distance_threshold", self.residual_distance_threshold
         )
         _validate_positive("car_size", self.car_size)
+        _validate_positive(
+            "cones_on_side_search_distance", self.cones_on_side_search_distance
+        )
+        _validate_angle("cones_on_side_search_angle", self.cones_on_side_search_angle)
 
 
 @dataclass
@@ -138,7 +149,9 @@ class MatchingConfig:
     min_track_width: float = 3.0
     max_search_range: float = 5.0
     max_search_angle: float = field(default_factory=lambda: float(np.deg2rad(50)))
-    matches_should_be_monotonic: bool = True
+    # The pipeline has always matched non-monotonically, for every mission.
+    # The default says so, rather than a factory overriding it on the way past.
+    matches_should_be_monotonic: bool = False
 
     # multiplier applied to max_search_range for ellipse major radius
     search_range_multiplier: float = 1.5
@@ -316,15 +329,10 @@ class SkidpadConfig:
         _validate_min_int("max_powerset_size", self.max_powerset_size, 3)
 
 
-def default_config(mission: MissionTypes) -> PipelineConfig:
+def default_config(mission: MissionTypes) -> PipelineConfig:  # noqa: ARG001
     """Return a PipelineConfig with per-mission defaults.
 
-    Currently all missions use the same defaults, but this factory
-    allows mission-specific overrides in the future.
+    Every mission currently uses the same values; the argument is kept so that
+    mission-specific defaults have an obvious home.
     """
-    config = PipelineConfig()
-
-    if mission == MissionTypes.skidpad:
-        config.matching.matches_should_be_monotonic = False
-
-    return config
+    return PipelineConfig()

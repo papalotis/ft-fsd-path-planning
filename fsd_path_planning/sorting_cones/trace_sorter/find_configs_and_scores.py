@@ -12,6 +12,7 @@ from typing import cast
 
 import numpy as np
 
+from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     AdjacencyMatrixCache,
     create_adjacency_matrix,
@@ -44,6 +45,7 @@ def calc_scores_and_end_configurations(
     return_history: bool = False,
     adjacency_cache: AdjacencyMatrixCache | None = None,
     nearby_searcher: NearbyConeSearcher | None = None,
+    config: SortingConfig | None = None,
 ) -> tuple[FloatArray, IntArray, tuple[IntArray, BoolArray] | None]:
     """
     Sorts a set of points such that the sum of the angles between the points is minimal.
@@ -68,6 +70,9 @@ def calc_scores_and_end_configurations(
         A list of indexes of the points in the optimal ordering, as well as the
         the costs of all end configurations and their corresponding indices
     """
+    if config is None:
+        config = SortingConfig()
+
     no_print = True
     with Timer("create_adjacency_matrix", no_print):
         adjacency_matrix, reachable_nodes = create_adjacency_matrix(
@@ -96,7 +101,8 @@ def calc_scores_and_end_configurations(
             first_k_indices_must_be,
             vehicle_position,
             vehicle_direction,
-            car_size=2.1,
+            car_size=config.car_size,
+            close_cone_threshold=config.close_cone_threshold,
             # this is only used for testing/debugging/visualization purposes
             # and should be set to False in production
             store_all_end_configurations=return_history,
@@ -111,6 +117,7 @@ def calc_scores_and_end_configurations(
             vehicle_direction=vehicle_direction,
             return_individual_costs=False,
             nearby_searcher=nearby_searcher,
+            config=config,
         )
     costs_sort_idx = np.argsort(costs)
     costs = cast(FloatArray, costs[costs_sort_idx])

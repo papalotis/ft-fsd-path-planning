@@ -19,14 +19,12 @@ from fsd_path_planning.calculate_path.core_calculate_path import (
     CalculatePath,
     PathCalculationInput,
 )
+from fsd_path_planning.calculate_path.skidpad_calculate_path import (
+    SkidpadCalculatePath,
+)
 from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatching,
     ConeMatchingInput,
-)
-from fsd_path_planning.config import (
-    create_default_cone_matching_with_non_monotonic_matches,
-    create_default_pathing,
-    create_default_sorting,
 )
 from fsd_path_planning.config_dataclasses import PipelineConfig, default_config
 from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
@@ -56,6 +54,10 @@ from fsd_path_planning.utils.math_utils import (
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
 from fsd_path_planning.utils.utils import Timer
+
+MissionToPathCalculation: dict[MissionTypes, type[CalculatePath]] = {
+    MissionTypes.skidpad: SkidpadCalculatePath,
+}
 
 MissionToRelocalizer: dict[MissionTypes, type[Relocalizer]] = {
     MissionTypes.acceleration: AccelerationRelocalizer,
@@ -104,14 +106,16 @@ class PathPlanner:
         if relocalizer_class is not None:
             self.relocalizer = relocalizer_class()
 
-        self.cone_sorting = cone_sorting or create_default_sorting(
-            mission, experimental_performance_improvements
+        # Built from self.config, so that a config passed in actually reaches
+        # the stages. It used to be stored and then ignored in favour of the
+        # defaults.
+        self.cone_sorting = cone_sorting or ConeSorting(
+            config=self.config.sorting,
+            experimental_performance_improvements=experimental_performance_improvements,
         )
-        self.cone_matching = (
-            cone_matching
-            or create_default_cone_matching_with_non_monotonic_matches(mission)
-        )
-        self.pathing = pathing or create_default_pathing(mission)
+        self.cone_matching = cone_matching or ConeMatching(config=self.config.matching)
+        path_calculation_class = MissionToPathCalculation.get(mission, CalculatePath)
+        self.pathing = pathing or path_calculation_class(config=self.config.path)
         self.global_path: FloatArray | None = None
 
         self.experimental_performance_improvements = (

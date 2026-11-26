@@ -108,6 +108,7 @@ class ConeSorting:
             self.state.threshold_directional_angle,
             self.state.threshold_absolute_angle,
             experimental_performance_improvements,
+            config=self.config,
         )
 
     def set_new_input(self, slam_input: ConeSortingInput) -> None:

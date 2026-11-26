@@ -21,6 +21,11 @@ from fsd_path_planning.utils.math_utils import (
     vec_angle_between,
 )
 
+# Distance below which the directional-angle limit is relaxed, in metres.
+# SortingConfig.close_cone_threshold is what the pipeline passes; this is the
+# value the algorithm shipped with, kept as the default for direct callers.
+DEFAULT_CLOSE_CONE_THRESHOLD = 4.0
+
 
 @my_njit
 def adjacency_matrix_to_borders_and_targets(
@@ -111,6 +116,7 @@ def _check_angle_continuity(
     cone_type: int,
     threshold_directional_angle: float,
     threshold_absolute_angle: float,
+    close_cone_threshold: float,
 ) -> bool:
     """Check that the angle between consecutive path segments is within thresholds."""
     second_to_last = trace[current_attempt[position_in_stack - 1]]
@@ -128,11 +134,13 @@ def _check_angle_continuity(
         return False
     elif cone_type == ConeTypes.LEFT:
         if not (
-            difference < threshold_directional_angle or len_last_to_candidate < 4.0
+            difference < threshold_directional_angle
+            or len_last_to_candidate < close_cone_threshold
         ):
             return False
     elif cone_type == ConeTypes.RIGHT and not (
-        difference > -threshold_directional_angle or len_last_to_candidate < 4.0
+        difference > -threshold_directional_angle
+        or len_last_to_candidate < close_cone_threshold
     ):
         return False
 
@@ -201,6 +209,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     car_position: FloatArray,
     car_direction: FloatArray,
     car_size: float,
+    close_cone_threshold: float,
 ) -> BoolArray:
     car_direction_normalized = car_direction / np.linalg.norm(car_direction)
 
@@ -253,6 +262,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
             cone_type,
             threshold_directional_angle,
             threshold_absolute_angle,
+            close_cone_threshold,
         ):
             can_be_added[i] = False
             continue
@@ -391,6 +401,7 @@ def _impl_find_all_end_configurations(
     car_position: FloatArray,
     car_direction: FloatArray,
     car_size: float,
+    close_cone_threshold: float,
     store_all_end_configurations: bool,
 ) -> tuple[IntArray, tuple[IntArray, BoolArray] | None]:
     """
@@ -449,6 +460,7 @@ def _impl_find_all_end_configurations(
             car_position,
             car_direction,
             car_size,
+            close_cone_threshold,
         )
 
         has_valid_neighbors = position_in_stack < target_length - 1 and np.any(
@@ -523,7 +535,8 @@ def find_all_end_configurations(
     car_position: FloatArray,
     car_direction: FloatArray,
     car_size: float,
-    store_all_end_configurations: bool,
+    close_cone_threshold: float = DEFAULT_CLOSE_CONE_THRESHOLD,
+    store_all_end_configurations: bool = False,
 ) -> tuple[IntArray, tuple[IntArray, BoolArray] | None]:
     """
     Finds all the possible paths that include all the reachable nodes from the starting
@@ -558,6 +571,7 @@ def find_all_end_configurations(
         car_position,
         car_direction,
         car_size,
+        close_cone_threshold,
         store_all_end_configurations,
     )
 

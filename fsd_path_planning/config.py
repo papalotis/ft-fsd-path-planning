@@ -6,6 +6,7 @@ Description: Config file to create instances of the pathing related classes.
 Project: fsd_path_planning
 """
 
+from dataclasses import replace
 from typing import Any
 
 from fsd_path_planning.calculate_path.core_calculate_path import (
@@ -144,7 +145,7 @@ def create_default_cone_matching(
         The created ConeMatching instance
     """
     cfg = default_config(mission)
-    return ConeMatching(config=cfg.matching)
+    return ConeMatching(config=replace(cfg.matching, matches_should_be_monotonic=True))
 
 
 def create_default_cone_matching_with_non_monotonic_matches(
@@ -160,5 +161,4 @@ def create_default_cone_matching_with_non_monotonic_matches(
         The created ConeMatching instance
     """
     cfg = default_config(mission)
-    cfg.matching.matches_should_be_monotonic = False
-    return ConeMatching(config=cfg.matching)
+    return ConeMatching(config=replace(cfg.matching, matches_should_be_monotonic=False))
