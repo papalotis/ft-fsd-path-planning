@@ -35,7 +35,6 @@ from fsd_path_planning.utils.math_utils import (
     rotate,
     vec_angle_between,
 )
-from fsd_path_planning.utils.utils import Timer
 
 
 def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
@@ -168,32 +167,29 @@ class TraceSorter:
         car_pos: FloatArray,
         car_dir: FloatArray,
     ) -> tuple[FloatArray, FloatArray]:
-        timer_no_print = True
         cones_flat = flatten_cones_by_type_array(cones_by_type)
 
-        with Timer("left config search", timer_no_print):
-            (
-                left_scores,
-                left_configs,
-                left_first_cones,
-            ) = left_result = self.calc_configurations_with_score_for_one_side(
-                cones_flat,
-                ConeTypes.LEFT,
-                car_pos,
-                car_dir,
-            )
+        (
+            left_scores,
+            left_configs,
+            left_first_cones,
+        ) = left_result = self.calc_configurations_with_score_for_one_side(
+            cones_flat,
+            ConeTypes.LEFT,
+            car_pos,
+            car_dir,
+        )
 
-        with Timer("right config search", timer_no_print):
-            (
-                right_scores,
-                right_configs,
-                right_first_cones,
-            ) = right_result = self.calc_configurations_with_score_for_one_side(
-                cones_flat,
-                ConeTypes.RIGHT,
-                car_pos,
-                car_dir,
-            )
+        (
+            right_scores,
+            right_configs,
+            right_first_cones,
+        ) = right_result = self.calc_configurations_with_score_for_one_side(
+            cones_flat,
+            ConeTypes.RIGHT,
+            car_pos,
+            car_dir,
+        )
 
         self.cached_results = ConeSortingCacheEntry(
             input_cones=cones_flat,

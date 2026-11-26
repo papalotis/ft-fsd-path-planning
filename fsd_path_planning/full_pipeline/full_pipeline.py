@@ -53,7 +53,6 @@ from fsd_path_planning.utils.math_utils import (
     unit_2d_vector_from_angle,
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
-from fsd_path_planning.utils.utils import Timer
 
 MissionToPathCalculation: dict[MissionTypes, type[CalculatePath]] = {
     MissionTypes.skidpad: SkidpadCalculatePath,
@@ -130,7 +129,6 @@ class PathPlanner:
         cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-        noprint: bool,
     ) -> tuple[
         FloatArray,
         FloatArray,
@@ -142,12 +140,11 @@ class PathPlanner:
         IntArray,
     ]:
         """Run the relocalization path (skidpad/acceleration)."""
-        with Timer("Relocalization", noprint=noprint):
-            if self.relocalizer is None:
-                raise ValueError("Relocalizer is not set for this mission")
-            self.relocalizer.attempt_relocalization_calculation(
-                cones, vehicle_position, vehicle_direction
-            )
+        if self.relocalizer is None:
+            raise ValueError("Relocalizer is not set for this mission")
+        self.relocalizer.attempt_relocalization_calculation(
+            cones, vehicle_position, vehicle_direction
+        )
 
         if self.relocalizer.is_relocalized:
             vehicle_yaw = angle_from_2d_vector(vehicle_direction)
@@ -182,32 +179,29 @@ class PathPlanner:
         cones: list[FloatArray],
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
-        noprint: bool,
     ) -> tuple[FloatArray, FloatArray, FloatArray, FloatArray, IntArray, IntArray]:
         """Run the standard sorting → matching pipeline."""
-        with Timer("Cone sorting", noprint=noprint):
-            cone_sorting_input = ConeSortingInput(
-                cones, vehicle_position, vehicle_direction
-            )
-            sorting_result = self.cone_sorting.run_cone_sorting(cone_sorting_input)
-            sorted_left = sorting_result.left_cones
-            sorted_right = sorting_result.right_cones
+        cone_sorting_input = ConeSortingInput(
+            cones, vehicle_position, vehicle_direction
+        )
+        sorting_result = self.cone_sorting.run_cone_sorting(cone_sorting_input)
+        sorted_left = sorting_result.left_cones
+        sorted_right = sorting_result.right_cones
 
-        with Timer("Cone matching", noprint=noprint):
-            matched_cones_input: list[FloatArray] = [
-                np.zeros((0, 2), dtype=float) for _ in ConeTypes
-            ]
-            matched_cones_input[ConeTypes.LEFT] = sorted_left
-            matched_cones_input[ConeTypes.RIGHT] = sorted_right
+        matched_cones_input: list[FloatArray] = [
+            np.zeros((0, 2), dtype=float) for _ in ConeTypes
+        ]
+        matched_cones_input[ConeTypes.LEFT] = sorted_left
+        matched_cones_input[ConeTypes.RIGHT] = sorted_right
 
-            cone_matching_input = ConeMatchingInput(
-                matched_cones_input, vehicle_position, vehicle_direction
-            )
-            matching_result = self.cone_matching.run_cone_matching(cone_matching_input)
-            left_cones_with_virtual = matching_result.left_cones_with_virtual
-            right_cones_with_virtual = matching_result.right_cones_with_virtual
-            left_to_right_match = matching_result.left_to_right_matches
-            right_to_left_match = matching_result.right_to_left_matches
+        cone_matching_input = ConeMatchingInput(
+            matched_cones_input, vehicle_position, vehicle_direction
+        )
+        matching_result = self.cone_matching.run_cone_matching(cone_matching_input)
+        left_cones_with_virtual = matching_result.left_cones_with_virtual
+        right_cones_with_virtual = matching_result.right_cones_with_virtual
+        left_to_right_match = matching_result.left_to_right_matches
+        right_to_left_match = matching_result.right_to_left_matches
 
         return (
             sorted_left,
@@ -319,8 +313,6 @@ class PathPlanner:
         vehicle_position = validate_vehicle_position(vehicle_position)
         vehicle_direction = convert_direction_to_array(vehicle_direction)
 
-        noprint = True
-
         if self.relocalizer is not None:
             (
                 vehicle_position,
@@ -331,9 +323,7 @@ class PathPlanner:
                 right_cones_with_virtual,
                 left_to_right_match,
                 right_to_left_match,
-            ) = self._run_relocalization(
-                cones, vehicle_position, vehicle_direction, noprint
-            )
+            ) = self._run_relocalization(cones, vehicle_position, vehicle_direction)
         else:
             (
                 sorted_left,
@@ -343,22 +333,21 @@ class PathPlanner:
                 left_to_right_match,
                 right_to_left_match,
             ) = self._run_sorting_and_matching(
-                cones, vehicle_position, vehicle_direction, noprint
+                cones, vehicle_position, vehicle_direction
             )
 
         # run path calculation
-        with Timer("Path calculation", noprint=noprint):
-            path_calculation_input = PathCalculationInput(
-                left_cones_with_virtual,
-                right_cones_with_virtual,
-                left_to_right_match,
-                right_to_left_match,
-                vehicle_position,
-                vehicle_direction,
-                self.global_path,
-            )
-            path_result = self.pathing.run_path_calculation(path_calculation_input)
-            final_path = path_result.final_path
+        path_calculation_input = PathCalculationInput(
+            left_cones_with_virtual,
+            right_cones_with_virtual,
+            left_to_right_match,
+            right_to_left_match,
+            vehicle_position,
+            vehicle_direction,
+            self.global_path,
+        )
+        path_result = self.pathing.run_path_calculation(path_calculation_input)
+        final_path = path_result.final_path
 
         if self.relocalizer is not None and self.relocalizer.is_relocalized:
             final_path = final_path.copy()

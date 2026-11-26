@@ -701,20 +701,6 @@ def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
     return np.array([x, y, r])
 
 
-if __name__ == "__main__":
-    p1, p2, p3 = unit_2d_vector_from_angle(np.array([0, 0.3, 0.31]))
-    print(center_of_circle_from_3_points(p1, p2, p3))
-
-    p1, p2, p3 = unit_2d_vector_from_angle(np.array([0, 0.8, 4])) + 10
-    print(center_of_circle_from_3_points(p1, p2, p3))
-
-    p1, p2, p3 = np.array([-1, 0.0]), np.array([0, 1.0]), np.array([1.0, 0.0])
-    print(center_of_circle_from_3_points(p1, p2, p3))
-
-    p1, p2, p3 = np.array([0, 0.0]), np.array([0, 1.0]), np.array([0.0, 2.0])
-    print(center_of_circle_from_3_points(p1, p2, p3))
-
-
 @my_njit
 def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """

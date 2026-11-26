@@ -32,7 +32,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
 )
-from fsd_path_planning.utils.utils import Timer
 
 
 def calc_scores_and_end_configurations(
@@ -78,52 +77,48 @@ def calc_scores_and_end_configurations(
     if config is None:
         config = SortingConfig()
 
-    no_print = True
-    with Timer("create_adjacency_matrix", no_print):
-        adjacency_matrix, reachable_nodes = create_adjacency_matrix(
-            cones=trace,
-            n_neighbors=n_neighbors,
-            start_idx=start_idx,
-            max_dist=max_dist,
-            cone_type=cone_type,
-            cache=adjacency_cache,
-        )
+    adjacency_matrix, reachable_nodes = create_adjacency_matrix(
+        cones=trace,
+        n_neighbors=n_neighbors,
+        start_idx=start_idx,
+        max_dist=max_dist,
+        cone_type=cone_type,
+        cache=adjacency_cache,
+    )
 
     target_length = min(reachable_nodes.shape[0], max_length)
 
     if first_k_indices_must_be is None:
         first_k_indices_must_be = np.arange(0)
 
-    with Timer("find_all_end_configurations", no_print):
-        all_end_configurations, history = find_all_end_configurations(
-            trace,
-            cone_type,
-            start_idx,
-            adjacency_matrix,
-            target_length,
-            threshold_directional_angle,
-            threshold_absolute_angle,
-            first_k_indices_must_be,
-            vehicle_position,
-            vehicle_direction,
-            car_size=config.car_size,
-            close_cone_threshold=config.close_cone_threshold,
-            # this is only used for testing/debugging/visualization purposes
-            # and should be set to False in production
-            store_all_end_configurations=return_history,
-        )
+    all_end_configurations, history = find_all_end_configurations(
+        trace,
+        cone_type,
+        start_idx,
+        adjacency_matrix,
+        target_length,
+        threshold_directional_angle,
+        threshold_absolute_angle,
+        first_k_indices_must_be,
+        vehicle_position,
+        vehicle_direction,
+        car_size=config.car_size,
+        close_cone_threshold=config.close_cone_threshold,
+        # this is only used for testing/debugging/visualization purposes
+        # and should be set to False in production
+        store_all_end_configurations=return_history,
+    )
 
-    with Timer("cost_configurations", no_print):
-        costs = cost_configurations(
-            points=trace,
-            configurations=all_end_configurations,
-            cone_type=cone_type,
-            vehicle_position=vehicle_position,
-            vehicle_direction=vehicle_direction,
-            return_individual_costs=False,
-            nearby_searcher=nearby_searcher,
-            config=config,
-        )
+    costs = cost_configurations(
+        points=trace,
+        configurations=all_end_configurations,
+        cone_type=cone_type,
+        vehicle_position=vehicle_position,
+        vehicle_direction=vehicle_direction,
+        return_individual_costs=False,
+        nearby_searcher=nearby_searcher,
+        config=config,
+    )
     costs_sort_idx = np.argsort(costs)
     costs = cast(FloatArray, costs[costs_sort_idx])
     all_end_configurations = cast(IntArray, all_end_configurations[costs_sort_idx])

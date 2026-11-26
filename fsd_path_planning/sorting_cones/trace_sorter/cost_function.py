@@ -22,7 +22,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import angle_difference, vec_angle_between
-from fsd_path_planning.utils.utils import Timer
 
 
 def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArray:
@@ -204,19 +203,16 @@ def calc_cones_on_either_cost(
     search_distance: float = 6.0,
     search_angle: float = np.pi / 1.5,
 ) -> FloatArray:
-    with Timer("calc_cones_on_either_cost", noprint=True) as _:
-        # Without a searcher from the caller the counts are computed uncached,
-        # rather than through a cache shared with every other planner.
-        searcher = (
-            nearby_searcher if nearby_searcher is not None else NearbyConeSearcher()
-        )
-        n_good, n_bad = searcher.number_of_cones_on_each_side_for_each_config(
-            points,
-            configurations,
-            cone_type,
-            search_distance,
-            search_angle,
-        )
+    # Without a searcher from the caller the counts are computed uncached,
+    # rather than through a cache shared with every other planner.
+    searcher = nearby_searcher if nearby_searcher is not None else NearbyConeSearcher()
+    n_good, n_bad = searcher.number_of_cones_on_each_side_for_each_config(
+        points,
+        configurations,
+        cone_type,
+        search_distance,
+        search_angle,
+    )
 
     diff = n_good - n_bad
     m_value = diff.min()
@@ -256,46 +252,33 @@ def cost_configurations(
     if len(configurations) == 0:
         return np.zeros(0)
 
-    timer_no_print = True
+    angle_cost = calc_angle_cost_for_configuration(points_xy, configurations, cone_type)
 
-    with Timer("angle_cost", timer_no_print):
-        angle_cost = calc_angle_cost_for_configuration(
-            points_xy, configurations, cone_type
-        )
+    residual_distance_cost = calc_distance_cost(
+        points_xy, configurations, config.residual_distance_threshold
+    )
 
-    with Timer("residual_distance_cost", timer_no_print):
-        residual_distance_cost = calc_distance_cost(
-            points_xy, configurations, config.residual_distance_threshold
-        )
+    number_of_cones_cost = calc_number_of_cones_cost(configurations)
 
-    with Timer("number_of_cones_cost", timer_no_print):
-        number_of_cones_cost = calc_number_of_cones_cost(configurations)
+    initial_direction_cost = calc_initial_direction_cost(
+        points_xy, configurations, vehicle_direction
+    )
+    # initial_direction_cost = np.zeros(configurations.shape[0])
 
-    with Timer("initial_direction_cost", timer_no_print):
-        initial_direction_cost = calc_initial_direction_cost(
-            points_xy, configurations, vehicle_direction
-        )
-        # initial_direction_cost = np.zeros(configurations.shape[0])
+    change_of_direction_cost = calc_change_of_direction_cost(points_xy, configurations)
 
-    with Timer("change_of_direction_cost", timer_no_print):
-        change_of_direction_cost = calc_change_of_direction_cost(
-            points_xy, configurations
-        )
+    cones_on_either_cost = calc_cones_on_either_cost(
+        points_xy,
+        configurations,
+        cone_type,
+        nearby_searcher=nearby_searcher,
+        search_distance=config.cones_on_side_search_distance,
+        search_angle=config.cones_on_side_search_angle,
+    )
 
-    with Timer("cones_on_either_cost", timer_no_print):
-        cones_on_either_cost = calc_cones_on_either_cost(
-            points_xy,
-            configurations,
-            cone_type,
-            nearby_searcher=nearby_searcher,
-            search_distance=config.cones_on_side_search_distance,
-            search_angle=config.cones_on_side_search_angle,
-        )
-
-    with Timer("wrong_direction_cost", timer_no_print):
-        wrong_direction_cost = calc_wrong_direction_cost(
-            points_xy, configurations, cone_type
-        )
+    wrong_direction_cost = calc_wrong_direction_cost(
+        points_xy, configurations, cone_type
+    )
 
     factors: FloatArray = np.array(
         [
