@@ -25,58 +25,10 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
     angle_from_2d_vector,
     my_cdist_sq_euclidean,
-    my_njit,
     rotate,
     trace_angles_between,
     vec_angle_between,
 )
-
-
-@my_njit
-def cones_in_range_and_pov_mask(
-    cones: FloatArray,
-    search_directions: FloatArray,
-    search_range: float,
-    search_angle: float,
-    other_side_cones: FloatArray,
-) -> BoolArray:
-    """
-    Calculates the indices of the visible cones according to the car position
-
-    Returns:
-        The indices of the visible cones
-    """
-    search_range_squared = search_range * search_range
-
-    # # (M, 2), (N, 2) -> (M,N)
-    dist_from_cones_to_other_side_squared: FloatArray = my_cdist_sq_euclidean(
-        other_side_cones, cones
-    )
-
-    # (M, N)
-    dist_mask: BoolArray = dist_from_cones_to_other_side_squared < search_range_squared
-
-    # (M, 1, 2) - (N, 2) -> (M, N, 2)
-    vec_from_cones_to_other_side = np.expand_dims(other_side_cones, axis=1) - cones
-
-    # (N, 2) -> (M, N, 2)
-    search_directions_broadcasted: FloatArray = np.broadcast_to(
-        search_directions, vec_from_cones_to_other_side.shape
-    ).copy()  # copy is needed in numba, otherwise a reshape error occurs
-
-    # (M, N, 2), (M, N, 2) -> (M, N)
-    angles_to_car = vec_angle_between(
-        search_directions_broadcasted, vec_from_cones_to_other_side
-    )
-    # (M, N)
-    mask_angles = np.logical_and(
-        -search_angle / 2 < angles_to_car, angles_to_car < search_angle / 2
-    )
-
-    visible_cones_mask = np.logical_and(dist_mask, mask_angles)
-
-    return_value: BoolArray = visible_cones_mask
-    return return_value
 
 
 def find_boolean_mask_of_all_potential_matches(

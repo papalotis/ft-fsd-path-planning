@@ -188,16 +188,6 @@ class CalculatePath:
         final_trivial_path: FloatArray = path_rotated + self.input.vehicle_position
         return final_trivial_path
 
-    def number_of_matches_on_one_side(self, side: ConeTypes) -> int:
-        assert side in (ConeTypes.LEFT, ConeTypes.RIGHT)
-        matches_of_side = (
-            self.input.left_to_right_matches
-            if side == ConeTypes.LEFT
-            else self.input.right_to_left_matches
-        )
-        return_value: int = np.sum(matches_of_side != -1)
-        return return_value
-
     def side_score(self, side: ConeTypes) -> tuple:
         matches_of_side = (
             self.input.left_to_right_matches

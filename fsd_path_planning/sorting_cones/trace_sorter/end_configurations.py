@@ -15,6 +15,7 @@ from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection impo
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
 from fsd_path_planning.utils.math_utils import (
+    angle_difference,
     my_in1d,
     my_njit,
     points_inside_ellipse,
@@ -365,26 +366,6 @@ def calculate_mask_within_ellipse(
     )
 
     return mask_in_ellipse
-
-
-@my_njit
-def angle_difference(
-    angle1: float | FloatArray, angle2: float | FloatArray
-) -> float | FloatArray:
-    """
-    Calculate the difference between two angles. The range of the difference
-    is [-pi, pi].
-    The order of the angles *is* important.
-
-    Args:
-        angle1: First angle.
-        angle2: Second angle.
-
-    Returns:
-        The difference between the two angles.
-    """
-    return_value = (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi
-    return return_value
 
 
 @my_njit

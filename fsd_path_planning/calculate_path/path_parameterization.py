@@ -8,15 +8,12 @@ Project: fsd_path_planning
 """
 
 from dataclasses import dataclass
-from typing import cast
 
 import numpy as np
 from scipy.ndimage import uniform_filter1d
 
 from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.utils.math_utils import (
-    Numeric,
-    angle_from_2d_vector,
     circle_fit,
     my_njit,
     trace_distance_to_next,
@@ -29,22 +26,6 @@ class PathParameterizerState:
     "State of the PathParameterizer"
 
     prediction_horizon: int
-
-
-def angle_difference(angle1: Numeric, angle2: Numeric) -> Numeric:
-    """
-    Calculate the difference between two angles. The range of the difference
-    is [-pi, pi].
-    The order of the angles *is* important.
-
-    Args:
-        angle1: First angle.
-        angle2: Second angle.
-
-    Returns:
-        The difference between the two angles.
-    """
-    return cast(Numeric, (angle1 - angle2 + 3 * np.pi) % (2 * np.pi) - np.pi)  # type: ignore
 
 
 @my_njit
@@ -189,65 +170,6 @@ class PathParameterizer:
         )
 
         return filtered_curvature
-
-    def _calculate_smallest_distance_to_path(
-        self, path_spline: SplineEvaluator, point: FloatArray
-    ) -> tuple[float, int]:
-        """
-        Calculate the closest point on the path to a point.
-
-        Args:
-            path_spline: The spline of the path.
-            point: The point.
-
-        Returns:
-            The closest point and its index on the path to the point.
-        """
-
-        path_resampled = path_spline.predict(der=0)
-        distances_of_path_to_vehicle: FloatArray = np.linalg.norm(
-            path_resampled - point, axis=-1
-        )
-
-        index_position_on_path_closest_to_pose = np.argmin(distances_of_path_to_vehicle)
-        smallest_distance_to_point: float = distances_of_path_to_vehicle[
-            index_position_on_path_closest_to_pose
-        ]
-        return smallest_distance_to_point, cast(
-            int, index_position_on_path_closest_to_pose
-        )
-
-    def _calculate_relative_direction_difference_between_path_and_vehicle(
-        self,
-        path_spline: SplineEvaluator,
-        vehicle_direction: FloatArray,
-        index_of_closest_point: int,
-    ) -> float:
-        """
-        Calculate the relative direction difference between the path and the vehicle.
-        The relative direction difference is the difference between the
-        direction of the vehicle and the direction of the path at the closest
-        point.
-
-        Args:
-            path_spline: The spline of the path.
-            vehicle_direction: The direction of the vehicle. The direction is
-                a 2D vector.
-            index_of_closest_point: The index of the closest point on the path.
-
-        Returns:
-            The relative direction difference between the path and the vehicle in rad.
-        """
-        path_direction = path_spline.predict(der=1)[index_of_closest_point]
-        path_direction_as_angle = cast(float, angle_from_2d_vector(path_direction))
-        vehicle_direction_as_angle = cast(
-            float, angle_from_2d_vector(vehicle_direction)
-        )
-
-        relative_angle_difference = angle_difference(
-            path_direction_as_angle, vehicle_direction_as_angle
-        )
-        return relative_angle_difference
 
     def _sample_path_parameters_for_prediction_horizon(
         self,
