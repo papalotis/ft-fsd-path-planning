@@ -336,21 +336,6 @@ class TraceSorter:
 
         return return_value
 
-    def invert_cone_type(self, cone_type: ConeTypes) -> ConeTypes:
-        """
-        Inverts the cone type
-        Args:
-            cone_type: The cone type to be inverted
-        Returns:
-            ConeTypes: The inverted cone type
-        """
-        if cone_type == ConeTypes.LEFT:
-            return ConeTypes.RIGHT
-        if cone_type == ConeTypes.RIGHT:
-            return ConeTypes.LEFT
-
-        raise ValueError(f"Cone type {cone_type} cannot be inverted.")
-
     def select_starting_cone(
         self,
         car_position: FloatArray,
