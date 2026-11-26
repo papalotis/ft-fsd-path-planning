@@ -408,7 +408,10 @@ class CalculatePath:
         return _remove_not_in_horizon(
             path_length_fixed_forward,
             self.scalars.mpc_path_length,
-            self.previous_paths[-1],
+            # The previous path is stored parameterized as (theta, x, y,
+            # curvature); the caller needs the (x, y) points it is about to
+            # parameterize again.
+            self.previous_paths[-1][:, 1:3],
         )
 
     def store_paths(
