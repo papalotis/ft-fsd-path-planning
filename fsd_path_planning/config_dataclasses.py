@@ -292,8 +292,9 @@ class SkidpadConfig:
     # maximum number of closest cones to use for relocalization
     max_cones_for_relocalization: int = 20
 
-    # maximum powerset size for circle fitting
-    max_powerset_size: int = 5
+    # maximum powerset size for circle fitting. 3 reproduces the behaviour of
+    # the released algorithm; see circle_fit_powerset for why.
+    max_powerset_size: int = 3
 
     def __post_init__(self) -> None:
         _validate_positive("circle_radius", self.circle_radius)

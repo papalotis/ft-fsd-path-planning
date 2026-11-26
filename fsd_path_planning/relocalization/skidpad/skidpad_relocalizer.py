@@ -30,7 +30,13 @@ def circle_fit_powerset(points: np.ndarray) -> PowersetCirceFitResult:
     out = []
     all_indices = range(len(points))
 
-    max_powerset_size = 5
+    # Only 3-cone subsets are evaluated, which reproduces the behaviour of the
+    # released algorithm: there, a loop variable shadowed `all_indices`, so the
+    # 4- and 5-cone passes silently iterated over an empty sequence. Raising this
+    # limit changes relocalization results and costs an order of magnitude more
+    # time per frame, so it is scheduled as a deliberate change after the
+    # refactor (random subset sampling), not as a side effect of this cleanup.
+    max_powerset_size = 3
     max_actual_powerset_size = min(max_powerset_size, len(points))
 
     rng = np.random.RandomState(42)
@@ -228,7 +234,7 @@ class SkidpadRelocalizer(Relocalizer):
         vehicle_position: FloatArray,
         vehicle_direction: FloatArray,
     ) -> tuple[RelocalizationCallable, RelocalizationCallable] | None:
-        cones_array = np.row_stack(cones)
+        cones_array = np.vstack(cones)
         cones_array_xy = cones_array[:, :2]
 
         # only keep 20 closest cones

@@ -350,7 +350,7 @@ def load_data_json(
         cones_observations_all_unknown = []
         for cones in cone_observations:
             new_observation: list[np.ndarray] = [np.zeros((0, 2)) for _ in ConeTypes]
-            new_observation[ConeTypes.UNKNOWN] = np.row_stack(
+            new_observation[ConeTypes.UNKNOWN] = np.vstack(
                 [c.reshape(-1, 2) for c in cones]
             )
             cones_observations_all_unknown.append(new_observation)
