@@ -7,11 +7,11 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 
 
-@my_njit
+@njit
 def _make_segments_homogeneous(
     segment_a_start: FloatArray,
     segment_a_end: FloatArray,
@@ -27,7 +27,7 @@ def _make_segments_homogeneous(
     return homogenenous
 
 
-@my_njit
+@njit
 def _handle_line_segment_intersection_parallel_case(
     segment_a_start: FloatArray,
     segment_a_end: FloatArray,
@@ -75,7 +75,7 @@ def _handle_line_segment_intersection_parallel_case(
 _DEFAULT_EPSILON = 1e-6
 
 
-@my_njit
+@njit
 def calc_intersections(homogeneous: FloatArray) -> tuple[float, float, float]:
     line_a = np.cross(homogeneous[0], homogeneous[1])  # get first line
     line_b = np.cross(homogeneous[2], homogeneous[3])  # get second line
@@ -84,7 +84,7 @@ def calc_intersections(homogeneous: FloatArray) -> tuple[float, float, float]:
     return inter_x, inter_y, inter_z
 
 
-@my_njit
+@njit
 def intersection_in_bounding_box(
     inter_x: float, inter_y: float, inter_z: float, homogeneous: FloatArray
 ) -> tuple[float, float, float, float, float, float, float, float, float, float]:
@@ -111,7 +111,7 @@ def intersection_in_bounding_box(
     )
 
 
-@my_njit
+@njit
 def check_intersection_within_bounding_boxes(
     epsilon: float,
     intersection_x: float,
@@ -133,7 +133,7 @@ def check_intersection_within_bounding_boxes(
     )
 
 
-@my_njit
+@njit
 def lines_segments_intersect_indicator(
     segment_a_start: FloatArray,
     segment_a_end: FloatArray,
@@ -202,7 +202,7 @@ def lines_segments_intersect_indicator(
     return return_value
 
 
-@my_njit
+@njit
 def batch_lines_segments_intersect_indicator(
     segments_a_start: FloatArray,
     segments_a_end: FloatArray,
@@ -259,7 +259,7 @@ def batch_lines_segments_intersect_indicator(
     return out
 
 
-@my_njit
+@njit
 def pairwise_segment_intersection(
     segment_starts: FloatArray,
     segment_ends: FloatArray,
@@ -334,7 +334,7 @@ def pairwise_segment_intersection(
     return indicator_matrix
 
 
-@my_njit
+@njit
 def number_of_intersections(intersection_matrix: BoolArray) -> int:
     """
     Given sorted 2d-points find the number of intersections between the segments.
@@ -355,7 +355,7 @@ def number_of_intersections(intersection_matrix: BoolArray) -> int:
     return int(np.count_nonzero(lower_triangle_matrix))
 
 
-@my_njit
+@njit
 def trace_intersections(
     points: FloatArray,
     intersect_with_consecutive_segments: bool = False,
@@ -398,7 +398,7 @@ def trace_intersections(
     return intersections
 
 
-@my_njit
+@njit
 def number_of_intersections_in_trace(
     points: FloatArray,
     intersect_with_consecutive_segments: bool = False,
@@ -429,7 +429,7 @@ def number_of_intersections_in_trace(
     return number_of_intersections(intersections)
 
 
-@my_njit
+@njit
 def number_of_intersections_in_configurations(
     points: FloatArray, configurations: IntArray
 ) -> IntArray:

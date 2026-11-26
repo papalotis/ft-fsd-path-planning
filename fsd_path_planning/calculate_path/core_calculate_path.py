@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
+from fsd_path_planning._deprecation import FsdPathPlanningDeprecationWarning
 from fsd_path_planning.calculate_path.path_basis_selector import (
     calculate_centerline_points,
 )
@@ -49,7 +50,7 @@ from fsd_path_planning.calculate_path.strategies import (
 from fsd_path_planning.common_types import FloatArray, IntArray, PathResult
 from fsd_path_planning.config_dataclasses import PathConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector
-from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitter
 from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
 
@@ -159,7 +160,7 @@ class CalculatePath:
             mpc_prediction_horizon=self.config.number_of_samples,
         )
         self.path_calculator_helpers = PathCalculatorHelpers()
-        self.spline_fitter_factory = SplineFitterFactory(
+        self.spline_fitter = SplineFitter(
             self.config.smoothing, self.config.predict_every, self.config.max_deg
         )
 
@@ -176,13 +177,24 @@ class CalculatePath:
         self.path_is_trivial_list = []
         self.path_updates = []
 
+    @property
+    def spline_fitter_factory(self) -> SplineFitter:
+        """Deprecated name of `spline_fitter`."""
+        warnings.warn(
+            "CalculatePath.spline_fitter_factory has been renamed to"
+            " spline_fitter; the old name will be removed in 0.7.0",
+            FsdPathPlanningDeprecationWarning,
+            stacklevel=2,
+        )
+        return self.spline_fitter
+
     def calculate_initial_path(self) -> FloatArray:
         """
         Calculate the initial path.
         """
 
         # calculate first path
-        initial_path = self.spline_fitter_factory.fit(
+        initial_path = self.spline_fitter.fit(
             self.path_calculator_helpers.calculate_almost_straight_path(
                 radius=self.config.initial_path_radius,
                 maximum_angle=self.config.initial_path_angle,
@@ -283,7 +295,7 @@ class CalculatePath:
         in another step
         """
         try:
-            path_length_fixed = self.spline_fitter_factory.fit(final_path).predict(
+            path_length_fixed = self.spline_fitter.fit(final_path).predict(
                 der=0, max_u=self.scalars.mpc_path_length * 1.5
             )
         except Exception:

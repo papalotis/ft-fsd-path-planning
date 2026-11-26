@@ -13,10 +13,10 @@ from typing import TypeVar, cast
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 
 
-@my_njit
+@njit
 def lerp(
     values_to_lerp: np.ndarray,
     start1: np.ndarray,

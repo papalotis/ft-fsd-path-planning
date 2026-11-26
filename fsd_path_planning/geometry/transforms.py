@@ -10,11 +10,11 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import FloatArray
 
 
-@my_njit
+@njit
 def rotate(points: np.ndarray, theta: float | np.ndarray) -> np.ndarray:
     """
     Rotates the points in `points` by angle `theta` around the origin

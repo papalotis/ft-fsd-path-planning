@@ -27,7 +27,7 @@ from fsd_path_planning.geometry.angles import (
     angle_from_2d_vector,
     vec_angle_between,
 )
-from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
+from fsd_path_planning.geometry.distances import cdist_sq_euclidean
 from fsd_path_planning.geometry.traces import trace_angles_between
 from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -135,7 +135,7 @@ def select_best_match_candidate(
     if len(other_side_cones) == 0:
         return np.full(len(matchable_cones), -1, dtype=int)
 
-    matched_index_for_each_cone: IntArray = my_cdist_sq_euclidean(
+    matched_index_for_each_cone: IntArray = cdist_sq_euclidean(
         matchable_cones, other_side_cones
     ).argmin(axis=1)
 
@@ -190,7 +190,7 @@ def insert_virtual_cones_to_existing(
     cones_to_insert = cones_to_insert.copy()
 
     order_to_insert = (
-        my_cdist_sq_euclidean(cones_to_insert, existing_cones).min(axis=1).argsort()
+        cdist_sq_euclidean(cones_to_insert, existing_cones).min(axis=1).argsort()
     )
     cones_to_insert = cones_to_insert[order_to_insert]
 
@@ -321,7 +321,7 @@ def combine_and_sort_virtual_with_real(
     )
 
     # cones than have a distance larger than epsilon to the existing cones are virtual
-    distance_of_final_cones_to_existing = my_cdist_sq_euclidean(
+    distance_of_final_cones_to_existing = cdist_sq_euclidean(
         sorted_combined_cones, other_side_cones
     )
     epsilon = 1e-2

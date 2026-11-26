@@ -14,31 +14,31 @@ from sys import maxsize
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_search_direction_for_one,
 )
 from fsd_path_planning.geometry.angles import vec_angle_between
-from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
+from fsd_path_planning.geometry.distances import cdist_sq_euclidean
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 SEARCH_DIRECTIONS_CACHE_KEY_TYPE = tuple[int, int, int]
 SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]
 
 
-# my_njit = lambda x: x  # for debugging only
+# njit = lambda x: x  # for debugging only
 
 
 SENTINEL_VALUE = maxsize - 10
 
 
-@my_njit
+@njit
 def create_search_directions_cache() -> SEARCH_DIRECTIONS_CACHE_TYPE:
     return {(SENTINEL_VALUE, SENTINEL_VALUE, SENTINEL_VALUE): np.array([-1.0, -1.0])}
 
 
-@my_njit
+@njit
 def calculate_match_search_direction_for_one_if_not_in_cache(
     cones_xy: FloatArray,
     key: SEARCH_DIRECTIONS_CACHE_KEY_TYPE,
@@ -53,7 +53,7 @@ def calculate_match_search_direction_for_one_if_not_in_cache(
     return cache_dict[key]
 
 
-@my_njit
+@njit
 def pre_caluclate_search_directions(
     cones: FloatArray,
     configs: IntArray,
@@ -89,7 +89,7 @@ def pre_caluclate_search_directions(
     return cache
 
 
-@my_njit
+@njit
 def sorted_set_diff(a: IntArray, b: IntArray) -> IntArray:
     """Returns the set difference between a and b, assume a,b are sorted."""
     # we cannot use np.setdiff1d because it is not supported by numba
@@ -98,7 +98,7 @@ def sorted_set_diff(a: IntArray, b: IntArray) -> IntArray:
     return a[mask]
 
 
-@my_njit
+@njit
 def find_nearby_cones_for_idxs(
     idxs: IntArray, distance_matrix_sqaured: FloatArray, search_range: float
 ) -> IntArray:
@@ -113,7 +113,7 @@ ANGLE_MASK_CACHE_KEY_TYPE = tuple[tuple[int, int, int], int, int]
 ANGLE_MASK_CACHE_TYPE = dict[ANGLE_MASK_CACHE_KEY_TYPE, tuple[bool, bool]]
 
 
-@my_njit
+@njit
 def create_angle_cache() -> ANGLE_MASK_CACHE_TYPE:
     # the key is a tuple which consists of the following:
     # - the key of the search direction cache (previous cone, current cone, next cone)
@@ -130,7 +130,7 @@ def create_angle_cache() -> ANGLE_MASK_CACHE_TYPE:
     return d
 
 
-@my_njit
+@njit
 def angle_between_search_direction_of_cone_and_other_cone_is_too_large(
     all_cone_directions: FloatArray,
     directions_key: SEARCH_DIRECTIONS_CACHE_KEY_TYPE,
@@ -153,7 +153,7 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large(
     return bool(good_angle), bool(bad_angle)
 
 
-@my_njit
+@njit
 def angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in_cache(
     all_cone_directions: FloatArray,
     directions_key: SEARCH_DIRECTIONS_CACHE_KEY_TYPE,
@@ -179,7 +179,7 @@ def angle_between_search_direction_of_cone_and_other_cone_is_too_large_if_not_in
     return angle_cache[key]
 
 
-@my_njit
+@njit
 def calculate_visible_cones_for_one_cone(
     cone_idx: int,
     cone_within_distance_matrix_mask: BoolArray,
@@ -221,7 +221,7 @@ def calculate_visible_cones_for_one_cone(
     return good_mask, bad_mask
 
 
-@my_njit
+@njit
 def _impl_number_cones_on_each_side_for_each_config(
     cones: FloatArray,
     configs: IntArray,
@@ -257,7 +257,7 @@ def _impl_number_cones_on_each_side_for_each_config(
         cones_to_cones_vecs = cones_xy - np.expand_dims(cones_xy, 1)
 
     if distance_matrix_square is None:
-        distance_matrix_square = my_cdist_sq_euclidean(cones_xy, cones_xy)
+        distance_matrix_square = cdist_sq_euclidean(cones_xy, cones_xy)
         np.fill_diagonal(
             distance_matrix_square, 1e6
         )  # for some reason np.inf doesn't work here
@@ -345,7 +345,7 @@ class NearbyConeSearcher:
             index_of_hashed_values = None
         if index_of_hashed_values is None:
             cones_xy = cones[:, :2]
-            distance_matrix_square = my_cdist_sq_euclidean(cones_xy, cones_xy)
+            distance_matrix_square = cdist_sq_euclidean(cones_xy, cones_xy)
             np.fill_diagonal(distance_matrix_square, 1e7)
             cones_to_cones = cones_xy - cones_xy[:, None]
 

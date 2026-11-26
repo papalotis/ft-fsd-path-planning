@@ -132,7 +132,10 @@ your code runs) until 0.7.0.
 | `fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection` | `fsd_path_planning.geometry.segments` |
 
 Every geometry function can also be imported from `fsd_path_planning.geometry`
-directly. `lerp`, `linearly_combine_values_over_time`, `odd_square` and the
+directly. Some names changed on the way: `my_cdist_sq_euclidean` is now
+`cdist_sq_euclidean`, `my_in1d` is `fsd_path_planning.utils.arrays.in1d`, and
+`SplineFitterFactory` is `SplineFitter` (and `CalculatePath.spline_fitter_factory`
+is `spline_fitter`). The old names still work, with the same warning. `lerp`, `linearly_combine_values_over_time`, `odd_square` and the
 quaternion conversions in `math_utils` are no longer used by the planner and
 have no new home; they are removed in 0.7.0.
 

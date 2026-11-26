@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, IntArray
 from fsd_path_planning.geometry.angles import angle_difference, vec_angle_between
 from fsd_path_planning.geometry.segments import lines_segments_intersect_indicator
 from fsd_path_planning.geometry.shapes import points_inside_ellipse
-from fsd_path_planning.utils.arrays import my_in1d
+from fsd_path_planning.utils.arrays import in1d
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 # Distance below which the directional-angle limit is relaxed, in metres.
@@ -22,7 +22,7 @@ from fsd_path_planning.utils.cone_types import ConeTypes
 DEFAULT_CLOSE_CONE_THRESHOLD = 4.0
 
 
-@my_njit
+@njit
 def adjacency_matrix_to_borders_and_targets(
     adjacency_matrix: BoolArray | IntArray,
 ) -> tuple[IntArray, IntArray]:
@@ -68,7 +68,7 @@ def adjacency_matrix_to_borders_and_targets(
     return neighbors_flat, final_borders
 
 
-@my_njit
+@njit
 def double_stack_len(stack: GenericArray) -> GenericArray:
     """
     Double the capacity of a stack (used in the path search)
@@ -85,7 +85,7 @@ def double_stack_len(stack: GenericArray) -> GenericArray:
     return new_buffer
 
 
-@my_njit
+@njit
 def resize_stack_if_needed(stack: GenericArray, stack_pointer: int) -> GenericArray:
     """
     Given a stack and its current pointer resize the stack if adding one more element
@@ -102,7 +102,7 @@ def resize_stack_if_needed(stack: GenericArray, stack_pointer: int) -> GenericAr
     return stack
 
 
-@my_njit
+@njit
 def _check_angle_continuity(
     trace: FloatArray,
     current_attempt: IntArray,
@@ -159,7 +159,7 @@ def _check_angle_continuity(
     return True
 
 
-@my_njit
+@njit
 def _check_forward_direction(
     trace: FloatArray,
     current_attempt: IntArray,
@@ -173,7 +173,7 @@ def _check_forward_direction(
     return bool(direction_offset < np.pi / 2)
 
 
-@my_njit
+@njit
 def _check_no_car_collision(
     trace: FloatArray,
     current_attempt: IntArray,
@@ -192,7 +192,7 @@ def _check_no_car_collision(
     )
 
 
-@my_njit
+@njit
 def neighbor_bool_mask_can_be_added_to_attempt(
     trace: FloatArray,
     cone_type: int,
@@ -209,7 +209,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     car_direction_normalized = car_direction / np.linalg.norm(car_direction)
 
     # neighbor can be added if not in current attempt
-    can_be_added = ~my_in1d(neighbors, current_attempt[: position_in_stack + 1])
+    can_be_added = ~in1d(neighbors, current_attempt[: position_in_stack + 1])
 
     neighbors_points = trace[neighbors]
     if position_in_stack >= 1:
@@ -282,7 +282,7 @@ def neighbor_bool_mask_can_be_added_to_attempt(
     return can_be_added
 
 
-@my_njit
+@njit
 def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
     trace: FloatArray,
     current_attempt: IntArray,
@@ -319,7 +319,7 @@ def check_if_neighbor_lies_between_last_in_attempt_and_candidate(
             break
 
 
-@my_njit
+@njit
 def mask_second_in_attempt_is_on_right_vehicle_side(
     cone_type: int,
     car_position: FloatArray,
@@ -340,7 +340,7 @@ def mask_second_in_attempt_is_on_right_vehicle_side(
     return mask
 
 
-@my_njit
+@njit
 def calculate_mask_within_ellipse(
     trace: FloatArray,
     current_attempt: IntArray,
@@ -362,7 +362,7 @@ def calculate_mask_within_ellipse(
     return mask_in_ellipse
 
 
-@my_njit
+@njit
 def _impl_find_all_end_configurations(
     trace: FloatArray,
     cone_type: int,

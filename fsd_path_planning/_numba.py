@@ -35,7 +35,7 @@ def _is_coverage_running() -> bool:
     return Coverage.current() is not None
 
 
-def my_njit(func: T) -> T:
+def njit(func: T) -> T:
     """
     numba.njit is an untyped decorator. This wrapper helps type checkers keep the
     type information after applying the decorator. Furthermore, it sets some performance
@@ -61,7 +61,7 @@ def my_njit(func: T) -> T:
 
 
 def njit_exact(func: T) -> T:
-    """Like `my_njit`, but with IEEE floating point (no ``fastmath``).
+    """Like `njit`, but with IEEE floating point (no ``fastmath``).
 
     For kernels that replace NumPy code whose results must stay bit for bit
     the same: ``fastmath`` lets the compiler reorder and fuse arithmetic,

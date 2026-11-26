@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 
 
-@my_njit
-def my_cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
+@njit
+def cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
     """
     Calculates the pairwise square euclidean distances from each point in `X` to each
     point in `Y`
@@ -44,7 +44,7 @@ def my_cdist_sq_euclidean(arr_a: np.ndarray, arr_b: np.ndarray) -> np.ndarray:
     return np.dot(x_ext, y_ext)
 
 
-@my_njit
+@njit
 def calc_pairwise_distances(
     points: np.ndarray, dist_to_self: float = 0.0
 ) -> np.ndarray:
@@ -59,7 +59,7 @@ def calc_pairwise_distances(
     Returns:
         np.ndarray: The 2d distance matrix
     """
-    pairwise_distances = my_cdist_sq_euclidean(points, points)
+    pairwise_distances = cdist_sq_euclidean(points, points)
 
     if dist_to_self != 0:
         for i in range(len(points)):

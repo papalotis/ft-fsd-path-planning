@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import fsd_path_planning._numba as math_utils_module
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.geometry.angles import (
     angle_difference,
     angle_from_2d_vector,
@@ -15,7 +15,7 @@ from fsd_path_planning.geometry.angles import (
 )
 from fsd_path_planning.geometry.distances import (
     calc_pairwise_distances,
-    my_cdist_sq_euclidean,
+    cdist_sq_euclidean,
 )
 from fsd_path_planning.geometry.shapes import (
     calculate_radius_from_points,
@@ -39,7 +39,7 @@ from fsd_path_planning.utils._retired_math import (
     odd_square,
     quaternion_to_euler_angles,
 )
-from fsd_path_planning.utils.arrays import my_in1d
+from fsd_path_planning.utils.arrays import in1d
 
 
 class TestMyNjit:
@@ -49,7 +49,7 @@ class TestMyNjit:
 
         monkeypatch.setattr(math_utils_module, "_is_coverage_running", lambda: True)
 
-        decorated = my_njit(sample_function)
+        decorated = njit(sample_function)
 
         assert decorated is sample_function
         assert decorated(2.0) == 3.0
@@ -74,7 +74,7 @@ class TestMyNjit:
         monkeypatch.setattr(math_utils_module, "_is_coverage_running", lambda: False)
         monkeypatch.setattr(math_utils_module, "jit", fake_jit)
 
-        decorated = my_njit(sample_function)
+        decorated = njit(sample_function)
 
         assert decorated is not sample_function
         assert decorated(2.0) == 3.0
@@ -185,21 +185,21 @@ class TestVecAngleBetween:
             vec_angle_between(np.array([[1.0, 0.0]]), np.array([[1.0, 0.0, 0.0]]))
 
 
-# ── my_cdist_sq_euclidean ────────────────────────────────────────────────────
+# ── cdist_sq_euclidean ────────────────────────────────────────────────────
 
 
 class TestMyCdistSqEuclidean:
     def test_against_manual(self):
         a = np.array([[0.0, 0.0], [1.0, 0.0]])
         b = np.array([[0.0, 0.0], [0.0, 1.0], [1.0, 1.0]])
-        result = my_cdist_sq_euclidean(a, b)
+        result = cdist_sq_euclidean(a, b)
         expected = np.array([[0.0, 1.0, 2.0], [1.0, 2.0, 1.0]])
         np.testing.assert_allclose(result, expected, atol=1e-10)
 
     def test_single_point(self):
         a = np.array([[3.0, 4.0]])
         b = np.array([[0.0, 0.0]])
-        result = my_cdist_sq_euclidean(a, b)
+        result = cdist_sq_euclidean(a, b)
         np.testing.assert_allclose(result, [[25.0]], atol=1e-10)
 
 
@@ -223,20 +223,20 @@ class TestCalcPairwiseDistances:
         np.testing.assert_allclose(np.diag(result), [99.0, 99.0], atol=1e-10)
 
 
-# ── my_in1d ──────────────────────────────────────────────────────────────────
+# ── in1d ──────────────────────────────────────────────────────────────────
 
 
 class TestMyIn1d:
     def test_basic(self):
         test = np.array([1, 2, 3, 4, 5])
         source = np.array([2, 4])
-        result = my_in1d(test, source)
+        result = in1d(test, source)
         np.testing.assert_array_equal(result, [False, True, False, True, False])
 
     def test_empty_source(self):
         test = np.array([1, 2])
         source = np.array([], dtype=int)
-        result = my_in1d(test, source)
+        result = in1d(test, source)
         np.testing.assert_array_equal(result, [False, False])
 
 

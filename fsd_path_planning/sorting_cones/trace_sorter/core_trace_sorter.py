@@ -15,7 +15,7 @@ import numpy as np
 from fsd_path_planning.common_types import FloatArray, IntArray, TraceOutcome
 from fsd_path_planning.config_dataclasses import SortingConfig
 from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
-from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
+from fsd_path_planning.geometry.distances import cdist_sq_euclidean
 from fsd_path_planning.geometry.shapes import points_inside_ellipse
 from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
@@ -69,7 +69,7 @@ def cone_arrays_are_similar(
     if cones.shape != other_cones.shape:
         return False
 
-    distances = my_cdist_sq_euclidean(cones[:, :2], other_cones[:, :2])
+    distances = cdist_sq_euclidean(cones[:, :2], other_cones[:, :2])
 
     closest_for_each = distances.min(axis=1)
     distances_all_close = np.all(closest_for_each < (threshold * threshold))

@@ -7,7 +7,7 @@ Project: fsd_path_planning
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import FloatArray, IntArray
 
 
@@ -37,7 +37,7 @@ def get_configurations_diff(points: FloatArray, configurations: IntArray) -> Flo
     return result
 
 
-@my_njit
+@njit
 def breadth_first_order(adjacency_matrix: IntArray, start_idx: int) -> IntArray:
     """
     Returns the nodes reachable from `start_idx` in BFS order

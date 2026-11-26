@@ -82,10 +82,11 @@ class TestGeometryMoved:
         old = importlib.import_module(module_name)
         forwarded = _forwarded_names(module_name)
         assert forwarded
-        for name, home in forwarded.items():
+        for name, target in forwarded.items():
+            home, _, new_name = target.partition(":")
             with pytest.warns(FsdPathPlanningDeprecationWarning, match="0.7.0"):
                 assert getattr(old, name) is getattr(
-                    importlib.import_module(home), name
+                    importlib.import_module(home), new_name or name
                 )
 
     def test_moved_names_point_at_their_new_home(self) -> None:
@@ -117,3 +118,47 @@ class TestGeometryMoved:
             [sys.executable, "-c", code], capture_output=True, text=True
         )
         assert result.returncode == 0, result.stderr
+
+
+class TestRenamed:
+    @pytest.mark.parametrize(
+        ("module_name", "old_name", "new_path"),
+        [
+            (
+                "fsd_path_planning.utils.math_utils",
+                "my_cdist_sq_euclidean",
+                "fsd_path_planning.geometry.distances.cdist_sq_euclidean",
+            ),
+            (
+                "fsd_path_planning.utils.math_utils",
+                "my_in1d",
+                "fsd_path_planning.utils.arrays.in1d",
+            ),
+            (
+                "fsd_path_planning.utils.math_utils",
+                "my_njit",
+                "fsd_path_planning._numba.njit",
+            ),
+            (
+                "fsd_path_planning.utils.spline_fit",
+                "SplineFitterFactory",
+                "fsd_path_planning.geometry.splines.SplineFitter",
+            ),
+        ],
+    )
+    def test_old_name_gives_the_renamed_object(
+        self, module_name, old_name, new_path
+    ) -> None:
+        new_module, _, new_name = new_path.rpartition(".")
+        with pytest.warns(FsdPathPlanningDeprecationWarning, match=new_path):
+            obj = getattr(importlib.import_module(module_name), old_name)
+        assert obj is getattr(importlib.import_module(new_module), new_name)
+
+    def test_spline_fitter_factory_attribute(self) -> None:
+        from fsd_path_planning.calculate_path.core_calculate_path import (
+            CalculatePath,
+        )
+
+        calculator = CalculatePath()
+        with pytest.warns(FsdPathPlanningDeprecationWarning, match="spline_fitter"):
+            assert calculator.spline_fitter_factory is calculator.spline_fitter

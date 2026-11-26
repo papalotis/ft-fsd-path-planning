@@ -153,7 +153,7 @@ class NullSplineEvaluator(SplineEvaluator):
         return points
 
 
-class SplineFitterFactory:
+class SplineFitter:
     """
     Wrapper class for `splev`, `splprep` functions
     """

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.geometry.splines import SplineFitterFactory
+from fsd_path_planning.geometry.splines import SplineFitter
 from fsd_path_planning.relocalization.skidpad.skidpad_path_data import (
     BASE_SKIDPAD_PATH,
     load_skidpad_path_spline,
@@ -90,7 +90,7 @@ class TestSplineRoundTrip:
         points = np.column_stack([np.cos(angles) * 9, np.sin(angles) * 9])
 
         indices = np.arange(0, len(points), 20)
-        factory = SplineFitterFactory(smoothing=0.0, predict_every=1.0, max_deg=3)
+        factory = SplineFitter(smoothing=0.0, predict_every=1.0, max_deg=3)
         spline = factory.fit(points[indices], u_fit=indices.astype(float))
 
         rebuilt = spline.evaluate_at(np.arange(indices[-1] + 1, dtype=float))

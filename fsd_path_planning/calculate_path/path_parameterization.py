@@ -12,10 +12,10 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.ndimage import uniform_filter1d
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.geometry.shapes import circle_fit
-from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitter
 from fsd_path_planning.geometry.traces import trace_distance_to_next
 
 
@@ -26,7 +26,7 @@ class PathParameterizerState:
     prediction_horizon: int
 
 
-@my_njit
+@njit
 def calculate_path_curvature(
     path: FloatArray, window_size: int, path_is_closed: bool
 ) -> FloatArray:
@@ -70,7 +70,7 @@ def calculate_path_curvature(
     return path_curvature
 
 
-@my_njit
+@njit
 def create_cyclic_sliding_window_indices(
     window_size: int, step_size: int, signal_length: int
 ) -> IntArray:
@@ -131,9 +131,7 @@ class PathParameterizer:
         # very little smoothing, because we assume that the incoming points are already
         # smooth, and max_deg is set to 3 because we cannot have a constant
         # second derivative for good curvature calculations
-        factory = SplineFitterFactory(
-            smoothing=0.01, predict_every=predict_every, max_deg=3
-        )
+        factory = SplineFitter(smoothing=0.01, predict_every=predict_every, max_deg=3)
         spline_fitter = factory.fit(path_skipped)
         return spline_fitter
 

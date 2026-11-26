@@ -43,7 +43,8 @@ def moved_names(
 ) -> Callable[[str], Any]:
     """Like `moved_module`, for a module whose names went to different places.
 
-    ``new_homes`` maps each moved name to the module it lives in now.
+    ``new_homes`` maps each moved name to the module it lives in now, or to
+    ``"module:new_name"`` when it was also renamed.
     ``retired`` maps names that have no new public home, because the planner
     no longer uses them, to the private module that still holds them until
     ``removed_in``; their warning says so.
@@ -52,13 +53,14 @@ def moved_names(
 
     def __getattr__(name: str) -> Any:
         if name in new_homes:
-            home = new_homes[name]
+            home, _, new_name = new_homes[name].partition(":")
+            new_name = new_name or name
             message = (
-                f"{old_module}.{name} has moved to {home}.{name}; the old path"
-                f" will be removed in {removed_in}"
+                f"{old_module}.{name} has moved to {home}.{new_name}; the old"
+                f" path will be removed in {removed_in}"
             )
         elif name in retired:
-            home = retired[name]
+            home, new_name = retired[name], name
             message = (
                 f"{old_module}.{name} is no longer used by fsd_path_planning and"
                 f" will be removed in {removed_in}; copy it into your own code if"
@@ -67,6 +69,6 @@ def moved_names(
         else:
             raise AttributeError(f"module {old_module!r} has no attribute {name!r}")
         warnings.warn(message, FsdPathPlanningDeprecationWarning, stacklevel=2)
-        return getattr(importlib.import_module(home), name)
+        return getattr(importlib.import_module(home), new_name)
 
     return __getattr__

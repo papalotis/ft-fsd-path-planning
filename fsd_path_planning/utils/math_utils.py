@@ -21,7 +21,9 @@ __getattr__ = moved_names(
         "angle_from_2d_vector": "fsd_path_planning.geometry.angles",
         "angle_difference": "fsd_path_planning.geometry.angles",
         "rotate": "fsd_path_planning.geometry.transforms",
-        "my_cdist_sq_euclidean": "fsd_path_planning.geometry.distances",
+        "my_cdist_sq_euclidean": (
+            "fsd_path_planning.geometry.distances:cdist_sq_euclidean"
+        ),
         "calc_pairwise_distances": "fsd_path_planning.geometry.distances",
         "trace_distance_to_next": "fsd_path_planning.geometry.traces",
         "trace_angles_between": "fsd_path_planning.geometry.traces",
@@ -30,8 +32,8 @@ __getattr__ = moved_names(
         "points_inside_ellipse": "fsd_path_planning.geometry.shapes",
         "center_of_circle_from_3_points": "fsd_path_planning.geometry.shapes",
         "circle_fit": "fsd_path_planning.geometry.shapes",
-        "my_in1d": "fsd_path_planning.utils.arrays",
-        "my_njit": "fsd_path_planning._numba",
+        "my_in1d": "fsd_path_planning.utils.arrays:in1d",
+        "my_njit": "fsd_path_planning._numba:njit",
     },
     removed_in="0.7.0",
     retired={

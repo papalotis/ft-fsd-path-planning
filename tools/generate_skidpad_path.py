@@ -28,7 +28,7 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from fsd_path_planning.geometry.splines import SplineFitterFactory  # noqa: E402
+from fsd_path_planning.geometry.splines import SplineFitter  # noqa: E402
 
 DEFAULT_OUTPUT = (
     REPO_ROOT
@@ -45,7 +45,7 @@ DEFAULT_STRIDE = 20
 def fit_path(points: np.ndarray, stride: int):
     """Fit a cubic spline through every `stride`-th point, parameterized by index."""
     indices = np.unique(np.append(np.arange(0, len(points), stride), len(points) - 1))
-    factory = SplineFitterFactory(smoothing=0.0, predict_every=1.0, max_deg=3)
+    factory = SplineFitter(smoothing=0.0, predict_every=1.0, max_deg=3)
     return factory.fit(points[indices], u_fit=indices.astype(float)), indices
 
 

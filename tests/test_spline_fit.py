@@ -8,14 +8,14 @@ import pytest
 from fsd_path_planning.geometry.splines import (
     NullSplineEvaluator,
     SplineEvaluator,
-    SplineFitterFactory,
+    SplineFitter,
 )
 
 
 class TestSplineFitterFactory:
     @pytest.fixture()
     def factory(self):
-        return SplineFitterFactory(smoothing=0.0, predict_every=0.1, max_deg=3)
+        return SplineFitter(smoothing=0.0, predict_every=0.1, max_deg=3)
 
     def test_fit_straight_line(self, factory):
         trace = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]])
@@ -89,7 +89,7 @@ class TestNullSplineEvaluator:
 class TestSplineEvaluatorCalculateUEval:
     def test_u_eval_spacing(self):
         # Create a real evaluator via the factory
-        factory = SplineFitterFactory(smoothing=0.0, predict_every=0.5, max_deg=3)
+        factory = SplineFitter(smoothing=0.0, predict_every=0.5, max_deg=3)
         trace = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0], [3.0, 0.0]])
         evaluator = factory.fit(trace)
         u_eval = evaluator.calculate_u_eval()
@@ -98,7 +98,7 @@ class TestSplineEvaluatorCalculateUEval:
         np.testing.assert_allclose(diffs, 0.5, atol=1e-12)
 
     def test_u_eval_with_custom_max(self):
-        factory = SplineFitterFactory(smoothing=0.0, predict_every=0.5, max_deg=3)
+        factory = SplineFitter(smoothing=0.0, predict_every=0.5, max_deg=3)
         trace = np.array([[0.0, 0.0], [1.0, 0.0], [2.0, 0.0]])
         evaluator = factory.fit(trace)
         u_eval_default = evaluator.calculate_u_eval()

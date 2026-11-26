@@ -6,16 +6,17 @@ Forwards to it with a warning until 0.7.0.
 Project: fsd_path_planning
 """
 
-from fsd_path_planning._deprecation import moved_module
+from fsd_path_planning._deprecation import moved_names
 
-__getattr__ = moved_module(
+_NEW = "fsd_path_planning.geometry.splines"
+
+__getattr__ = moved_names(
     "fsd_path_planning.utils.spline_fit",
-    "fsd_path_planning.geometry.splines",
-    (
-        "SplineEvaluator",
-        "NullSplineEvaluator",
-        "SplineFitterFactory",
-        "ARANGE_DECIMALS",
-    ),
+    {
+        "SplineEvaluator": _NEW,
+        "NullSplineEvaluator": _NEW,
+        "SplineFitterFactory": f"{_NEW}:SplineFitter",
+        "ARANGE_DECIMALS": _NEW,
+    },
     removed_in="0.7.0",
 )

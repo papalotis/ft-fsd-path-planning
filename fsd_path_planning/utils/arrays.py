@@ -8,11 +8,11 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 
 
-@my_njit
-def my_in1d(test_values: np.ndarray, source_container: np.ndarray) -> np.ndarray:
+@njit
+def in1d(test_values: np.ndarray, source_container: np.ndarray) -> np.ndarray:
     """
     Calculate a boolean mask for a 1d array indicating if an element in `test_values` is
     present in `source container` which is also 1d

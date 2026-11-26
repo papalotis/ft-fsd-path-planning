@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.geometry.traces import trace_distance_to_next
 from fsd_path_planning.geometry.transforms import rotate
 
@@ -76,7 +76,7 @@ def trace_calculate_consecutive_radii(trace: np.ndarray) -> np.ndarray:
     return radii
 
 
-@my_njit
+@njit
 def points_inside_ellipse(
     points: np.ndarray,
     center: np.ndarray,
@@ -165,7 +165,7 @@ def center_of_circle_from_3_points(
     return center
 
 
-@my_njit
+@njit
 def circle_fit(coords: np.ndarray, max_iter: int = 99) -> np.ndarray:
     """
     Fit a circle to a set of points. This function is adapted from the

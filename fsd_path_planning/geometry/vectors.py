@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 
 
-@my_njit
+@njit
 def vec_dot(vecs1: np.ndarray, vecs2: np.ndarray) -> np.ndarray:
     """
     Mutliplies vectors in an array elementwise
@@ -26,7 +26,7 @@ def vec_dot(vecs1: np.ndarray, vecs2: np.ndarray) -> np.ndarray:
     return np.sum(vecs1 * vecs2, axis=-1)
 
 
-@my_njit
+@njit
 def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
     original_shape = arr.shape
     arr_row_col = np.ascontiguousarray(arr).reshape(-1, arr.shape[-1])
@@ -40,7 +40,7 @@ def norm_of_last_axis(arr: np.ndarray) -> np.ndarray:
     return result
 
 
-@my_njit
+@njit
 def normalize_last_axis(vecs: np.ndarray) -> np.ndarray:
     """
     Returns a normalized version of vecs

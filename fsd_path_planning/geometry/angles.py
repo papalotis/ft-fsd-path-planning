@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.common_types import FloatArray
 from fsd_path_planning.geometry.vectors import norm_of_last_axis, vec_dot
 
 
-@my_njit
+@njit
 def vec_angle_between(
     vecs1: np.ndarray, vecs2: np.ndarray, clip_cos_theta: bool = True
 ) -> np.ndarray:
@@ -50,7 +50,7 @@ def vec_angle_between(
     return np.arccos(cos_theta)
 
 
-@my_njit
+@njit
 def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     """
     Creates unit vectors for each value in the rad array
@@ -70,7 +70,7 @@ def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     return res
 
 
-@my_njit
+@njit
 def _angles_of_2d_vectors(vecs: FloatArray) -> FloatArray:
     """The angle of each vector in `vecs`, shaped like `vecs` without its last axis."""
     vecs_flat = vecs.reshape(-1, 2)
@@ -113,7 +113,7 @@ def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     return angles
 
 
-@my_njit
+@njit
 def angle_difference(angle1: np.ndarray, angle2: np.ndarray) -> np.ndarray:
     """
     Calculate the difference between two angles. The range of the difference

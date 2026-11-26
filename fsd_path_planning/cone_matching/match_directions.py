@@ -1,11 +1,11 @@
 import numpy as np
 
-from fsd_path_planning._numba import my_njit
+from fsd_path_planning._numba import njit
 from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 
-@my_njit
+@njit
 def calculate_search_direction_for_one(cones, idxs, cone_type):
     """
     Calculates the search direction for one cone
@@ -21,7 +21,7 @@ def calculate_search_direction_for_one(cones, idxs, cone_type):
     return search_direction / np.linalg.norm(search_direction)
 
 
-@my_njit
+@njit
 def calculate_match_search_direction(
     cones,
     cone_type: int,

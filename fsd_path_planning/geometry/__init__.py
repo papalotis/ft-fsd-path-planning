@@ -23,7 +23,7 @@ from fsd_path_planning.geometry.angles import (
 )
 from fsd_path_planning.geometry.distances import (
     calc_pairwise_distances,
-    my_cdist_sq_euclidean,
+    cdist_sq_euclidean,
 )
 from fsd_path_planning.geometry.segments import (
     batch_lines_segments_intersect_indicator,
@@ -47,7 +47,7 @@ from fsd_path_planning.geometry.shapes import (
 from fsd_path_planning.geometry.splines import (
     NullSplineEvaluator,
     SplineEvaluator,
-    SplineFitterFactory,
+    SplineFitter,
 )
 from fsd_path_planning.geometry.traces import (
     trace_angles_between,
@@ -71,7 +71,7 @@ __all__ = [
     "angle_from_2d_vector",
     "angle_difference",
     "rotate",
-    "my_cdist_sq_euclidean",
+    "cdist_sq_euclidean",
     "calc_pairwise_distances",
     "trace_distance_to_next",
     "trace_angles_between",
@@ -92,5 +92,5 @@ __all__ = [
     "number_of_intersections_in_configurations",
     "SplineEvaluator",
     "NullSplineEvaluator",
-    "SplineFitterFactory",
+    "SplineFitter",
 ]

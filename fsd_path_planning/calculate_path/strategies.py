@@ -134,9 +134,9 @@ class SplineThroughBasis:
         basis: FloatArray,
     ) -> FloatArray:
         try:
-            return calculator.spline_fitter_factory.fit(basis).predict(der=0)
+            return calculator.spline_fitter.fit(basis).predict(der=0)
         except ValueError:
-            return calculator.spline_fitter_factory.fit(
+            return calculator.spline_fitter.fit(
                 calculator.previous_paths[-1][:, 1:3]
             ).predict(der=0)
 
