@@ -279,7 +279,10 @@ def trace_angles_between(trace: np.ndarray) -> np.ndarray:
         len(trace) - 1`
     """
     all_to_next = np.diff(trace, axis=-2)
-    from_middle_to_next = all_to_next[..., 1:, :]
+    # Numba compiles one version per array layout. Whether this slice is
+    # contiguous depends on the data (with a single row it is), so without the
+    # copy a frame could hit a layout the warm-up never compiled and stall.
+    from_middle_to_next = np.ascontiguousarray(all_to_next[..., 1:, :])
     from_middle_to_prev = -all_to_next[..., :-1, :]
     angles = vec_angle_between(from_middle_to_next, from_middle_to_prev)
     return angles
@@ -305,9 +308,14 @@ def unit_2d_vector_from_angle(rad: float | FloatArray) -> FloatArray:
     return res
 
 
-# Calculates the angle of each vector in `vecs`
-# TODO: Look into fixing return type when a single vector is provided (return float)
 @my_njit
+def _angles_of_2d_vectors(vecs: FloatArray) -> FloatArray:
+    """The angle of each vector in `vecs`, shaped like `vecs` without its last axis."""
+    vecs_flat = vecs.reshape(-1, 2)
+    angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
+    return angles.reshape(vecs.shape[:-1])
+
+
 def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     """
     Calculates the angle of each vector in `vecs`. If `vecs` is just a single 2d vector
@@ -316,7 +324,9 @@ def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
     >>> import numpy as np
     >>> x = np.array([[1, 0], [1, 1], [0, 1]])
     >>> angle_from_2d_vector(x)
-    >>> array([0.        , 0.78539816, 1.57079633])
+    array([0.        , 0.78539816, 1.57079633])
+    >>> angle_from_2d_vector(np.array([0.0, 1.0]))
+    np.float64(1.5707963267948966)
 
     Args:
         vecs (np.array): The vectors for which the angle is calculated
@@ -325,20 +335,20 @@ def angle_from_2d_vector(vecs: FloatArray) -> FloatArray:
         ValueError: If `vecs` has the wrong shape a ValueError is raised
 
     Returns:
-        np.array: The angle of each vector in `vecs`
+        np.array: The angle of each vector in `vecs`, or a NumPy scalar for a
+        single vector
     """
+    vecs = np.asarray(vecs)
     if vecs.shape[-1] != 2:
         raise ValueError("vecs must be a 2d vector")
 
-    vecs_flat = vecs.reshape(-1, 2)
-
-    angles = np.arctan2(vecs_flat[:, 1], vecs_flat[:, 0])
-    return_value = angles.reshape(vecs.shape[:-1])
-
-    # if vecs.ndim == 1:
-    #     return return_value[0]
-
-    return return_value
+    angles = _angles_of_2d_vectors(np.ascontiguousarray(vecs, dtype=float))
+    if vecs.ndim == 1:
+        # A NumPy scalar rather than a 0-d array. The value is the same, but a
+        # 0-d array passed on to a Numba function makes Numba compile another
+        # version of it, which the warm-up cannot know about in advance.
+        return angles[()]
+    return angles
 
 
 @my_njit

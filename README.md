@@ -218,7 +218,25 @@ pip install -e .[demo]
 
 The algorithm (with default parameters) is fast enough to run in real-time on a Jetson Xavier AGX 16GB on MAXN power mode. On that platform, the algorithm takes on average around 10ms from start to finish. You can run the demo to get an idea of the performance on your hardware.
 
-*Note that the first time that you run the algorithm, it will take around 30-60 seconds to compile all the Numba functions. Run the demo a second time to get a real indicator on performance.*
+*Note that the first time that you run the algorithm, it will take around 30-70 seconds to compile all the Numba functions. The compiled code is cached on disk, so later starts take about a second. Run the demo a second time to get a real indicator on performance.*
+
+### Warm-up
+
+Numba compiles a function the first time each branch of the planner reaches it,
+so without help the compilation happens in the middle of a run: on a fresh
+install, a single frame can take seconds. Call `warmup()` once while the vehicle
+is still standing, for example when your node starts or the car enters
+AS-READY:
+
+```python
+from fsd_path_planning import warmup
+
+warmup()  # about a second with a warm cache, about a minute on a fresh install
+```
+
+It drives throwaway planners through synthetic trackdrive, acceleration and
+skidpad situations, so that nothing is left to compile once the car moves. On
+the bundled datasets no frame after the warm-up needs a compile.
 
 Run the following command to run the demo on your machine:
 

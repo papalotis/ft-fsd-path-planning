@@ -30,7 +30,10 @@ def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArr
     mask_should_overwrite = (configurations == -1)[:, 1:]
     all_to_next[mask_should_overwrite] = 100
 
-    from_middle_to_next = all_to_next[..., 1:, :]
+    # Numba compiles one version per array layout. Whether this slice is
+    # contiguous depends on the data (with a single row it is), so without the
+    # copy a frame could hit a layout the warm-up never compiled and stall.
+    from_middle_to_next = np.ascontiguousarray(all_to_next[..., 1:, :])
     from_prev_to_middle = all_to_next[..., :-1, :]
     from_middle_to_prev = -from_prev_to_middle
 
