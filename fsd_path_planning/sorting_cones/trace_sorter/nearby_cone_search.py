@@ -315,18 +315,29 @@ def _impl_number_cones_on_each_side_for_each_config(
     return n_good_cones_for_all, n_bad_cones_for_all
 
 
+CacheKey = tuple[int, ConeTypes, float, float]
+
+
 class NearbyConeSearcher:
     def __init__(self) -> None:
         self.caches_cache: deque[
-            tuple[tuple[int, ConeTypes], tuple[dict, dict, FloatArray, FloatArray]]
+            tuple[CacheKey, tuple[dict, dict, FloatArray, FloatArray]]
         ] = deque(maxlen=20)
 
     def get_caches(
-        self, cones: np.ndarray, cone_type: ConeTypes
+        self,
+        cones: np.ndarray,
+        cone_type: ConeTypes,
+        max_distance: float,
+        max_angle: float,
     ) -> tuple[dict, dict, FloatArray, FloatArray]:
         array_buffer = cones.tobytes()
         array_hash = hash(array_buffer)
-        cache_key = (array_hash, cone_type)
+        # The angle cache stores decisions that depend on the search geometry,
+        # so the search distance and angle are part of its identity. Both are
+        # constant today, but a cache that silently ignores them would hand
+        # back answers for the wrong geometry as soon as they are configurable.
+        cache_key: CacheKey = (array_hash, cone_type, max_distance, max_angle)
 
         try:
             index_of_hashed_values = next(
@@ -363,7 +374,7 @@ class NearbyConeSearcher:
         max_distance: float,
         max_angle: float,
     ) -> tuple[np.ndarray, np.ndarray]:
-        cached_values = self.get_caches(cones, cone_type)
+        cached_values = self.get_caches(cones, cone_type, max_distance, max_angle)
         return _impl_number_cones_on_each_side_for_each_config(
             cones, configs, cone_type, max_distance, max_angle, *cached_values[:]
         )
