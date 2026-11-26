@@ -39,6 +39,13 @@ def tests_lowest(session: nox.Session) -> None:
     session.run("pytest", "tests/", "-x", "-q", *session.posargs)
 
 
+@nox.session(python="3.12")
+def demo(session: nox.Session) -> None:
+    """Run the demos headless: the Streamlit app and the command line demo."""
+    session.install(".[demo,test]")
+    session.run("pytest", "tests/test_demo_smoke.py", "-m", "demo", "-q")
+
+
 @nox.session
 def lint(session: nox.Session) -> None:
     """Run ruff linter and formatter check."""

@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st
 
 from fsd_path_planning import MissionTypes
-from fsd_path_planning.calculate_path.core_calculate_path import PathCalculationInput
-from fsd_path_planning.common_types import FloatArray, IntArray
-from fsd_path_planning.config import (
-    create_default_pathing,
+from fsd_path_planning.calculate_path.core_calculate_path import (
+    CalculatePath,
+    PathCalculationInput,
 )
+from fsd_path_planning.common_types import FloatArray, IntArray
+from fsd_path_planning.config_dataclasses import default_config
 from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
@@ -98,7 +101,6 @@ def run() -> None:
     left_to_right_index = st.session_state["left_to_right_matches"]
     right_to_left_index = st.session_state["right_to_left_matches"]
 
-    pathing = create_default_pathing(MissionTypes.trackdrive)
     desired_path_length = st.slider(
         "Desired path length",
         min_value=5.0,
@@ -115,8 +117,13 @@ def run() -> None:
         step=1,
     )
 
-    pathing.scalars.mpc_path_length = desired_path_length
-    pathing.scalars.mpc_prediction_horizon = number_of_elements
+    pathing = CalculatePath(
+        config=replace(
+            default_config(MissionTypes.trackdrive).path,
+            path_length=desired_path_length,
+            number_of_samples=number_of_elements,
+        )
+    )
 
     pathing_input = PathCalculationInput(
         left_cones,
@@ -126,9 +133,7 @@ def run() -> None:
         position,
         direction,
     )
-    pathing.set_new_input(pathing_input)
-
-    final_path, path_update = pathing.run_path_calculation()
+    final_path, path_update = pathing.run(pathing_input)
 
     cone_by_type_w_virtual = [np.zeros((0, 2)) for _ in ConeTypes]
     cone_by_type_w_virtual[ConeTypes.LEFT] = left_cones

@@ -94,6 +94,27 @@ jobs:
       - name: Run tests
         run: nox -s tests-lowest
 
+  # ── The demos still run ──────────────────────────────────────────────────
+  # The Streamlit app, rendered headless with streamlit.testing, and the
+  # command line demo on two datasets.
+
+  demo:
+    name: Demo smoke test
+    runs-on: ubuntu-latest
+    env:
+      FSD_PATH_PLANNING_STRICT: "1"
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run the demos
+        run: nox -s demo
+
   # ── Slow regression tests against the golden baseline ────────────────────
   # Compared with the agreed tolerance (1 cm of sideways movement of the
   # planned line), so the stored baseline holds on CI's machines too.

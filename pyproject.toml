@@ -25,6 +25,7 @@ testpaths = ["tests"]
 markers = [
     "slow: marks tests as slow (full pipeline regression)",
     "jit: marks tests that specifically validate Numba JIT behavior",
+    "demo: runs the demos (needs the demo extra; skipped otherwise)",
 ]
 
 [build-system]

@@ -59,7 +59,9 @@ def show_starting_cone(
         3,
         max_dist_to_first=max_distance,
         max_length=10,
-        threshold_absolute_angle=0,
+        # only the starting cone selection is used here, which ignores both
+        # thresholds; they must still be valid angles
+        threshold_absolute_angle=np.deg2rad(65),
         threshold_directional_angle=0.5,
     )
     out: list[IntArray | None] = [None for _ in ConeTypes]
