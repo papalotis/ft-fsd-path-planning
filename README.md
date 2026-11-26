@@ -59,19 +59,23 @@ Update them at your convenience — they will be removed in a future release.
 Old (deprecated):
 
 ```python
-sorter  = ConeSorting(max_n_neighbors=5, max_dist=6.5)
+sorter = ConeSorting(max_n_neighbors=5, max_dist=6.5)
 matcher = ConeMatching(min_track_width=3.0)
-pather  = CalculatePath(smoothing=0.2, mpc_path_length=20.0)
+pather = CalculatePath(smoothing=0.2, mpc_path_length=20.0)
 ```
 
 New (use a config dataclass):
 
 ```python
-from fsd_path_planning.config_dataclasses import SortingConfig, MatchingConfig, PathConfig
+from fsd_path_planning.config_dataclasses import (
+    SortingConfig,
+    MatchingConfig,
+    PathConfig,
+)
 
-sorter  = ConeSorting(config=SortingConfig(max_n_neighbors=5, max_dist=6.5))
+sorter = ConeSorting(config=SortingConfig(max_n_neighbors=5, max_dist=6.5))
 matcher = ConeMatching(config=MatchingConfig(min_track_width=3.0))
-pather  = CalculatePath(config=PathConfig(smoothing=0.2, path_length=20.0))
+pather = CalculatePath(config=PathConfig(smoothing=0.2, path_length=20.0))
 ```
 
 **2. `set_new_input()` + `calculate()` pattern**
@@ -215,7 +219,7 @@ from fsd_path_planning import PathPlanner, MissionTypes, ConeTypes
 
 path_planner = PathPlanner(MissionTypes.trackdrive)
 # you have to load/get the data, this is just an example
-global_cones, car_position, car_direction = load_data() 
+global_cones, car_position, car_direction = load_data()
 # global_cones must contain exactly 5 numeric numpy arrays with shape (N, 2),
 # where N is the number of cones of that type
 
@@ -232,11 +236,12 @@ global_cones, car_position, car_direction = load_data()
 # - a finite float representing the car's direction in radians
 # A zero direction vector is rejected.
 
-path = path_planner.calculate_path_in_global_frame(global_cones, car_position, car_direction)
+path = path_planner.calculate_path_in_global_frame(
+    global_cones, car_position, car_direction
+)
 
 # path is a Mx4 numpy array, where M is the number of points in the path
 # the columns represent the spline parameter (distance along path), x, y and path curvature
-
 ```
 
 `calculate_path_in_global_frame()` validates its public inputs before running the

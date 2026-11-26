@@ -164,7 +164,9 @@ A factory function selects the right subclass based on mission.
 **Decision:** Add epsilon to the denominator in `circle_fit` to prevent division by zero:
 ```python
 det = x * x - x * Mz + Cov_xy
-det = det if abs(det) > 1e-15 else 1e-15  # prevent division by zero for collinear points
+det = (
+    det if abs(det) > 1e-15 else 1e-15
+)  # prevent division by zero for collinear points
 ```
 
 ---
@@ -217,6 +219,7 @@ class SortingResult:
     left_cones: FloatArray
     right_cones: FloatArray
 
+
 @dataclass
 class MatchingResult:
     left_cones_with_virtual: FloatArray
@@ -224,10 +227,11 @@ class MatchingResult:
     left_to_right_matches: IntArray
     right_to_left_matches: IntArray
 
+
 @dataclass
 class PathResult:
-    final_path: FloatArray          # (N, 4)
-    centerline_basis: FloatArray    # (M, 2)
+    final_path: FloatArray  # (N, 4)
+    centerline_basis: FloatArray  # (M, 2)
 ```
 
 ### 3.4 ✅ Remove dead code and debug artifacts
