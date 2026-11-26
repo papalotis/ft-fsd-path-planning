@@ -1,11 +1,19 @@
-#!/usr/bin/env python3
 """
-Description: Entry point for fsd_path_planning.
+FaSTTUBe Formula Student Driverless path planning.
+
+    PathPlanner     plan a path from cones and the car's pose, frame by frame
+    PipelineConfig  every setting, frozen; see fsd_path_planning.config_dataclasses
+    PlannerResult   everything PathPlanner.plan() produced for one frame
+    PathStatus      how trustworthy a frame's path is; see fsd_path_planning.health
+    warmup          compile everything before the car moves
+
 Project: fsd_path_planning
 """
 
-from fsd_path_planning.full_pipeline.full_pipeline import PathPlanner
-from fsd_path_planning.relocalization.relocalization_information import (
+from fsd_path_planning.config_dataclasses import PipelineConfig
+from fsd_path_planning.health import PathStatus
+from fsd_path_planning.pipeline import PathPlanner, PlannerResult
+from fsd_path_planning.stages.relocalization.information import (
     RelocalizationInformation,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -19,5 +27,8 @@ __all__ = [
     "normalize_cones",
     "warmup",
     "PathPlanner",
+    "PathStatus",
+    "PipelineConfig",
+    "PlannerResult",
     "RelocalizationInformation",
 ]

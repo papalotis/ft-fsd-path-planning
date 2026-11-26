@@ -1,6 +1,6 @@
 [project]
 name = "fsd_path_planning"
-version = "0.5.0"
+version = "0.6.0"
 readme = "README.md"
 dependencies = [
     # Floors only, no caps. Each floor is the oldest release that CI tests (the
