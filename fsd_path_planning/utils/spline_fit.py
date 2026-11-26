@@ -8,8 +8,10 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from os import PathLike
+from typing import IO, Any
 
 import numpy as np
 from scipy.interpolate import splev, splprep
@@ -81,6 +83,65 @@ class SplineEvaluator:
 
         return values
 
+    def evaluate_at(self, u_eval: np.ndarray, der: int = 0) -> np.ndarray:
+        """
+        Evaluate the spline at given parameter values, ignoring `predict_every`.
+
+        Args:
+            u_eval: The parameter values to evaluate at.
+            der: The derivative to evaluate.
+
+        Returns:
+            np.ndarray: The evaluated spline, one row per requested value.
+        """
+        return np.array(splev(np.asarray(u_eval, dtype=float), tck=self.tck, der=der)).T
+
+    def to_arrays(self) -> dict[str, np.ndarray]:
+        """
+        The spline as plain arrays, ready to be stored in an .npz file.
+
+        Returns:
+            A mapping that `from_arrays` turns back into an evaluator.
+        """
+        knots, coefficients, degree = self.tck
+        return {
+            "knots": np.asarray(knots, dtype=float),
+            "coefficients": np.asarray(coefficients, dtype=float),
+            "degree": np.asarray(int(degree)),
+            "max_u": np.asarray(float(self.max_u)),
+            "predict_every": np.asarray(float(self.predict_every)),
+        }
+
+    @classmethod
+    def from_arrays(cls, arrays: Mapping[str, np.ndarray]) -> SplineEvaluator:
+        """Rebuild an evaluator from the arrays produced by `to_arrays`."""
+        coefficients = np.asarray(arrays["coefficients"], dtype=float)
+        tck = (
+            np.asarray(arrays["knots"], dtype=float),
+            [np.asarray(row, dtype=float) for row in coefficients],
+            int(arrays["degree"]),
+        )
+        return cls(
+            max_u=float(arrays["max_u"]),
+            tck=tck,
+            predict_every=float(arrays["predict_every"]),
+        )
+
+    def save(self, path: str | PathLike[str]) -> None:
+        """
+        Write the spline to an .npz file.
+
+        Storing the spline instead of the points it was fitted to keeps a dense
+        path small: a few hundred coefficients stand in for thousands of points.
+        """
+        np.savez_compressed(path, **self.to_arrays())
+
+    @classmethod
+    def load(cls, path: str | PathLike[str] | IO[bytes]) -> SplineEvaluator:
+        """Read a spline written by `save`."""
+        with np.load(path) as arrays:
+            return cls.from_arrays(arrays)
+
 
 class NullSplineEvaluator(SplineEvaluator):
     """
@@ -111,13 +172,23 @@ class SplineFitterFactory:
         self.predict_every = predict_every
         self.max_deg = max_deg
 
-    def fit(self, trace: np.ndarray, periodic: bool = False) -> SplineEvaluator:
+    def fit(
+        self,
+        trace: np.ndarray,
+        periodic: bool = False,
+        u_fit: np.ndarray | None = None,
+    ) -> SplineEvaluator:
         """
         Fit a trace and returns a SplineEvaluator that can evaluate the fitted spline at
         different positions.
 
         Args:
             trace (np.ndarray): The trace to fit
+            periodic (bool): Whether the trace closes on itself
+            u_fit (np.ndarray | None): The parameter value of each point. By
+                default the cumulative distance along the trace, which makes the
+                parameter an arc length. Pass the point indices instead to be
+                able to recover the original points by index later.
 
         Returns:
             A instance of SplineEvaluator that can be used to evaluate the spline
@@ -130,8 +201,11 @@ class SplineFitterFactory:
                 0,
             )
         k = np.clip(len(trace) - 1, 1, self.max_deg)
-        distance_to_next = trace_distance_to_next(trace)
-        u_fit = np.concatenate(([0], np.cumsum(distance_to_next)))
+        if u_fit is None:
+            distance_to_next = trace_distance_to_next(trace)
+            u_fit = np.concatenate(([0], np.cumsum(distance_to_next)))
+        else:
+            u_fit = np.asarray(u_fit, dtype=float)
         try:
             tck, _ = splprep(  # pylint: disable=unbalanced-tuple-unpacking
                 trace.T, s=self.smoothing, k=k, u=u_fit, per=periodic
