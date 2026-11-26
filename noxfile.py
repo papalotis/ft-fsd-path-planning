@@ -25,3 +25,14 @@ def typecheck(session: nox.Session) -> None:
     """Run pyright type checking."""
     session.install(".[dev,demo]")
     session.run("pyright", "fsd_path_planning")
+
+
+@nox.session(python="3.12")
+def differential(session: nox.Session) -> None:
+    """Compare the working tree with the frozen baseline, golden-v1.
+
+    Needs the tag and its history: in CI, check out with fetch-depth 0. Pass
+    runner options after --, for example: nox -s differential -- --with-cache
+    """
+    session.install(".")
+    session.run("python", "tools/diff_runner/diff_runner.py", *session.posargs)

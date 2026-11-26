@@ -3,17 +3,19 @@
 
 Both refs are checked out into throwaway worktrees and run in separate
 subprocesses against the *same* dataset files, so the only variable is the
-library code. Every stage output of every frame is compared exactly.
+library code. The planned path of every frame is compared as a trajectory: the
+run passes when the planned line moves sideways by no more than 1 cm, the
+acceptance rule agreed for the refactor. --exact requires byte equality.
 
 Examples:
-    # working tree against main
-    python tools/diff_runner/diff_runner.py --base origin/main
+    # the working tree against the frozen baseline: the gate for a refactor
+    python tools/diff_runner/diff_runner.py
 
     # two commits, quick pass over one dataset
     python tools/diff_runner/diff_runner.py --base HEAD~1 --head HEAD --quick
 
-Exit code is 0 when the two refs agree exactly, 1 when they differ, so the
-runner can gate a refactoring commit in CI.
+Exit code is 0 within tolerance and 1 beyond it, so the runner can gate a
+refactoring commit in CI.
 """
 
 from __future__ import annotations
@@ -30,17 +32,26 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _metrics import PathDeviation, path_deviation  # noqa: E402
+from _metrics import (  # noqa: E402
+    LATERAL_TOLERANCE,
+    LENGTH_TOLERANCE,
+    PathDeviation,
+    path_deviation,
+)
+from _metrics import planner_was_blind as metrics_planner_was_blind  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+# The output every refactoring commit is compared against: the state after the
+# phase-1 fixes, before any restructuring.
+BASELINE_TAG = "golden-v1"
 COLLECT_SCRIPT = Path(__file__).resolve().parent / "_collect.py"
 WORKING_TREE = "WORKTREE"
 # How far the planned trajectory may move before a run counts as a regression.
 # A centimetre is well inside the noise of cone detection and vehicle state.
-DEFAULT_TOLERANCE = 0.01
+DEFAULT_TOLERANCE = LATERAL_TOLERANCE
 # The far end of the horizon is a sampling artefact, so the length of the
 # planned path is held to a looser bound than its position.
-DEFAULT_LENGTH_TOLERANCE = 0.5
+DEFAULT_LENGTH_TOLERANCE = LENGTH_TOLERANCE
 
 # (dataset file, mission name). Missions follow the demo's filename convention.
 DATASETS = (
@@ -150,18 +161,13 @@ def percentile(values: np.ndarray, q: float) -> float:
     return float(np.percentile(values, q)) if values.size else float("nan")
 
 
-# Missions that plan from sorted cones. The others follow a stored reference
-# path and never run the sorter, so an empty sort result means nothing there.
-SORTING_MISSIONS = frozenset({"trackdrive", "autocross"})
-
-
 def planner_was_blind(store, spec: RunSpec, frame: int) -> bool:
     """Whether the base ref's sorter returned no cones on either side."""
-    if spec.mission not in SORTING_MISSIONS:
-        return False
-    left = store[f"{spec.key}|{frame}|sorted_left"]
-    right = store[f"{spec.key}|{frame}|sorted_right"]
-    return len(left) == 0 and len(right) == 0
+    return metrics_planner_was_blind(
+        spec.mission,
+        store[f"{spec.key}|{frame}|sorted_left"],
+        store[f"{spec.key}|{frame}|sorted_right"],
+    )
 
 
 def summarize_run(base, head, spec: RunSpec, stage_names) -> dict:
@@ -298,7 +304,11 @@ def report(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--base", default="origin/main", help="reference git ref")
+    parser.add_argument(
+        "--base",
+        default=BASELINE_TAG,
+        help=f"reference git ref (default: the frozen baseline, {BASELINE_TAG})",
+    )
     parser.add_argument(
         "--head",
         default=WORKING_TREE,

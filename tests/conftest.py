@@ -14,6 +14,32 @@ DEMO_DIR = Path(__file__).resolve().parent.parent / "fsd_path_planning" / "demo"
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden_data"
 
 
+def strip_colour(cones: list[np.ndarray]) -> list[np.ndarray]:
+    """The same frame as a perception stack without colour would report it.
+
+    Every cone goes into the UNKNOWN slot; the other slots are left empty. This
+    is how the differential runner builds its no-colour runs too.
+    """
+    merged = np.vstack(cones) if len(cones) else np.zeros((0, 2))
+    return [merged] + [np.zeros((0, 2)) for _ in range(len(cones) - 1)]
+
+
+# Every run the golden baseline covers: (dataset stem, mission, colour).
+GOLDEN_RUNS: tuple[tuple[str, MissionTypes, bool], ...] = tuple(
+    (stem, mission, colour)
+    for stem, mission in (
+        ("fsg_19_2_laps", MissionTypes.trackdrive),
+        ("fss_19_4_laps", MissionTypes.trackdrive),
+        ("skidpad", MissionTypes.skidpad),
+    )
+    for colour in (True, False)
+)
+
+
+def golden_file(stem: str, colour: bool) -> Path:
+    return GOLDEN_DIR / f"{stem}{'' if colour else '_nocolor'}.npz"
+
+
 def load_data_json(
     data_path: Path,
 ) -> tuple[np.ndarray, np.ndarray, list[list[np.ndarray]]]:

@@ -24,6 +24,18 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.interpolate import splev, splprep
 
+# Acceptance rule agreed for the refactor: the planned line may move sideways by
+# up to about a centimetre. Path length gets a looser bound of its own, because
+# the far end of the horizon moves by a sampling step without the line moving.
+LATERAL_TOLERANCE = 0.01  # metres
+LENGTH_TOLERANCE = 0.5  # metres
+# Cones produced by a stage (sorted, virtual) may move by the same amount.
+CONE_TOLERANCE = 0.01  # metres
+
+# Missions that plan from sorted cones. The others follow a stored reference
+# path and never run the sorter, so an empty sort result means nothing there.
+SORTING_MISSIONS = frozenset({"trackdrive", "autocross"})
+
 # Positions along the shared arc length at which curvature is compared.
 RESAMPLE_POINTS = 200
 # Points on the smooth curve through each path's samples, for the cross-track
@@ -190,3 +202,16 @@ def cone_deviation(base: np.ndarray, head: np.ndarray) -> float:
     if base.ndim == 1:
         return float(np.abs(base.astype(float) - head.astype(float)).max())
     return float(np.linalg.norm(base.astype(float) - head.astype(float), axis=-1).max())
+
+
+def planner_was_blind(mission: str, sorted_left, sorted_right) -> bool:
+    """Whether a sorting mission's sorter found no cones on either side.
+
+    On such a frame the planner only replays and extends the path it planned
+    earlier, so any earlier difference is extrapolated as the car keeps moving.
+    The frame says nothing about how well the code plans a track, so it is
+    reported but not held to the tolerance.
+    """
+    return (
+        mission in SORTING_MISSIONS and len(sorted_left) == 0 and len(sorted_right) == 0
+    )
