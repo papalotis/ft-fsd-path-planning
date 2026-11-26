@@ -30,7 +30,7 @@ from fsd_path_planning.sorting_cones.trace_sorter.find_configs_and_scores import
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
 )
-from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
+from fsd_path_planning.utils.cone_types import ConeTypes, Side, invert_cone_type
 
 
 def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
@@ -189,18 +189,12 @@ class TraceSorter:
         cones_flat = flatten_cones_by_type_array(cones_by_type)
 
         left_result, left_search_outcome = self._search_one_side(
-            cones_flat,
-            ConeTypes.LEFT,
-            car_pos,
-            car_dir,
+            cones_flat, Side.LEFT.cone_type, car_pos, car_dir
         )
         left_scores, left_configs, left_first_cones = left_result
 
         right_result, right_search_outcome = self._search_one_side(
-            cones_flat,
-            ConeTypes.RIGHT,
-            car_pos,
-            car_dir,
+            cones_flat, Side.RIGHT.cone_type, car_pos, car_dir
         )
         right_scores, right_configs, right_first_cones = right_result
 
@@ -247,7 +241,7 @@ class TraceSorter:
         threshold: float,
         cone_type: ConeTypes,
     ) -> bool:
-        assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
+        Side.of(cone_type)  # raises for anything but LEFT and RIGHT
 
         # automatically fail if caching is not enabled
         if not self.experimental_caching:
@@ -258,7 +252,7 @@ class TraceSorter:
 
         previous_starting_cones = (
             self.cached_results.left_starting_cones
-            if cone_type == ConeTypes.LEFT
+            if Side.of(cone_type) is Side.LEFT
             else self.cached_results.right_starting_cones
         )
 
@@ -308,7 +302,7 @@ class TraceSorter:
         tuple[FloatArray | None, IntArray | None, FloatArray | None], TraceOutcome
     ]:
         """The candidate traces for one side, and how the search ended."""
-        assert cone_type in (ConeTypes.LEFT, ConeTypes.RIGHT)
+        Side.of(cone_type)  # raises for anything but LEFT and RIGHT
 
         no_result = None, None, None
 
@@ -341,7 +335,7 @@ class TraceSorter:
         ):
             cr = self.cached_results
             assert cr is not None
-            if cone_type == ConeTypes.LEFT:
+            if Side.of(cone_type) is Side.LEFT:
                 return cr.left_result, cr.left_outcome
             return cr.right_result, cr.right_outcome
 

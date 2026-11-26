@@ -1,10 +1,14 @@
-#!/usr/bin/env python3
 """
-Description: This File calculates the costs for the different path versions
+The cost the sorter uses to rank candidate traces: one function per term, and
+COST_TERMS, which lists them with the weight that applies to each.
+
 Project: fsd_path_planning
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -113,6 +117,13 @@ def calc_initial_direction_cost(
     return vec_angle_between(points_configs_first_two, vehicle_direction)
 
 
+def _heading_changes(trace: FloatArray) -> FloatArray:
+    """The change of heading at each inner point of a trace, in (-pi, pi]."""
+    steps = np.diff(trace, axis=0)
+    headings = np.arctan2(steps[:, 1], steps[:, 0])
+    return angle_difference(headings[:-1], headings[1:])
+
+
 def calc_change_of_direction_cost(
     points: FloatArray, configurations: IntArray
 ) -> FloatArray:
@@ -137,14 +148,7 @@ def calc_change_of_direction_cost(
         if len(c) == 3:
             continue
 
-        points_of_configuration = points[c]
-
-        diff_1 = points_of_configuration[1:] - points_of_configuration[:-1]
-
-        diff_1 = np.diff(points_of_configuration, axis=0)
-        angle = np.arctan2(diff_1[:, 1], diff_1[:, 0])
-        # angle = angle_from_2d_vector(diff_1)
-        difference = angle_difference(angle[:-1], angle[1:])
+        difference = _heading_changes(points[c])
 
         mask_zero_crossing = np.sign(difference[:-1]) != np.sign(difference[1:])
         raw_cost_values = np.abs(difference[:-1] - difference[1:])
@@ -176,14 +180,7 @@ def calc_wrong_direction_cost(
         if len(c) == 3:
             continue
 
-        points_of_configuration = points[c]
-
-        diff_1 = points_of_configuration[1:] - points_of_configuration[:-1]
-
-        diff_1 = np.diff(points_of_configuration, axis=0)
-        angle = np.arctan2(diff_1[:, 1], diff_1[:, 0])
-        # angle = angle_from_2d_vector(diff_1)
-        difference = angle_difference(angle[:-1], angle[1:])
+        difference = _heading_changes(points[c])
 
         mask_wrong_direction = np.sign(difference) == unwanted_direction_sign
         mask_threshold = np.abs(difference) > np.deg2rad(40)
@@ -224,111 +221,128 @@ def calc_cones_on_either_cost(
     return 1 / diff
 
 
+@dataclass(frozen=True)
+class CostContext:
+    """Everything a cost term may look at, for one side and one frame."""
+
+    points_xy: FloatArray
+    configurations: IntArray
+    cone_type: SortableConeTypes
+    vehicle_direction: FloatArray
+    config: SortingConfig
+    nearby_searcher: NearbyConeSearcher | None
+
+
+@dataclass(frozen=True)
+class CostTerm:
+    """One term of the sorting cost.
+
+    `name` is the CostWeights field that weights it. Every term returns one
+    value per configuration; lower is better.
+    """
+
+    name: str
+    compute: Callable[[CostContext], FloatArray]
+
+
+def _cones_on_side_term(ctx: CostContext) -> FloatArray:
+    return calc_cones_on_either_cost(
+        ctx.points_xy,
+        ctx.configurations,
+        ctx.cone_type,
+        nearby_searcher=ctx.nearby_searcher,
+        search_distance=ctx.config.cones_on_side_search_distance,
+        search_angle=ctx.config.cones_on_side_search_angle,
+    )
+
+
+COST_TERMS: tuple[CostTerm, ...] = (
+    CostTerm(
+        "angle",
+        lambda ctx: calc_angle_cost_for_configuration(
+            ctx.points_xy, ctx.configurations, ctx.cone_type
+        ),
+    ),
+    CostTerm(
+        "residual_distance",
+        lambda ctx: calc_distance_cost(
+            ctx.points_xy, ctx.configurations, ctx.config.residual_distance_threshold
+        ),
+    ),
+    CostTerm("n_cones", lambda ctx: calc_number_of_cones_cost(ctx.configurations)),
+    CostTerm(
+        "initial_direction",
+        lambda ctx: calc_initial_direction_cost(
+            ctx.points_xy, ctx.configurations, ctx.vehicle_direction
+        ),
+    ),
+    CostTerm(
+        "direction_change",
+        lambda ctx: calc_change_of_direction_cost(ctx.points_xy, ctx.configurations),
+    ),
+    CostTerm("cones_on_side", _cones_on_side_term),
+    CostTerm(
+        "wrong_direction",
+        lambda ctx: calc_wrong_direction_cost(
+            ctx.points_xy, ctx.configurations, ctx.cone_type
+        ),
+    ),
+)
+"""The terms of the sorting cost, in the column order of
+cost_configurations(return_individual_costs=True)."""
+
+
 def cost_configurations(
     points: FloatArray,
     configurations: IntArray,
     cone_type: SortableConeTypes,
     vehicle_position: FloatArray,  # pylint: disable=unused-argument (future proofing, incase we want to use it)
-    vehicle_direction: FloatArray,  # pylint: disable=unused-argument (future proofing)
+    vehicle_direction: FloatArray,
     *,
     return_individual_costs: bool,
     nearby_searcher: NearbyConeSearcher | None = None,
     config: SortingConfig | None = None,
 ) -> FloatArray:
     """
-    Calculates a cost for each provided configuration
+    Calculates a cost for each provided configuration: the weighted sum of
+    the COST_TERMS, with the weights normalised to sum to one.
+
     Args:
         points: The underlying points
         configurations: An array of indices defining a configuration of the
         provided points
         cone_type: The type of cone (left/right)
+        return_individual_costs: Return the weighted value of each term, one
+        column per term in COST_TERMS order, instead of their sum
     Returns:
         A cost for each configuration
     """
     if config is None:
         config = SortingConfig()
-    weights = config.cost_weights
-
-    points_xy = points[:, :2]
 
     if len(configurations) == 0:
         return np.zeros(0)
 
-    n_configurations = len(configurations)
+    ctx = CostContext(
+        points_xy=points[:, :2],
+        configurations=configurations,
+        cone_type=cone_type,
+        vehicle_direction=vehicle_direction,
+        config=config,
+        nearby_searcher=nearby_searcher,
+    )
+    weights = [getattr(config.cost_weights, term.name) for term in COST_TERMS]
 
-    def term(weight: float, compute: Callable[[], FloatArray]) -> FloatArray:
-        # A term weighted zero contributes nothing, so it is not computed. Its
-        # column stays in the result so that return_individual_costs keeps the
-        # same seven columns in the same order.
-        if weight == 0:
-            return np.zeros(n_configurations)
-        return compute()
+    # A term weighted zero contributes nothing, so it is not computed; its
+    # column stays, as zeros, so the columns keep their order.
+    columns = [
+        term.compute(ctx) if weight != 0 else np.zeros(len(configurations))
+        for term, weight in zip(COST_TERMS, weights, strict=True)
+    ]
 
-    angle_cost = term(
-        weights.angle,
-        lambda: calc_angle_cost_for_configuration(points_xy, configurations, cone_type),
-    )
-    residual_distance_cost = term(
-        weights.residual_distance,
-        lambda: calc_distance_cost(
-            points_xy, configurations, config.residual_distance_threshold
-        ),
-    )
-    number_of_cones_cost = term(
-        weights.n_cones, lambda: calc_number_of_cones_cost(configurations)
-    )
-    initial_direction_cost = term(
-        weights.initial_direction,
-        lambda: calc_initial_direction_cost(
-            points_xy, configurations, vehicle_direction
-        ),
-    )
-    change_of_direction_cost = term(
-        weights.direction_change,
-        lambda: calc_change_of_direction_cost(points_xy, configurations),
-    )
-    cones_on_either_cost = term(
-        weights.cones_on_side,
-        lambda: calc_cones_on_either_cost(
-            points_xy,
-            configurations,
-            cone_type,
-            nearby_searcher=nearby_searcher,
-            search_distance=config.cones_on_side_search_distance,
-            search_angle=config.cones_on_side_search_angle,
-        ),
-    )
-    wrong_direction_cost = term(
-        weights.wrong_direction,
-        lambda: calc_wrong_direction_cost(points_xy, configurations, cone_type),
-    )
-
-    factors: FloatArray = np.array(
-        [
-            weights.angle,
-            weights.residual_distance,
-            weights.n_cones,
-            weights.initial_direction,
-            weights.direction_change,
-            weights.cones_on_side,
-            weights.wrong_direction,
-        ]
-    )
+    factors: FloatArray = np.array(weights)
     factors = factors / factors.sum()
-    final_costs = (
-        np.column_stack(
-            [
-                angle_cost,
-                residual_distance_cost,
-                number_of_cones_cost,
-                initial_direction_cost,
-                change_of_direction_cost,
-                cones_on_either_cost,
-                wrong_direction_cost,
-            ]
-        )
-        * factors
-    )
+    final_costs = np.column_stack(columns) * factors
 
     if return_individual_costs:
         return final_costs
