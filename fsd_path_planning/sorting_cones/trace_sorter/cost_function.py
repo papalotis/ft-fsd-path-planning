@@ -12,7 +12,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
 )
 from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
-    number_cones_on_each_side_for_each_config,
 )
 from fsd_path_planning.types import BoolArray, FloatArray, IntArray, SortableConeTypes
 from fsd_path_planning.utils.cone_types import ConeTypes
@@ -195,25 +194,18 @@ def calc_cones_on_either_cost(
     nearby_searcher: NearbyConeSearcher | None = None,
 ) -> FloatArray:
     with Timer("calc_cones_on_either_cost", noprint=True) as _:
-        if nearby_searcher is not None:
-            (
-                n_good,
-                n_bad,
-            ) = nearby_searcher.number_of_cones_on_each_side_for_each_config(
-                points,
-                configurations,
-                cone_type,
-                6.0,
-                np.pi / 1.5,
-            )
-        else:
-            n_good, n_bad = number_cones_on_each_side_for_each_config(
-                points,
-                configurations,
-                cone_type,
-                6.0,
-                np.pi / 1.5,
-            )
+        # Without a searcher from the caller the counts are computed uncached,
+        # rather than through a cache shared with every other planner.
+        searcher = (
+            nearby_searcher if nearby_searcher is not None else NearbyConeSearcher()
+        )
+        n_good, n_bad = searcher.number_of_cones_on_each_side_for_each_config(
+            points,
+            configurations,
+            cone_type,
+            6.0,
+            np.pi / 1.5,
+        )
 
     diff = n_good - n_bad
     m_value = diff.min()

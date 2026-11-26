@@ -55,25 +55,6 @@ class AdjacencyMatrixCache:
         return self._idxs_calculated.copy()
 
 
-# Module-level instance for backward compatibility
-_DEFAULT_CACHE = AdjacencyMatrixCache()
-
-LAST_MATRIX_CALC_HASH = None
-LAST_MATRIX_CALC_DISTANCE_MATRIX = None
-
-
-def calculate_distance_matrix(cones_xy: FloatArray) -> FloatArray:
-    return _DEFAULT_CACHE.calculate_distance_matrix(cones_xy)
-
-
-LAST_IDXS_CALCULATED = None
-LAST_IDXS_HASH = None
-
-
-def find_k_closest_in_point_cloud(pairwise_distances: FloatArray, k: int) -> IntArray:
-    return _DEFAULT_CACHE.find_k_closest_in_point_cloud(pairwise_distances, k)
-
-
 def create_adjacency_matrix(
     cones: FloatArray,
     n_neighbors: int,
@@ -103,7 +84,9 @@ def create_adjacency_matrix(
     cones_color = cones[:, 2]
 
     if cache is None:
-        cache = _DEFAULT_CACHE
+        # No shared fallback: a process-wide cache would hand results between
+        # independent planners and is not safe to touch from two threads.
+        cache = AdjacencyMatrixCache()
 
     pairwise_distances: FloatArray = cache.calculate_distance_matrix(cones_xy)
 

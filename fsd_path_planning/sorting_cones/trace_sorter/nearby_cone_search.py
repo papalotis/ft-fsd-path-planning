@@ -380,14 +380,6 @@ class NearbyConeSearcher:
         )
 
 
-NEARBY_CONE_SEARCH_CACHE = NearbyConeSearcher()
-
-
-def clear_nearby_cone_search_cache() -> None:
-    global NEARBY_CONE_SEARCH_CACHE
-    NEARBY_CONE_SEARCH_CACHE = NearbyConeSearcher()
-
-
 def number_cones_on_each_side_for_each_config(
     cones: np.ndarray,
     configs: np.ndarray,
@@ -395,6 +387,12 @@ def number_cones_on_each_side_for_each_config(
     max_distance: float,
     max_angle: float,
 ) -> tuple[np.ndarray, np.ndarray]:
-    return NEARBY_CONE_SEARCH_CACHE.number_of_cones_on_each_side_for_each_config(
+    """Uncached convenience wrapper.
+
+    Each call gets its own NearbyConeSearcher, so nothing is shared between
+    callers. Code that runs per frame should hold a NearbyConeSearcher of its
+    own and call it directly, the way TraceSorter does, to keep the caching.
+    """
+    return NearbyConeSearcher().number_of_cones_on_each_side_for_each_config(
         cones, configs, cone_type, max_distance, max_angle
     )
