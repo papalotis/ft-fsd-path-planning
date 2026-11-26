@@ -7,7 +7,7 @@ from dataclasses import fields
 import pytest
 
 from fsd_path_planning.config_dataclasses import CostWeights
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import COST_TERMS
+from fsd_path_planning.stages.sorting.costs import COST_TERMS
 from fsd_path_planning.utils.cone_types import ConeTypes, Side, invert_cone_type
 
 

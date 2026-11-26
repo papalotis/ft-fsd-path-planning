@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
+from fsd_path_planning.stages.relocalization.acceleration import (
     BASE_ACCELERATION_PATH,
     AccelerationRelocalizer,
     best_fit,

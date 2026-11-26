@@ -287,7 +287,7 @@ class TestStraightTrackNeedsNoRecovery:
     the parameterization fallback ran."""
 
     def test_extension_of_a_straight_tail_has_no_repeated_points(self) -> None:
-        from fsd_path_planning.calculate_path.path_extender import extend_path
+        from fsd_path_planning.stages.path.extension import extend_path
 
         path = np.column_stack([np.arange(-0.8, 18.0, 0.1), np.zeros(188)])
         extended = extend_path(

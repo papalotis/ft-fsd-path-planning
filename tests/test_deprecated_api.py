@@ -5,21 +5,21 @@ import warnings
 import numpy as np
 import pytest
 
-from fsd_path_planning.calculate_path.core_calculate_path import (
-    CalculatePath,
-    PathCalculationInput,
-)
 from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.cone_matching.core_cone_matching import (
-    ConeMatching,
-    ConeMatchingInput,
-)
 from fsd_path_planning.config_dataclasses import (
     MatchingConfig,
     PathConfig,
     SortingConfig,
 )
-from fsd_path_planning.sorting_cones.core_cone_sorting import (
+from fsd_path_planning.stages.matching.stage import (
+    ConeMatching,
+    ConeMatchingInput,
+)
+from fsd_path_planning.stages.path.stage import (
+    CalculatePath,
+    PathCalculationInput,
+)
+from fsd_path_planning.stages.sorting.stage import (
     ConeSorting,
     ConeSortingInput,
 )

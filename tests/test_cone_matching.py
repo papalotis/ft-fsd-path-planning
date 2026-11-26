@@ -5,15 +5,15 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.cone_matching.core_cone_matching import (
-    ConeMatching,
-    ConeMatchingInput,
-)
-from fsd_path_planning.cone_matching.match_directions import (
+from fsd_path_planning.config_dataclasses import MatchingConfig
+from fsd_path_planning.stages.matching.search_directions import (
     calculate_match_search_direction,
     calculate_search_direction_for_one,
 )
-from fsd_path_planning.config_dataclasses import MatchingConfig
+from fsd_path_planning.stages.matching.stage import (
+    ConeMatching,
+    ConeMatchingInput,
+)
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 # ── Search direction ─────────────────────────────────────────────────────────

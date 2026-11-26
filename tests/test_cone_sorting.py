@@ -6,12 +6,12 @@ import numpy as np
 import pytest
 
 from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.sorting_cones.core_cone_sorting import (
+from fsd_path_planning.stages.sorting import trace_sorter as core_trace_sorter
+from fsd_path_planning.stages.sorting.common import breadth_first_order
+from fsd_path_planning.stages.sorting.stage import (
     ConeSorting,
     ConeSortingInput,
 )
-from fsd_path_planning.sorting_cones.trace_sorter import core_trace_sorter
-from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 # ── breadth_first_order ──────────────────────────────────────────────────────

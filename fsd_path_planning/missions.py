@@ -13,16 +13,16 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from fsd_path_planning.calculate_path.core_calculate_path import CalculatePath
-from fsd_path_planning.calculate_path.skidpad_calculate_path import (
+from fsd_path_planning.config_dataclasses import PipelineConfig
+from fsd_path_planning.stages.path.skidpad import (
     SkidpadCalculatePath,
 )
-from fsd_path_planning.config_dataclasses import PipelineConfig
-from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
+from fsd_path_planning.stages.path.stage import CalculatePath
+from fsd_path_planning.stages.relocalization.acceleration import (
     AccelerationRelocalizer,
 )
-from fsd_path_planning.relocalization.relocalization_base_class import Relocalizer
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
+from fsd_path_planning.stages.relocalization.base import Relocalizer
+from fsd_path_planning.stages.relocalization.skidpad import (
     SkidpadRelocalizer,
 )
 from fsd_path_planning.utils.mission_types import MissionTypes

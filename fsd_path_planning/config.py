@@ -9,24 +9,24 @@ Project: fsd_path_planning
 from dataclasses import replace
 from typing import Any
 
-from fsd_path_planning.calculate_path.core_calculate_path import (
-    CalculatePath as CalculatePath,
-)
-from fsd_path_planning.calculate_path.skidpad_calculate_path import (
-    SkidpadCalculatePath as SkidpadCalculatePath,
-)
-
-# for reexport
-from fsd_path_planning.cone_matching.core_cone_matching import (
-    ConeMatching as ConeMatching,
-)
 from fsd_path_planning.config_dataclasses import (
     PathConfig,
     SortingConfig,
     default_config,
 )
 from fsd_path_planning.missions import mission_spec
-from fsd_path_planning.sorting_cones.core_cone_sorting import ConeSorting
+
+# for reexport
+from fsd_path_planning.stages.matching.stage import (
+    ConeMatching as ConeMatching,
+)
+from fsd_path_planning.stages.path.skidpad import (
+    SkidpadCalculatePath as SkidpadCalculatePath,
+)
+from fsd_path_planning.stages.path.stage import (
+    CalculatePath as CalculatePath,
+)
+from fsd_path_planning.stages.sorting.stage import ConeSorting
 from fsd_path_planning.utils.mission_types import MissionTypes
 
 KwargsType = dict[str, Any]

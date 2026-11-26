@@ -23,10 +23,10 @@ from fsd_path_planning.config_dataclasses import (
 )
 from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
 from fsd_path_planning.geometry.transforms import rotate
-from fsd_path_planning.sorting_cones.trace_sorter.cost_function import (
+from fsd_path_planning.stages.sorting.costs import (
     cost_configurations,
 )
-from fsd_path_planning.sorting_cones.trace_sorter.end_configurations import (
+from fsd_path_planning.stages.sorting.search import (
     neighbor_bool_mask_can_be_added_to_attempt,
 )
 
@@ -246,8 +246,8 @@ class TestDefaultsAreTheShippedValues:
 
 class TestVirtualConeAngleThreshold:
     def test_it_reaches_the_insertion_of_virtual_cones(self, monkeypatch) -> None:
-        from fsd_path_planning.cone_matching import functional_cone_matching as fcm
-        from fsd_path_planning.cone_matching.core_cone_matching import (
+        from fsd_path_planning.stages.matching import virtual_cones as fcm
+        from fsd_path_planning.stages.matching.stage import (
             ConeMatching,
             ConeMatchingInput,
         )
@@ -275,7 +275,7 @@ class TestVirtualConeAngleThreshold:
         assert seen and set(seen) == {1.0}
 
     def test_the_threshold_changes_which_cones_are_kept(self) -> None:
-        from fsd_path_planning.cone_matching.functional_cone_matching import (
+        from fsd_path_planning.stages.matching.virtual_cones import (
             insert_virtual_cones_to_existing,
         )
 

@@ -33,8 +33,8 @@ from fsd_path_planning.geometry.splines import SplineFitter  # noqa: E402
 DEFAULT_OUTPUT = (
     REPO_ROOT
     / "fsd_path_planning"
+    / "stages"
     / "relocalization"
-    / "skidpad"
     / "data"
     / "skidpad_path_spline.npz"
 )
@@ -54,7 +54,7 @@ def load_reference_points(from_literal: Path | None) -> np.ndarray:
         namespace = runpy.run_path(str(from_literal))
         return np.asarray(namespace["BASE_SKIDPAD_PATH"], dtype=float)
 
-    from fsd_path_planning.relocalization.skidpad.skidpad_path_data import (
+    from fsd_path_planning.stages.relocalization.skidpad_path_data import (
         BASE_SKIDPAD_PATH,
     )
 

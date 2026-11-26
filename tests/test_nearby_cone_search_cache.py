@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
+from fsd_path_planning.stages.sorting.nearby_cones import (
     NearbyConeSearcher,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes

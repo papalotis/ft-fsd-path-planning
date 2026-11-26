@@ -155,7 +155,7 @@ class TestRenamed:
         assert obj is getattr(importlib.import_module(new_module), new_name)
 
     def test_spline_fitter_factory_attribute(self) -> None:
-        from fsd_path_planning.calculate_path.core_calculate_path import (
+        from fsd_path_planning.stages.path.stage import (
             CalculatePath,
         )
 
@@ -169,10 +169,69 @@ class TestPathHistoryLists:
         "name", ["path_updates", "mpc_paths", "path_is_trivial_list"]
     )
     def test_still_readable_with_a_warning(self, name) -> None:
-        from fsd_path_planning.calculate_path.core_calculate_path import (
+        from fsd_path_planning.stages.path.stage import (
             CalculatePath,
         )
 
         calculator = CalculatePath()
         with pytest.warns(FsdPathPlanningDeprecationWarning, match=name):
             assert getattr(calculator, name) == []
+
+
+def _whole_module_shims() -> list[tuple[str, str]]:
+    """(old module, new module) for every module that moved as a whole."""
+    import ast
+    from pathlib import Path
+
+    package = Path(__file__).resolve().parents[1] / "fsd_path_planning"
+    pairs = []
+    for path in sorted(package.rglob("*.py")):
+        source = path.read_text()
+        if "moved_module_entirely(" not in source or path.name == "_deprecation.py":
+            continue
+        call = next(
+            node
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Call)
+            and getattr(node.func, "id", None) == "moved_module_entirely"
+        )
+        old, new = (arg.value for arg in call.args[:2])  # type: ignore[attr-defined]
+        pairs.append((old, new))
+    return pairs
+
+
+WHOLE_MODULE_SHIMS = _whole_module_shims()
+
+
+class TestStageModulesMoved:
+    def test_every_stage_module_moved(self) -> None:
+        assert len(WHOLE_MODULE_SHIMS) == 26
+        assert all(
+            new.startswith("fsd_path_planning.stages.")
+            or new == "fsd_path_planning.pipeline"
+            for _, new in WHOLE_MODULE_SHIMS
+        )
+
+    @pytest.mark.parametrize(("old", "new"), WHOLE_MODULE_SHIMS)
+    def test_old_path_forwards_every_name(self, old: str, new: str) -> None:
+        old_module = importlib.import_module(old)
+        new_module = importlib.import_module(new)
+        names = [n for n in vars(new_module) if not n.startswith("__")]
+        assert names
+        for name in names:
+            with pytest.warns(FsdPathPlanningDeprecationWarning, match=new):
+                assert getattr(old_module, name) is getattr(new_module, name)
+
+    @pytest.mark.parametrize(("old", "new"), WHOLE_MODULE_SHIMS[:3])
+    def test_unknown_names_are_attribute_errors(self, old: str, new: str) -> None:
+        with pytest.raises(AttributeError):
+            importlib.import_module(old).does_not_exist  # noqa: B018
+
+    def test_the_0_4_import_path_of_mission_to_relocalizer(self) -> None:
+        with pytest.warns(FsdPathPlanningDeprecationWarning, match="pipeline"):
+            from fsd_path_planning.full_pipeline.full_pipeline import (
+                MissionToRelocalizer,
+            )
+        from fsd_path_planning.pipeline import MissionToRelocalizer as new
+
+        assert MissionToRelocalizer is new

@@ -6,14 +6,14 @@ import numpy as np
 import pytest
 
 from fsd_path_planning.geometry.splines import SplineFitter
-from fsd_path_planning.relocalization.skidpad.skidpad_path_data import (
+from fsd_path_planning.stages.relocalization.skidpad import (
+    SkidpadRelocalizer,
+    calculate_reference_centers_for_skidpad_path,
+)
+from fsd_path_planning.stages.relocalization.skidpad_path_data import (
     BASE_SKIDPAD_PATH,
     load_skidpad_path_spline,
     sample_skidpad_path,
-)
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
-    SkidpadRelocalizer,
-    calculate_reference_centers_for_skidpad_path,
 )
 
 # Skidpad geometry from the Formula Student rules, in metres.

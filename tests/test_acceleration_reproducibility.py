@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
+from fsd_path_planning.stages.relocalization.acceleration import (
     AccelerationRelocalizer,
     best_fit,
 )

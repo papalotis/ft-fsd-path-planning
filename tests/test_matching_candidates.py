@@ -5,11 +5,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    find_boolean_mask_of_all_potential_matches,
-)
 from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
 from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.stages.matching.virtual_cones import (
+    find_boolean_mask_of_all_potential_matches,
+)
 
 
 def reference_mask(

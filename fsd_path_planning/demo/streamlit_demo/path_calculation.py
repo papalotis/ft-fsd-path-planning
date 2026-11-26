@@ -7,15 +7,15 @@ import numpy as np
 import streamlit as st
 
 from fsd_path_planning import MissionTypes
-from fsd_path_planning.calculate_path.core_calculate_path import (
-    CalculatePath,
-    PathCalculationInput,
-)
 from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.config_dataclasses import default_config
 from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
+)
+from fsd_path_planning.stages.path.stage import (
+    CalculatePath,
+    PathCalculationInput,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
 

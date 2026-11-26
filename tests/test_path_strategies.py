@@ -6,14 +6,15 @@ from dataclasses import replace
 
 import numpy as np
 
-from fsd_path_planning.calculate_path.core_calculate_path import (
+from fsd_path_planning.config_dataclasses import PathConfig
+from fsd_path_planning.stages.path.skidpad import (
+    SkidpadCalculatePath,
+)
+from fsd_path_planning.stages.path.stage import (
     CalculatePath,
     PathCalculationInput,
 )
-from fsd_path_planning.calculate_path.skidpad_calculate_path import (
-    SkidpadCalculatePath,
-)
-from fsd_path_planning.calculate_path.strategies import (
+from fsd_path_planning.stages.path.strategies import (
     DEFAULT_BASIS_STRATEGIES,
     FollowKnownMap,
     KeepPrevious,
@@ -21,7 +22,6 @@ from fsd_path_planning.calculate_path.strategies import (
     MatchCenterline,
     SplineThroughBasis,
 )
-from fsd_path_planning.config_dataclasses import PathConfig
 
 POSITION = np.array([0.0, 0.0])
 DIRECTION = np.array([1.0, 0.0])

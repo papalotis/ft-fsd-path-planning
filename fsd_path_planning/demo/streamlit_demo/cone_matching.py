@@ -5,14 +5,6 @@ import numpy as np
 import streamlit as st
 
 from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
-from fsd_path_planning.cone_matching.functional_cone_matching import (
-    calculate_match_search_direction,
-    calculate_matches_for_side,
-    calculate_positions_of_virtual_cones,
-    combine_and_sort_virtual_with_real,
-    find_boolean_mask_of_all_potential_matches,
-    select_best_match_candidate,
-)
 from fsd_path_planning.demo.streamlit_demo.common import (
     CONE_TYPE_TO_COLOR,
     get_cones_for_configuration,
@@ -20,6 +12,14 @@ from fsd_path_planning.demo.streamlit_demo.common import (
 )
 from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.geometry.vectors import normalize_last_axis
+from fsd_path_planning.stages.matching.virtual_cones import (
+    calculate_match_search_direction,
+    calculate_matches_for_side,
+    calculate_positions_of_virtual_cones,
+    combine_and_sort_virtual_with_real,
+    find_boolean_mask_of_all_potential_matches,
+    select_best_match_candidate,
+)
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 

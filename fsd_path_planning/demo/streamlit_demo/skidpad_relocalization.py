@@ -11,10 +11,10 @@ from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
 )
-from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
+from fsd_path_planning.stages.relocalization.skidpad import (
     circle_fit_powerset,
 )
+from fsd_path_planning.stages.relocalization.skidpad_path_data import BASE_SKIDPAD_PATH
 from fsd_path_planning.utils.cone_types import ConeTypes
 
 

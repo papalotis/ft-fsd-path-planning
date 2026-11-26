@@ -5,12 +5,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.calculate_path.core_calculate_path import (
+from fsd_path_planning.stages.path.helpers import (
+    PathCalculatorHelpers,
+)
+from fsd_path_planning.stages.path.stage import (
     CalculatePath,
     PathCalculationInput,
-)
-from fsd_path_planning.calculate_path.path_calculator_helpers import (
-    PathCalculatorHelpers,
 )
 
 # ── PathCalculatorHelpers ────────────────────────────────────────────────────

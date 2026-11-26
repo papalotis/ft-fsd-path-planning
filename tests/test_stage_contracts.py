@@ -10,17 +10,12 @@ import numpy as np
 import pytest
 
 from fsd_path_planning import ConeTypes, MissionTypes, PathPlanner
-from fsd_path_planning.calculate_path.core_calculate_path import CalculatePath
-from fsd_path_planning.calculate_path.skidpad_calculate_path import (
-    SkidpadCalculatePath,
-)
 from fsd_path_planning.common_types import (
     MatchingResult,
     PathResult,
     SortingResult,
     TraceOutcome,
 )
-from fsd_path_planning.cone_matching.core_cone_matching import ConeMatching
 from fsd_path_planning.config_dataclasses import (
     CostWeights,
     MatchingConfig,
@@ -30,27 +25,32 @@ from fsd_path_planning.config_dataclasses import (
     SortingConfig,
     default_config,
 )
-from fsd_path_planning.full_pipeline.full_pipeline import (
+from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
+from fsd_path_planning.missions import MISSIONS, mission_spec
+from fsd_path_planning.pipeline import (
     MissionToPathCalculation,
     MissionToRelocalizer,
 )
-from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
-from fsd_path_planning.missions import MISSIONS, mission_spec
-from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
+from fsd_path_planning.stages import Stage
+from fsd_path_planning.stages.matching.stage import ConeMatching
+from fsd_path_planning.stages.path.skidpad import (
+    SkidpadCalculatePath,
+)
+from fsd_path_planning.stages.path.stage import CalculatePath
+from fsd_path_planning.stages.relocalization.acceleration import (
     AccelerationRelocalizer,
 )
-from fsd_path_planning.relocalization.relocalization_base_class import (
+from fsd_path_planning.stages.relocalization.base import (
     RelocalizationInput,
     RelocalizationOutcome,
 )
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
+from fsd_path_planning.stages.relocalization.skidpad import (
     SkidpadRelocalizer,
 )
-from fsd_path_planning.sorting_cones.core_cone_sorting import (
+from fsd_path_planning.stages.sorting.stage import (
     ConeSorting,
     ConeSortingInput,
 )
-from fsd_path_planning.stages import Stage
 
 POSITION = np.array([0.0, 0.0])
 DIRECTION = np.array([1.0, 0.0])
@@ -283,7 +283,7 @@ class TestNotRelocalizedIsAResult:
 
 class TestFinalOutcome:
     def test_combining_can_drop_a_found_trace(self) -> None:
-        from fsd_path_planning.sorting_cones.trace_sorter.core_trace_sorter import (
+        from fsd_path_planning.stages.sorting.trace_sorter import (
             _final_outcome,
         )
 

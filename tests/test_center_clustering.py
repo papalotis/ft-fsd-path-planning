@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
+from fsd_path_planning.stages.relocalization.skidpad import (
     cluster_within_distance,
 )
 

@@ -1,81 +1,15 @@
-#!/usr/bin/env python3
 """
-Core path calculation.
+Deprecated: moved to fsd_path_planning.stages.path.helpers.
 
-Description: A module for path update calculation that will be used in combination with
-the existing path
+Forwards every name to it with a warning until 0.7.0.
 
 Project: fsd_path_planning
 """
 
-from __future__ import annotations
+from fsd_path_planning._deprecation import moved_module_entirely
 
-from typing import Literal
-
-import numpy as np
-
-from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
-from fsd_path_planning.geometry.transforms import rotate
-from fsd_path_planning.utils.cone_types import ConeTypes
-
-ConeTypesForPathCalculation = Literal[ConeTypes.LEFT, ConeTypes.RIGHT]
-
-
-class PathCalculatorHelpers:
-    """
-    A class for calculating the update path that will be combined with the
-    existing path.
-    """
-
-    HALF_PI = np.pi / 2
-
-    def calculate_chord_path(
-        self, radius: float, maximum_angle: float, number_of_points: int
-    ) -> FloatArray:
-        """
-        Calculate a chord (part of circle) path with a specific radius.
-
-        Args:
-            radius: The radius of the chord path
-            maximum_angle: The angle of the chord
-            number_of_points: The number of points the path should be evaluated
-            for
-        Returns:
-            The arc path
-        """
-
-        points: FloatArray = (
-            # create points on a circle
-            unit_2d_vector_from_angle(
-                np.linspace(0, np.abs(maximum_angle), number_of_points)
-            )
-        )
-        # rotate so initial points, point to the right
-        points_centered: FloatArray = points - [1, 0]  # bring x axis to center
-        points_centered_scaled: FloatArray = points_centered * radius  # scale
-        points_centered_scaled_rotated = rotate(points_centered_scaled, -self.HALF_PI)
-
-        # handle negative angles
-        points_centered_scaled_rotated[:, 1] *= np.sign(maximum_angle)
-        return points_centered_scaled_rotated
-
-    def calculate_almost_straight_path(
-        self,
-        radius: float = 1000.0,
-        maximum_angle: float | None = None,
-        number_of_points: int = 40,
-    ) -> FloatArray:
-        """
-        Calculate a chord path with a very high radius and a very small chord angle.
-
-        Returns:
-            np.ndarray: The straight-like chord path update
-        """
-        if maximum_angle is None:
-            maximum_angle = np.pi / 50
-        return self.calculate_chord_path(
-            radius=radius,
-            maximum_angle=maximum_angle,
-            number_of_points=number_of_points,
-        )
+__getattr__ = moved_module_entirely(
+    "fsd_path_planning.calculate_path.path_calculator_helpers",
+    "fsd_path_planning.stages.path.helpers",
+    removed_in="0.7.0",
+)
