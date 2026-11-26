@@ -71,6 +71,25 @@ jobs:
       - name: Run tests (excluding slow regression and JIT tests)
         run: nox -s "tests-${{ matrix.python-version }}" -- -m "not slow and not jit"
 
+  # ── Oldest allowed dependency versions ──────────────────────────────────
+  # The runtime dependencies have floors and no caps. This runs the whole
+  # suite, golden regression included, with each one at its floor, on the
+  # oldest supported Python, with the JIT on.
+
+  tests-lowest:
+    name: Tests (lowest dependency versions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install nox
+        run: uv pip install --system nox
+      - name: Run tests
+        run: nox -s tests-lowest
+
   # ── Slow regression tests against the golden baseline ────────────────────
   # Compared with the agreed tolerance (1 cm of sideways movement of the
   # planned line), so the stored baseline holds on CI's machines too.

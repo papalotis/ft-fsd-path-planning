@@ -12,6 +12,33 @@ def tests(session: nox.Session) -> None:
     session.run("pytest", "tests/", "-x", "-q", *session.posargs)
 
 
+@nox.session(python=PYTHON_VERSIONS[0], name="tests-lowest")
+def tests_lowest(session: nox.Session) -> None:
+    """Run the test suite against the oldest dependency versions allowed.
+
+    The runtime dependencies in pyproject.toml carry floors and no caps; this
+    keeps the floors true. Only the package's own dependencies are resolved to
+    their lowest versions: pytest is installed afterwards at its latest.
+    scikit-learn is left out, so its parity test is skipped.
+    """
+    # Wheels only for the compiled dependencies: their oldest releases do not
+    # build from source on a current toolchain.
+    session.install(
+        "--resolution=lowest-direct",
+        "--only-binary=numba,llvmlite,numpy,scipy",
+        ".",
+    )
+    session.install("pytest")
+    session.run(
+        "python",
+        "-c",
+        "import numba, numpy, scipy; "
+        "print('numba', numba.__version__, 'numpy', numpy.__version__, "
+        "'scipy', scipy.__version__)",
+    )
+    session.run("pytest", "tests/", "-x", "-q", *session.posargs)
+
+
 @nox.session
 def lint(session: nox.Session) -> None:
     """Run ruff linter and formatter check."""
