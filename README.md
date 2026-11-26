@@ -16,9 +16,23 @@ FaSTTUBe Formula Student Driverless Path Planning Algorithm
 
 ## Updates 
 
-### April 2026 (v0.5.0) :star: 100 stars!
+### v0.5.0 (unreleased) :star: 100 stars!
 
-This release focuses on code quality, modularity, and developer experience. No algorithmic changes were made, all existing behavior is preserved. The changes have been made with the goal of making the codebase easier to understand, maintain, and extend, as well as improving the experience for contributors.
+This release focuses on code quality, modularity, and developer experience, with the goal of making the codebase easier to understand, maintain, and extend. The algorithm is unchanged, but a handful of fixes change its output slightly: on the bundled datasets the planned line moves sideways by at most 0.8 mm, apart from a single frame at 11.7 mm (see below).
+
+#### Fixes and output changes
+
+- **The output is now reproducible.** Path sampling sat exactly on a floating-point edge: whether the planner resampled the path with *n* or *n+1* points was decided by the last bits of a float, so a sub-nanometre change in the input, or a different NumPy, SciPy or BLAS build, could change the returned path array by up to 0.17 m. The sample count is now fixed. The planned line itself moves by at most 0.8 mm on the bundled datasets, apart from one frame at 11.7 mm where only one side of the track is visible.
+- **`PathPlanner(config=...)` is now used.** The config used to be stored and then ignored in favour of the defaults. The cost weights, the car size and several distance thresholds now come from `SortingConfig` instead of literals in the code.
+- **Cones as one `(N, 3)` array of `[x, y, cone_type]` rows are officially supported**, through the new `normalize_cones()`. This format used to crash the acceleration mission.
+- **Acceleration relocalization is reproducible.** It draws from its own seeded random generator instead of NumPy's global one.
+- **No state is shared between planners.** The remaining process-wide caches are gone, so two planners in one process, or in two threads, cannot hand results to each other.
+- **The skidpad reference path is stored as a 6 kB spline** instead of a 234 kB Python literal. The path moves by at most 0.45 mm.
+- Smaller fixes: `Timer.get_std_time()` returned the mean; `Timer.report_mean_time()` raised; a fallback in the path calculation passed the wrong columns; the nearby-cone cache ignored the search geometry.
+
+Removed from internal modules: `adjacency_matrix.calculate_distance_matrix`, `adjacency_matrix.find_k_closest_in_point_cloud`, `nearby_cone_search.NEARBY_CONE_SEARCH_CACHE` and `nearby_cone_search.clear_nearby_cone_search_cache`. `MatchingConfig` now defaults to non-monotonic matching, which is what `PathPlanner` has always used; code that builds a `ConeMatching` directly from a default `MatchingConfig` gets non-monotonic matches unless it sets `matches_should_be_monotonic=True`.
+
+Python 3.10 is the minimum supported version. It stays the minimum until ROS 2 Humble, whose Ubuntu 22.04 ships Python 3.10, reaches its end of life in May 2027.
 
 #### API improvements
 
