@@ -242,3 +242,46 @@ class TestDefaultsAreTheShippedValues:
             weights.cones_on_side,
             weights.wrong_direction,
         ] == [1000.0, 200.0, 5000.0, 1000.0, 0.0, 1000.0, 1000.0]
+
+
+class TestVirtualConeAngleThreshold:
+    def test_it_reaches_the_insertion_of_virtual_cones(self, monkeypatch) -> None:
+        from fsd_path_planning.cone_matching import functional_cone_matching as fcm
+        from fsd_path_planning.cone_matching.core_cone_matching import (
+            ConeMatching,
+            ConeMatchingInput,
+        )
+
+        seen: list[float | None] = []
+        original = fcm.insert_virtual_cones_to_existing
+
+        def spy(*args, **kwargs):
+            seen.append(
+                args[3] if len(args) > 3 else kwargs.get("virtual_cone_angle_threshold")
+            )
+            return original(*args, **kwargs)
+
+        monkeypatch.setattr(fcm, "insert_virtual_cones_to_existing", spy)
+
+        cones = curved_cones()
+        # the far half of the right side is missing, so the left cones there
+        # get virtual partners
+        right = cones[ConeTypes.RIGHT]
+        cones[ConeTypes.RIGHT] = right[: len(right) // 2 + 1]
+        matcher = ConeMatching(
+            config=replace(MatchingConfig(), virtual_cone_angle_threshold=1.0)
+        )
+        matcher.run(ConeMatchingInput(cones, POSITION, DIRECTION))
+        assert seen and set(seen) == {1.0}
+
+    def test_the_threshold_changes_which_cones_are_kept(self) -> None:
+        from fsd_path_planning.cone_matching.functional_cone_matching import (
+            insert_virtual_cones_to_existing,
+        )
+
+        # a straight row with a virtual cone that makes a sharp spike
+        real = np.array([[0.0, 0.0], [2.0, 0.0], [4.0, 0.0], [6.0, 0.0]])
+        virtual = np.array([[3.0, 2.5]])
+        kept_loose, _ = insert_virtual_cones_to_existing(real, virtual, POSITION, 0.1)
+        kept_strict, _ = insert_virtual_cones_to_existing(real, virtual, POSITION, 3.0)
+        assert len(kept_strict) < len(kept_loose)

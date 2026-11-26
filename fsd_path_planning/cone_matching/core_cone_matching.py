@@ -144,6 +144,7 @@ class ConeMatching:
             minor_radius,
             self.state.max_search_angle,
             self.state.matches_should_be_monotonic,
+            self.config.virtual_cone_angle_threshold,
         )
 
         return MatchingResult(

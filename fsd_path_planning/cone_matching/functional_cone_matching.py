@@ -176,11 +176,14 @@ def insert_virtual_cones_to_existing(
     other_side_virtual_cones: FloatArray,
     car_position: FloatArray,
     virtual_cone_angle_threshold: float | None = None,
+    record_history: bool = False,
 ) -> tuple[FloatArray, list[FloatArray]]:
     """
     Combine the virtual with the real cones into a single array.
+
+    With `record_history`, also return a copy of the array after each
+    insertion, for the demo to animate; otherwise the list is empty.
     """
-    # print(locals())
     existing_cones, cones_to_insert = (
         (other_side_cones, other_side_virtual_cones)
         if len(other_side_cones) > len(other_side_virtual_cones)
@@ -237,10 +240,10 @@ def insert_virtual_cones_to_existing(
             axis=0,
         )
 
-        history.append(existing_cones.copy())
+        if record_history:
+            history.append(existing_cones.copy())
 
     angles = trace_angles_between(existing_cones)
-    # print(np.rad2deg(angles))
     if virtual_cone_angle_threshold is None:
         virtual_cone_angle_threshold = np.deg2rad(85)
     mask_low_angles = angles < virtual_cone_angle_threshold
@@ -248,7 +251,8 @@ def insert_virtual_cones_to_existing(
 
     if mask_low_angles.any():
         existing_cones = existing_cones[:][~mask_low_angles]
-        history.append(existing_cones.copy())
+        if record_history:
+            history.append(existing_cones.copy())
 
     return existing_cones, history
 
@@ -301,6 +305,9 @@ def combine_and_sort_virtual_with_real(
     other_side_cone_type: SortableConeTypes,  # pylint : disable=unused-argument
     car_pos: FloatArray,
     car_dir: FloatArray,  # pylint: disable=unused-argument
+    *,
+    virtual_cone_angle_threshold: float | None = None,
+    record_history: bool = False,
 ) -> tuple[FloatArray, BoolArray, list[FloatArray]]:
     """
     Combine the existing cones with the newly calculated cones into a single array.
@@ -317,7 +324,11 @@ def combine_and_sort_virtual_with_real(
         return other_side_cones, np.zeros(len(other_side_cones), dtype=bool), []
 
     sorted_combined_cones, history = insert_virtual_cones_to_existing(
-        other_side_cones, other_side_virtual_cones, car_pos
+        other_side_cones,
+        other_side_virtual_cones,
+        car_pos,
+        virtual_cone_angle_threshold,
+        record_history,
     )
 
     # cones than have a distance larger than epsilon to the existing cones are virtual
@@ -391,6 +402,7 @@ def calculate_cones_for_other_side(
     car_pos: FloatArray,
     car_dir: FloatArray,
     matches_should_be_monotonic: bool,
+    virtual_cone_angle_threshold: float | None = None,
 ) -> tuple[FloatArray, BoolArray]:
     """
     Calculate the virtual cones for the other side.
@@ -420,13 +432,13 @@ def calculate_cones_for_other_side(
         ConeTypes.YELLOW if cone_type == ConeTypes.BLUE else ConeTypes.BLUE
     )
 
-    # we do not care about the history in prod, only for debugging/visualization
     combined_and_sorted_cones, mask_is_virtual, _ = combine_and_sort_virtual_with_real(
         other_side_cones,
         positions_of_virtual_cones,
         other_side_cone_type,
         car_pos,
         car_dir,
+        virtual_cone_angle_threshold=virtual_cone_angle_threshold,
     )
 
     if len(combined_and_sorted_cones) < 2:
@@ -482,6 +494,7 @@ def calculate_virtual_cones_for_both_sides(
     minor_radius: float,
     max_search_angle: float,
     matches_should_be_monotonic: bool = True,
+    virtual_cone_angle_threshold: float | None = None,
 ) -> tuple[
     tuple[FloatArray, BoolArray, IntArray],
     tuple[FloatArray, BoolArray, IntArray],
@@ -492,15 +505,12 @@ def calculate_virtual_cones_for_both_sides(
     each cone if it is a virtual cone or not and an integer mask indicating for each
     cone the index of the match on the other side.
     """
-    # if len(left_cones) > 20 or len(right_cones) > 20:
-    #     print(locals())
     empty_bool_array: BoolArray = np.zeros(0, dtype=np.bool_)
     empty_int_array: IntArray = np.zeros(0, dtype=np.int_)
     empty_cone_array: FloatArray = np.zeros((0, 2), dtype=np.float64)
 
     dummy_result = empty_cone_array, empty_bool_array, empty_int_array
 
-    # ic("calculate_virtual_cones_for_both_sides: start")
     if len(left_cones) < 2 and len(right_cones) < 2:
         left_result = dummy_result
         right_result = dummy_result
@@ -515,7 +525,6 @@ def calculate_virtual_cones_for_both_sides(
         else:
             right_cones = empty_cone_array
 
-    # ic("calculate_virtual_cones_for_both_sides: left match right")
     right_mask_is_virtual: BoolArray
     right_cones_with_virtual, right_mask_is_virtual = (
         calculate_cones_for_other_side(
@@ -529,6 +538,7 @@ def calculate_virtual_cones_for_both_sides(
             car_position,
             car_direction,
             matches_should_be_monotonic,
+            virtual_cone_angle_threshold,
         )
         if len(left_cones) >= 2
         else (
@@ -537,7 +547,6 @@ def calculate_virtual_cones_for_both_sides(
         )
     )
 
-    # ic("calculate_virtual_cones_for_both_sides: right match left")
     left_mask_is_virtual: BoolArray
     left_cones_with_virtual, left_mask_is_virtual = (
         calculate_cones_for_other_side(
@@ -551,6 +560,7 @@ def calculate_virtual_cones_for_both_sides(
             car_position,
             car_direction,
             matches_should_be_monotonic,
+            virtual_cone_angle_threshold,
         )
         if len(right_cones) >= 2
         else (
@@ -559,7 +569,6 @@ def calculate_virtual_cones_for_both_sides(
         )
     )
 
-    # ic("calculate_virtual_cones_for_both_sides: match left and right w/ virtual")
     left_to_right_matches, right_to_left_matches = match_both_sides_with_virtual_cones(
         left_cones_with_virtual,
         right_cones_with_virtual,
@@ -574,7 +583,6 @@ def calculate_virtual_cones_for_both_sides(
         left_mask_is_virtual,
         left_to_right_matches,
     )
-    # ic("match left and right w/ virtual")
     right_result = (
         right_cones_with_virtual,
         right_mask_is_virtual,

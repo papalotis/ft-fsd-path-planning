@@ -364,6 +364,7 @@ def show_merging(
         ConeTypes.LEFT,
         position,
         direction,
+        record_history=True,
     )
 
     (
@@ -376,6 +377,7 @@ def show_merging(
         ConeTypes.RIGHT,
         position,
         direction,
+        record_history=True,
     )
 
     cones_by_type: list[FloatArray] = [np.zeros((0, 2)) for _ in ConeTypes]
