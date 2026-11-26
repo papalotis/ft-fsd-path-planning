@@ -1,35 +1,45 @@
-"""Unit tests for fsd_path_planning.utils.math_utils."""
+"""Unit tests for the geometry functions and the Numba decorator."""
 
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
-import fsd_path_planning.utils.math_utils as math_utils_module
-from fsd_path_planning.utils.math_utils import (
+import fsd_path_planning._numba as math_utils_module
+from fsd_path_planning._numba import my_njit
+from fsd_path_planning.geometry.angles import (
     angle_difference,
     angle_from_2d_vector,
+    unit_2d_vector_from_angle,
+    vec_angle_between,
+)
+from fsd_path_planning.geometry.distances import (
     calc_pairwise_distances,
+    my_cdist_sq_euclidean,
+)
+from fsd_path_planning.geometry.shapes import (
     calculate_radius_from_points,
     center_of_circle_from_3_points,
     circle_fit,
-    euler_angles_to_quaternion,
-    lerp,
-    my_cdist_sq_euclidean,
-    my_in1d,
-    my_njit,
-    norm_of_last_axis,
-    normalize_last_axis,
-    odd_square,
     points_inside_ellipse,
-    quaternion_to_euler_angles,
-    rotate,
+)
+from fsd_path_planning.geometry.traces import (
     trace_angles_between,
     trace_distance_to_next,
-    unit_2d_vector_from_angle,
-    vec_angle_between,
+)
+from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.geometry.vectors import (
+    norm_of_last_axis,
+    normalize_last_axis,
     vec_dot,
 )
+from fsd_path_planning.utils._retired_math import (
+    euler_angles_to_quaternion,
+    lerp,
+    odd_square,
+    quaternion_to_euler_angles,
+)
+from fsd_path_planning.utils.arrays import my_in1d
 
 
 class TestMyNjit:

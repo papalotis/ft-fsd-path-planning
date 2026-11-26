@@ -7,9 +7,9 @@ Project: fsd_path_planning
 import numpy as np
 
 from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
+from fsd_path_planning.geometry.distances import calc_pairwise_distances
 from fsd_path_planning.sorting_cones.trace_sorter.common import breadth_first_order
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import calc_pairwise_distances
 
 
 class AdjacencyMatrixCache:

@@ -7,14 +7,14 @@ from typing import cast
 import numpy as np
 
 from fsd_path_planning.common_types import BoolArray, FloatArray
-from fsd_path_planning.utils.math_utils import (
+from fsd_path_planning.geometry.angles import (
     angle_from_2d_vector,
-    circle_fit,
-    normalize_last_axis,
-    trace_distance_to_next,
     unit_2d_vector_from_angle,
     vec_angle_between,
 )
+from fsd_path_planning.geometry.shapes import circle_fit
+from fsd_path_planning.geometry.traces import trace_distance_to_next
+from fsd_path_planning.geometry.vectors import normalize_last_axis
 
 
 def connect_path_to_car(

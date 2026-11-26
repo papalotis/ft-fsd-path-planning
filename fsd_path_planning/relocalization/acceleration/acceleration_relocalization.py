@@ -8,11 +8,11 @@ from __future__ import annotations
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
 )
-from fsd_path_planning.utils.math_utils import rotate
 
 DEFAULT_RANDOM_SEED = 42
 

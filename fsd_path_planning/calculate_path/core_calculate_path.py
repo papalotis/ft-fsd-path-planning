@@ -41,12 +41,10 @@ from fsd_path_planning.calculate_path.path_extender import (
 from fsd_path_planning.calculate_path.path_parameterization import PathParameterizer
 from fsd_path_planning.common_types import FloatArray, IntArray, PathResult
 from fsd_path_planning.config_dataclasses import PathConfig
+from fsd_path_planning.geometry.angles import angle_from_2d_vector
+from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    rotate,
-)
-from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
 
 logger = logging.getLogger(__name__)
 

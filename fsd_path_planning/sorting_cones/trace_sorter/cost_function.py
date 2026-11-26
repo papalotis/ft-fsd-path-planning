@@ -15,6 +15,7 @@ from fsd_path_planning.common_types import (
     SortableConeTypes,
 )
 from fsd_path_planning.config_dataclasses import SortingConfig
+from fsd_path_planning.geometry.angles import angle_difference, vec_angle_between
 from fsd_path_planning.sorting_cones.trace_sorter.common import get_configurations_diff
 from fsd_path_planning.sorting_cones.trace_sorter.cone_distance_cost import (
     calc_distance_cost,
@@ -23,7 +24,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import angle_difference, vec_angle_between
 
 
 def calc_angle_to_next(points: FloatArray, configurations: IntArray) -> FloatArray:

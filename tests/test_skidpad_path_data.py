@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from fsd_path_planning.geometry.splines import SplineFitterFactory
 from fsd_path_planning.relocalization.skidpad.skidpad_path_data import (
     BASE_SKIDPAD_PATH,
     load_skidpad_path_spline,
@@ -14,7 +15,6 @@ from fsd_path_planning.relocalization.skidpad.skidpad_relocalizer import (
     SkidpadRelocalizer,
     calculate_reference_centers_for_skidpad_path,
 )
-from fsd_path_planning.utils.spline_fit import SplineFitterFactory
 
 # Skidpad geometry from the Formula Student rules, in metres.
 CIRCLE_RADIUS = 9.125
@@ -75,7 +75,7 @@ class TestSplineRoundTrip:
         destination = tmp_path / "spline.npz"
         spline.save(destination)
 
-        from fsd_path_planning.utils.spline_fit import SplineEvaluator
+        from fsd_path_planning.geometry.splines import SplineEvaluator
 
         reloaded = SplineEvaluator.load(destination)
         assert reloaded.max_u == spline.max_u

@@ -28,6 +28,10 @@ from fsd_path_planning.cone_matching.core_cone_matching import (
     ConeMatchingInput,
 )
 from fsd_path_planning.config_dataclasses import PipelineConfig, default_config
+from fsd_path_planning.geometry.angles import (
+    angle_from_2d_vector,
+    unit_2d_vector_from_angle,
+)
 from fsd_path_planning.relocalization.acceleration.acceleration_relocalization import (
     AccelerationRelocalizer,
 )
@@ -47,10 +51,6 @@ from fsd_path_planning.utils.input_validation import (
     convert_direction_to_array,
     normalize_cones,
     validate_vehicle_position,
-)
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    unit_2d_vector_from_angle,
 )
 from fsd_path_planning.utils.mission_types import MissionTypes
 

@@ -28,9 +28,7 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT))
 
-from fsd_path_planning.utils.spline_fit import (  # noqa: E402
-    SplineFitterFactory,
-)
+from fsd_path_planning.geometry.splines import SplineFitterFactory  # noqa: E402
 
 DEFAULT_OUTPUT = (
     REPO_ROOT

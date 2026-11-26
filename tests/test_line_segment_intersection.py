@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
+from fsd_path_planning.geometry.segments import (
     batch_lines_segments_intersect_indicator,
     lines_segments_intersect_indicator,
     number_of_intersections,

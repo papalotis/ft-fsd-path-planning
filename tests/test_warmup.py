@@ -10,7 +10,7 @@ import pytest
 from numba.core.dispatcher import Dispatcher
 
 from fsd_path_planning import PathPlanner, warmup
-from fsd_path_planning.utils.math_utils import angle_from_2d_vector
+from fsd_path_planning.geometry.angles import angle_from_2d_vector
 from tests.conftest import DEMO_DIR, GOLDEN_RUNS, load_data_json, strip_colour
 
 

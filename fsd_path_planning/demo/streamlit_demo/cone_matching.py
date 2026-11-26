@@ -18,8 +18,9 @@ from fsd_path_planning.demo.streamlit_demo.common import (
     get_cones_for_configuration,
     visualize_configuration,
 )
+from fsd_path_planning.geometry.transforms import rotate
+from fsd_path_planning.geometry.vectors import normalize_last_axis
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import normalize_last_axis, rotate
 
 
 def naive_search_directions(

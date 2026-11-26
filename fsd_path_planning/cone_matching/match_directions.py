@@ -1,7 +1,8 @@
 import numpy as np
 
+from fsd_path_planning._numba import my_njit
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import my_njit, rotate
 
 
 @my_njit

@@ -67,7 +67,7 @@ Python 3.10 is the minimum supported version. It stays the minimum until ROS 2 H
 
 #### Migration guide for deprecated patterns
 
-Two patterns from earlier releases still work but emit a `DeprecationWarning`.
+The patterns below from earlier releases still work but emit a warning.
 Update them at your convenience — they will be removed in a future release.
 
 **1. Keyword-argument constructors**
@@ -108,6 +108,24 @@ New (pass input directly):
 ```python
 result = sorter.run_cone_sorting(sorting_input)
 ```
+
+**3. Moved modules**
+
+These modules moved. The old paths forward to the new ones and emit an
+`FsdPathPlanningDeprecationWarning` (a `UserWarning`, so it is shown wherever
+your code runs) until 0.7.0.
+
+| Old path | New path |
+| --- | --- |
+| `fsd_path_planning.types` | `fsd_path_planning.common_types` |
+| `fsd_path_planning.utils.math_utils` | `fsd_path_planning.geometry` (split by topic: `vectors`, `angles`, `transforms`, `distances`, `traces`, `shapes`) |
+| `fsd_path_planning.utils.spline_fit` | `fsd_path_planning.geometry.splines` |
+| `fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection` | `fsd_path_planning.geometry.segments` |
+
+Every geometry function can also be imported from `fsd_path_planning.geometry`
+directly. `lerp`, `linearly_combine_values_over_time`, `odd_square` and the
+quaternion conversions in `math_utils` are no longer used by the planner and
+have no new home; they are removed in 0.7.0.
 
 ### December 2023, July 2024 (v0.4)
 

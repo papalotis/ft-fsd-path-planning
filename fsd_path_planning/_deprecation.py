@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import importlib
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 
@@ -32,16 +32,41 @@ def moved_module(
     it reaches this function, which warns and returns the object from its new
     home. The warning points at the caller's import line.
     """
+    return moved_names(old_module, dict.fromkeys(names, new_module), removed_in)
+
+
+def moved_names(
+    old_module: str,
+    new_homes: Mapping[str, str],
+    removed_in: str,
+    retired: Mapping[str, str] | None = None,
+) -> Callable[[str], Any]:
+    """Like `moved_module`, for a module whose names went to different places.
+
+    ``new_homes`` maps each moved name to the module it lives in now.
+    ``retired`` maps names that have no new public home, because the planner
+    no longer uses them, to the private module that still holds them until
+    ``removed_in``; their warning says so.
+    """
+    retired = dict(retired or {})
 
     def __getattr__(name: str) -> Any:
-        if name not in names:
+        if name in new_homes:
+            home = new_homes[name]
+            message = (
+                f"{old_module}.{name} has moved to {home}.{name}; the old path"
+                f" will be removed in {removed_in}"
+            )
+        elif name in retired:
+            home = retired[name]
+            message = (
+                f"{old_module}.{name} is no longer used by fsd_path_planning and"
+                f" will be removed in {removed_in}; copy it into your own code if"
+                " you need it"
+            )
+        else:
             raise AttributeError(f"module {old_module!r} has no attribute {name!r}")
-        warnings.warn(
-            f"{old_module}.{name} has moved to {new_module}.{name}; the old path"
-            f" will be removed in {removed_in}",
-            FsdPathPlanningDeprecationWarning,
-            stacklevel=2,
-        )
-        return getattr(importlib.import_module(new_module), name)
+        warnings.warn(message, FsdPathPlanningDeprecationWarning, stacklevel=2)
+        return getattr(importlib.import_module(home), name)
 
     return __getattr__

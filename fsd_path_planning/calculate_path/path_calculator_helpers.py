@@ -15,8 +15,9 @@ from typing import Literal
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray
+from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 
 ConeTypesForPathCalculation = Literal[ConeTypes.LEFT, ConeTypes.RIGHT]
 

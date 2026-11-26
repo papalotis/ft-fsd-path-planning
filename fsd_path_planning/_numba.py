@@ -1,0 +1,60 @@
+"""
+The Numba decorator every compiled function in the package uses.
+
+Project: fsd_path_planning
+"""
+
+from __future__ import annotations
+
+import os
+from typing import TypeVar
+
+try:
+    from numba import jit
+except ImportError:
+
+    def jit(**kwargs):
+        def wrapper(func):
+            return func
+
+        return wrapper
+
+
+T = TypeVar("T")
+
+
+def _is_coverage_running() -> bool:
+    if os.getenv("COVERAGE_PROCESS_START"):
+        return True
+
+    try:
+        from coverage import Coverage
+    except ImportError:
+        return False
+
+    return Coverage.current() is not None
+
+
+def my_njit(func: T) -> T:
+    """
+    numba.njit is an untyped decorator. This wrapper helps type checkers keep the
+    type information after applying the decorator. Furthermore, it sets some performance
+    flags
+
+    Args:
+        func (T): The function to jit
+
+    Returns:
+        T: The jitted function
+    """
+    if _is_coverage_running():
+        return func
+
+    jit_func: T = jit(
+        nopython=True,
+        cache=True,
+        nogil=True,
+        fastmath=True,
+    )(func)
+
+    return jit_func

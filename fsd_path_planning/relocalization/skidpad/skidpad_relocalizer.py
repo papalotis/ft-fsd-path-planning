@@ -13,17 +13,15 @@ from scipy.sparse.csgraph import connected_components
 from scipy.spatial import cKDTree
 
 from fsd_path_planning.common_types import FloatArray, IntArray
+from fsd_path_planning.geometry.angles import angle_from_2d_vector
+from fsd_path_planning.geometry.distances import calc_pairwise_distances
+from fsd_path_planning.geometry.shapes import circle_fit
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.relocalization.relocalization_base_class import (
     RelocalizationCallable,
     Relocalizer,
 )
 from fsd_path_planning.relocalization.skidpad.skidpad_path_data import BASE_SKIDPAD_PATH
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    calc_pairwise_distances,
-    circle_fit,
-    rotate,
-)
 
 PowersetCirceFitResult = list[tuple[FloatArray, IntArray]]
 

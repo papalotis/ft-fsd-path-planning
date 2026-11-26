@@ -7,8 +7,8 @@ Project: fsd_path_planning
 
 import numpy as np
 
+from fsd_path_planning._numba import my_njit
 from fsd_path_planning.common_types import FloatArray, IntArray
-from fsd_path_planning.utils.math_utils import my_njit
 
 
 class NoPathError(RuntimeError):

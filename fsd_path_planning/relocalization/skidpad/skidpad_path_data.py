@@ -17,7 +17,7 @@ from importlib import resources
 import numpy as np
 
 from fsd_path_planning.common_types import FloatArray
-from fsd_path_planning.utils.spline_fit import SplineEvaluator
+from fsd_path_planning.geometry.splines import SplineEvaluator
 
 SPLINE_RESOURCE = "skidpad_path_spline.npz"
 

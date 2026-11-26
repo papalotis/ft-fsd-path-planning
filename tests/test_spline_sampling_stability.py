@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from fsd_path_planning.utils.spline_fit import SplineEvaluator
+from fsd_path_planning.geometry.splines import SplineEvaluator
 
 DUMMY_TCK = (0, 0, 0)
 

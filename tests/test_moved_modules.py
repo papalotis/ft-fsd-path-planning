@@ -57,3 +57,63 @@ class TestWarningIsAlwaysShown:
         assert any(
             issubclass(w.category, FsdPathPlanningDeprecationWarning) for w in caught
         )
+
+
+GEOMETRY_SHIMS = (
+    "fsd_path_planning.utils.math_utils",
+    "fsd_path_planning.utils.spline_fit",
+    "fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection",
+)
+
+
+def _forwarded_names(module_name: str) -> dict[str, str]:
+    """Each name a shim forwards, mapped to the module it now lives in."""
+    shim = importlib.import_module(module_name)
+    mapping: dict[str, str] = {}
+    for cell in shim.__getattr__.__closure__ or ():
+        if isinstance(cell.cell_contents, dict):
+            mapping.update(cell.cell_contents)
+    return mapping
+
+
+class TestGeometryMoved:
+    @pytest.mark.parametrize("module_name", GEOMETRY_SHIMS)
+    def test_every_old_name_resolves_to_the_new_object(self, module_name) -> None:
+        old = importlib.import_module(module_name)
+        forwarded = _forwarded_names(module_name)
+        assert forwarded
+        for name, home in forwarded.items():
+            with pytest.warns(FsdPathPlanningDeprecationWarning, match="0.7.0"):
+                assert getattr(old, name) is getattr(
+                    importlib.import_module(home), name
+                )
+
+    def test_moved_names_point_at_their_new_home(self) -> None:
+        with pytest.warns(
+            FsdPathPlanningDeprecationWarning,
+            match=r"fsd_path_planning\.geometry\.transforms\.rotate",
+        ):
+            from fsd_path_planning.utils.math_utils import rotate  # noqa: F401
+
+    def test_retired_helpers_say_they_have_no_replacement(self) -> None:
+        with pytest.warns(FsdPathPlanningDeprecationWarning, match="no longer used"):
+            from fsd_path_planning.utils.math_utils import lerp  # noqa: F401
+
+    def test_the_package_itself_uses_no_deprecated_path(self) -> None:
+        """Importing and running the planner must not trigger any shim."""
+        import subprocess
+        import sys
+
+        code = (
+            "import warnings\n"
+            "from fsd_path_planning._deprecation import "
+            "FsdPathPlanningDeprecationWarning as W\n"
+            "warnings.simplefilter('error', W)\n"
+            "import fsd_path_planning, fsd_path_planning.geometry\n"
+            "from fsd_path_planning.warmup import warmup\n"
+            "warmup()\n"
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", code], capture_output=True, text=True
+        )
+        assert result.returncode == 0, result.stderr

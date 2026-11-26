@@ -12,13 +12,11 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.ndimage import uniform_filter1d
 
+from fsd_path_planning._numba import my_njit
 from fsd_path_planning.common_types import FloatArray, IntArray
-from fsd_path_planning.utils.math_utils import (
-    circle_fit,
-    my_njit,
-    trace_distance_to_next,
-)
-from fsd_path_planning.utils.spline_fit import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.geometry.shapes import circle_fit
+from fsd_path_planning.geometry.splines import SplineEvaluator, SplineFitterFactory
+from fsd_path_planning.geometry.traces import trace_distance_to_next
 
 
 @dataclass

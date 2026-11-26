@@ -14,16 +14,14 @@ from sys import maxsize
 
 import numpy as np
 
+from fsd_path_planning._numba import my_njit
 from fsd_path_planning.common_types import BoolArray, FloatArray, IntArray
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_search_direction_for_one,
 )
+from fsd_path_planning.geometry.angles import vec_angle_between
+from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    my_cdist_sq_euclidean,
-    my_njit,
-    vec_angle_between,
-)
 
 SEARCH_DIRECTIONS_CACHE_KEY_TYPE = tuple[int, int, int]
 SEARCH_DIRECTIONS_CACHE_TYPE = dict[SEARCH_DIRECTIONS_CACHE_KEY_TYPE, FloatArray]

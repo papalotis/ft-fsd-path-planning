@@ -8,19 +8,14 @@ from __future__ import annotations
 
 import numpy as np
 
+from fsd_path_planning._numba import my_njit
 from fsd_path_planning.common_types import BoolArray, FloatArray, GenericArray, IntArray
+from fsd_path_planning.geometry.angles import angle_difference, vec_angle_between
+from fsd_path_planning.geometry.segments import lines_segments_intersect_indicator
+from fsd_path_planning.geometry.shapes import points_inside_ellipse
 from fsd_path_planning.sorting_cones.trace_sorter.common import NoPathError
-from fsd_path_planning.sorting_cones.trace_sorter.line_segment_intersection import (
-    lines_segments_intersect_indicator,
-)
+from fsd_path_planning.utils.arrays import my_in1d
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_difference,
-    my_in1d,
-    my_njit,
-    points_inside_ellipse,
-    vec_angle_between,
-)
 
 # Distance below which the directional-angle limit is relaxed, in metres.
 # SortingConfig.close_cone_threshold is what the pipeline passes; this is the

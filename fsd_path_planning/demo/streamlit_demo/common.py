@@ -9,8 +9,9 @@ import streamlit as st
 from matplotlib.axes._axes import Axes
 
 from fsd_path_planning.common_types import FloatArray
+from fsd_path_planning.geometry.angles import unit_2d_vector_from_angle
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import rotate, unit_2d_vector_from_angle
 
 
 def calculate_pose_triangle_position(

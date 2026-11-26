@@ -21,14 +21,11 @@ from fsd_path_planning.common_types import (
 from fsd_path_planning.cone_matching.match_directions import (
     calculate_match_search_direction,
 )
+from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
+from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
+from fsd_path_planning.geometry.traces import trace_angles_between
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.utils.cone_types import ConeTypes
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    my_cdist_sq_euclidean,
-    rotate,
-    trace_angles_between,
-    vec_angle_between,
-)
 
 
 def find_boolean_mask_of_all_potential_matches(

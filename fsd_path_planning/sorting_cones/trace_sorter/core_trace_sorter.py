@@ -14,6 +14,10 @@ import numpy as np
 
 from fsd_path_planning.common_types import FloatArray, IntArray
 from fsd_path_planning.config_dataclasses import SortingConfig
+from fsd_path_planning.geometry.angles import angle_from_2d_vector, vec_angle_between
+from fsd_path_planning.geometry.distances import my_cdist_sq_euclidean
+from fsd_path_planning.geometry.shapes import points_inside_ellipse
+from fsd_path_planning.geometry.transforms import rotate
 from fsd_path_planning.sorting_cones.trace_sorter.adjacency_matrix import (
     AdjacencyMatrixCache,
 )
@@ -28,13 +32,6 @@ from fsd_path_planning.sorting_cones.trace_sorter.nearby_cone_search import (
     NearbyConeSearcher,
 )
 from fsd_path_planning.utils.cone_types import ConeTypes, invert_cone_type
-from fsd_path_planning.utils.math_utils import (
-    angle_from_2d_vector,
-    my_cdist_sq_euclidean,
-    points_inside_ellipse,
-    rotate,
-    vec_angle_between,
-)
 
 
 def flatten_cones_by_type_array(cones_by_type: list[FloatArray]) -> FloatArray:
