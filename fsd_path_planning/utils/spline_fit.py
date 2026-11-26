@@ -18,6 +18,11 @@ from fsd_path_planning.utils.math_utils import trace_distance_to_next
 
 logger = logging.getLogger(__name__)
 
+# Decimal places the number of sampling steps is rounded to before the sample
+# positions are built. Ten is far finer than any real path resolution and far
+# coarser than the float noise that used to decide the count.
+ARANGE_DECIMALS = 10
+
 
 @dataclass
 class SplineEvaluator:
@@ -43,7 +48,19 @@ class SplineEvaluator:
 
         if max_u is None:
             max_u = self.max_u
-        return np.arange(0, max_u, self.predict_every)
+
+        # np.arange(0, max_u, predict_every) returns one more point when
+        # max_u / predict_every lands a hair above a whole number instead of a
+        # hair below. The path parameterizer divides the path length by a point
+        # count to get predict_every, so the ratio is a whole number by
+        # construction and the sampling sat exactly on that edge: a change far
+        # below a micrometre anywhere upstream, or a different BLAS or SciPy
+        # build, flipped the number of samples and moved the sampled path by up
+        # to a third of a step. Round the count to the nearest whole number of
+        # steps before taking the half-open range, so the edge resolves the
+        # same way everywhere.
+        n_steps = int(np.ceil(round(max_u / self.predict_every, ARANGE_DECIMALS)))
+        return np.arange(n_steps) * self.predict_every
 
     def predict(self, der: int, max_u: float | None = None) -> np.ndarray:
         """
