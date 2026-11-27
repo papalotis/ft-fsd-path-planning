@@ -282,12 +282,30 @@ class SkidpadConfig:
     # maximum residual for circle fit acceptance
     max_residual: float = 0.4
 
+    # check the two centres found against where the car starts: in the entry
+    # lane, midway between the circles, facing along it, some way before the
+    # line through the centres. Rejects circles fitted through the lane cones,
+    # which a few centimetres of map noise produce; see tools/skidpad_quality.py.
+    # Off by default until it is decided on; it changes no bundled result
+    check_start_position: bool = False
+    start_lateral_tolerance: float = 1.5
+    min_start_distance: float = 5.0
+    max_start_distance: float = 30.0
+
     # maximum number of closest cones to use for relocalization
     max_cones_for_relocalization: int = 20
 
-    # maximum powerset size for circle fitting. 3 reproduces the behaviour of
-    # the released algorithm; see circle_fit_powerset for why.
+    # the largest cone subsets a circle is fitted through. All triples are
+    # tried; of the larger subsets a random sample (see below). 3, triples
+    # only, is what every release has done; tools/skidpad_quality.py found no
+    # gain from larger subsets, so they are off by default
     max_powerset_size: int = 3
+    # how many of the larger subsets to try per attempt, split evenly between
+    # the sizes 4 to max_powerset_size; bounds the time per frame
+    max_sampled_subsets: int = 500
+    # seed of the relocalizer's generator for that sample; each attempt draws a
+    # new sample, and the same seed replays the same run
+    random_seed: int = 42
 
     def __post_init__(self) -> None:
         _validate_positive("circle_radius", self.circle_radius)
@@ -307,6 +325,15 @@ class SkidpadConfig:
             "max_cones_for_relocalization", self.max_cones_for_relocalization
         )
         _validate_min_int("max_powerset_size", self.max_powerset_size, 3)
+        _validate_min_int("max_sampled_subsets", self.max_sampled_subsets, 0)
+        _validate_min_int("random_seed", self.random_seed, 0)
+        _validate_positive("start_lateral_tolerance", self.start_lateral_tolerance)
+        _validate_non_negative("min_start_distance", self.min_start_distance)
+        if self.max_start_distance <= self.min_start_distance:
+            raise ValueError(
+                "max_start_distance must be > min_start_distance, got "
+                f"{self.max_start_distance} <= {self.min_start_distance}"
+            )
 
 
 @dataclass(frozen=True)

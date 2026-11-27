@@ -6,6 +6,7 @@ Description: Place the car in the known skidpad map and relocalize it.
 from __future__ import annotations
 
 from itertools import combinations
+from math import comb
 
 import numpy as np
 from scipy.sparse import coo_matrix
@@ -28,56 +29,87 @@ PowersetCirceFitResult = list[tuple[FloatArray, IntArray]]
 
 
 def circle_fit_powerset(
-    points: np.ndarray, config: SkidpadConfig | None = None
+    points: np.ndarray,
+    config: SkidpadConfig | None = None,
+    rng: np.random.Generator | None = None,
 ) -> PowersetCirceFitResult:
-    """Circles through subsets of the points that look like a skidpad circle."""
+    """Circles through subsets of the points that look like a skidpad circle.
+
+    Every triple of points is tried. Larger subsets, up to
+    `config.max_powerset_size` points, are too many to try them all (with 20
+    cones there are 4,845 quadruples and 15,504 quintuples), so a random
+    sample of at most `config.max_sampled_subsets` of them is drawn from
+    `rng`, split evenly between the sizes. Each call draws a new sample, so a
+    relocalizer that tries again on the next frame tries other subsets.
+    """
     config = config or SkidpadConfig()
+    if rng is None:
+        rng = np.random.default_rng(config.random_seed)
+    n_points = len(points)
+    max_size = min(config.max_powerset_size, n_points)
+
+    subsets: list[tuple[int, ...]] = list(combinations(range(n_points), 3))
+    larger_sizes = range(4, max_size + 1)
+    if len(larger_sizes) > 0:
+        per_size = config.max_sampled_subsets // len(larger_sizes)
+        for size in larger_sizes:
+            subsets.extend(_sample_subsets(n_points, size, per_size, rng))
+
+    # tiny noise against exactly colinear points; a fixed stream, so that the
+    # triples give the same circles as they always have
+    noise = np.random.RandomState(42)
+
     out = []
-    all_indices = range(len(points))
+    for idxs in subsets:
+        set_ = np.array(idxs)
+        points_of_set = points[set_]
 
-    # Only 3-cone subsets are evaluated, which reproduces the behaviour of the
-    # released algorithm: there, a loop variable shadowed `all_indices`, so the
-    # 4- and 5-cone passes silently iterated over an empty sequence. Raising this
-    # limit changes relocalization results and costs an order of magnitude more
-    # time per frame, so it is scheduled as a deliberate change after the
-    # refactor (random subset sampling), not as a side effect of this cleanup.
-    max_powerset_size = config.max_powerset_size
-    max_actual_powerset_size = min(max_powerset_size, len(points))
+        # get the mean distance to the closest point
+        distance = calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
+        min_distances = distance.min(axis=0)
+        mean_distance = min_distances.mean()
 
-    rng = np.random.RandomState(42)
+        points_of_set = points_of_set + noise.randn(*points_of_set.shape) * 1e-3
 
-    for i in range(3, max_actual_powerset_size + 1):
-        for idxs in combinations(all_indices, i):
-            set_ = np.array(idxs)
-            # get the points in the set
-            points_of_set = points[set_]
+        res = circle_fit(points_of_set)
 
-            # get the mean distance to the closest point
-            distance = (
-                calc_pairwise_distances(points_of_set, dist_to_self=np.inf) ** 0.5
-            )
-            min_distances = distance.min(axis=0)
-            mean_distance = min_distances.mean()
+        residual = np.abs(
+            np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]
+        ).mean()
 
-            # estimate the circle parameters
-            # add tiny noise to avoid colinear points
-            points_of_set = points_of_set + rng.randn(*points_of_set.shape) * 1e-3
-
-            res = circle_fit(points_of_set)
-
-            residual = np.abs(
-                np.linalg.norm(res[:2] - points_of_set, axis=1) - res[2]
-            ).mean()
-
-            if (
-                abs(res[2] - config.circle_radius) < config.circle_radius_tolerance
-                and abs(mean_distance - config.mean_cone_distance)
-                < config.mean_cone_distance_tolerance
-                and residual < config.max_residual
-            ):
-                out.append((res, set_))
+        if (
+            abs(res[2] - config.circle_radius) < config.circle_radius_tolerance
+            and abs(mean_distance - config.mean_cone_distance)
+            < config.mean_cone_distance_tolerance
+            and residual < config.max_residual
+        ):
+            out.append((res, set_))
 
     return out
+
+
+def _sample_subsets(
+    n_points: int, size: int, max_count: int, rng: np.random.Generator
+) -> list[tuple[int, ...]]:
+    """Up to `max_count` distinct `size`-subsets of range(n_points), sorted.
+
+    All of them when there are no more than `max_count`; otherwise a uniform
+    random sample without repeats.
+    """
+    if max_count <= 0 or size > n_points:
+        return []
+    if comb(n_points, size) <= max_count:
+        return list(combinations(range(n_points), size))
+
+    chosen: set[tuple[int, ...]] = set()
+    while len(chosen) < max_count:
+        # each row: a random permutation, of which the first `size` are kept
+        draws = np.sort(rng.random((max_count, n_points)).argsort(axis=1)[:, :size])
+        for row in draws:
+            chosen.add(tuple(int(i) for i in row))
+            if len(chosen) == max_count:
+                break
+    return sorted(chosen)
 
 
 # Circle centres closer than this, directly or through a chain of others, are
@@ -153,6 +185,32 @@ def calculate_circle_centers(
         return None
 
     return best_centers
+
+
+def centers_fit_start_position(
+    circle_centers: FloatArray,
+    start_position: FloatArray,
+    start_direction: FloatArray,
+    config: SkidpadConfig,
+) -> bool:
+    """Whether two circle centres can be the skidpad's, seen from the start.
+
+    The car starts in the entry lane, on the line midway between the two
+    circles and facing along it, some distance before the line through their
+    centres. Seen from the start pose, the centres must therefore lie one on
+    each side, about half the centre distance out, and both ahead by about
+    the same amount.
+    """
+    yaw = float(angle_from_2d_vector(start_direction))
+    local = rotate(circle_centers - start_position, -yaw)
+    ahead, lateral = local[:, 0], local[:, 1]
+    half = config.center_distance / 2
+    return bool(
+        np.all(np.abs(np.abs(lateral) - half) < config.start_lateral_tolerance)
+        and lateral[0] * lateral[1] < 0
+        and np.all(ahead > config.min_start_distance)
+        and np.all(ahead < config.max_start_distance)
+    )
 
 
 def calculate_transformation(
@@ -240,6 +298,9 @@ class SkidpadRelocalizer(Relocalizer):
     def __init__(self, config: SkidpadConfig | None = None):
         super().__init__()
         self.config = config or SkidpadConfig()
+        # Owned by the relocalizer, so that each attempt draws a new sample of
+        # the larger subsets while a run can still be replayed from the seed.
+        self._rng = np.random.default_rng(self.config.random_seed)
 
         self.reference_centers = calculate_reference_centers_for_skidpad_path(
             BASE_SKIDPAD_PATH
@@ -260,7 +321,7 @@ class SkidpadRelocalizer(Relocalizer):
         idxs = np.argsort(distances)[: self.config.max_cones_for_relocalization]
         cones_array_xy = cones_array_xy[idxs]
 
-        potential_circles = circle_fit_powerset(cones_array_xy, self.config)
+        potential_circles = circle_fit_powerset(cones_array_xy, self.config, self._rng)
         if len(potential_circles) < self.config.min_candidate_circles:
             return None
 
@@ -270,6 +331,13 @@ class SkidpadRelocalizer(Relocalizer):
 
         assert self._original_vehicle_position is not None
         assert self._original_vehicle_direction is not None
+        if self.config.check_start_position and not centers_fit_start_position(
+            circle_centers,
+            self._original_vehicle_position,
+            self._original_vehicle_direction,
+            self.config,
+        ):
+            return None
         return calculate_transformation(
             self.reference_centers,
             circle_centers,
