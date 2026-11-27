@@ -42,6 +42,11 @@ is unchanged: byte-identical to 0.5.0 on every frame of the bundled datasets.
 - `PathPlanner.health` counts recoveries and frames since the last good path, for publishing as diagnostics.
 - Optional bounds on recovery: past them the planner returns an empty path instead of a stale one.
 
+#### Skidpad relocalization
+
+- New, off by default: `SkidpadConfig.max_powerset_size` above 3 also tries a seeded random sample of larger cone subsets, and `check_start_position` rejects circle centres that cannot be the skidpad's as seen from where the car starts.
+- `tools/skidpad_quality.py` measures relocalization on degraded cone maps. It found that a few centimetres of map noise can make the relocalizer place the skidpad 10–40 m off, using circles fitted through the entry-lane cones; see [benchmarks/skidpad-quality.md](benchmarks/skidpad-quality.md). The defaults, and the output, are unchanged.
+
 #### Faster
 
 - The matching candidate search is compiled with Numba. On the trackdrive datasets a frame is about 10% faster at the median than with 0.5.0, and 6–28% faster at the 95th percentile, depending on the run; skidpad is unchanged.
