@@ -45,13 +45,15 @@ class SE2Transform:
     expected.
     """
 
-    angle: float
+    angle: float | FloatArray
     shift: FloatArray = field(default_factory=lambda: np.zeros(2))
     pivot: FloatArray = field(default_factory=lambda: np.zeros(2))
     offset: FloatArray = field(default_factory=lambda: np.zeros(2))
 
-    def __call__(self, position_2d: FloatArray, yaw: float) -> tuple[FloatArray, float]:
-        return self.apply_to_points(position_2d), yaw + self.angle
+    def __call__(
+        self, position_2d: FloatArray, direction_yaw: float
+    ) -> tuple[FloatArray, float]:
+        return self.apply_to_points(position_2d), direction_yaw + self.angle  # type: ignore[return-value]
 
     def apply_to_points(self, points: FloatArray) -> FloatArray:
         """Transform a position, or an (N, 2) array of them."""

@@ -7,6 +7,7 @@ Project: fsd_path_planning
 from __future__ import annotations
 
 from enum import Enum, IntEnum
+from typing import Literal
 
 
 class ConeTypes(IntEnum):
@@ -48,7 +49,7 @@ class Side(Enum):
     RIGHT = "right"
 
     @property
-    def cone_type(self) -> ConeTypes:
+    def cone_type(self) -> Literal[ConeTypes.LEFT, ConeTypes.RIGHT]:
         return ConeTypes.LEFT if self is Side.LEFT else ConeTypes.RIGHT
 
     @property

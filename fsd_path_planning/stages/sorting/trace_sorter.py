@@ -342,7 +342,7 @@ class TraceSorter:
         n_neighbors = min(self.max_n_neighbors, len(cones) - 1)
         result = calc_scores_and_end_configurations(
             cones,
-            cone_type,
+            Side.of(cone_type).cone_type,
             n_neighbors,
             start_idx,
             self.threshold_directional_angle,
